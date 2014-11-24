@@ -22,8 +22,17 @@ namespace DotaHostBoxManager
         // The steam cmd file to run steam commands with
         static readonly String STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
 
+        // The path to depot downloader
+        static readonly String DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
+
+        // The execute to run depot downloader
+        static readonly String DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
+
         // The path to download steamcmd from
         static readonly String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
+
+        // The path to download depot downloader
+        static readonly String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
 
         // URL to download SRCDS from (Move this onto our own domain at some stage)
         static readonly String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
@@ -37,14 +46,20 @@ namespace DotaHostBoxManager
         // The path to the source1 dota 2 server
         static readonly String SOURCE1_PATH = "dota_s1\\";
 
+        // The path to the source2 dota 2 server
+        static readonly String SOURCE2_PATH = "dota_s2\\";
+
         // The username to download files with (Username and password should probably be exported somewhere)
         static readonly String STEAM_USERNAME = "dotahost_net";
 
         // The password to download files with
         static readonly String STEAM_PASSWORD = "***REMOVED***";
 
-        // The command to update dota
+        // The command to update dota (source1)
         static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + g_BASEPATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
+
+        // The command to update dota (source2)
+        static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + g_BASEPATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
 
         // Used for downloading files
         static WebClient dlManager = new WebClient();
@@ -56,7 +71,7 @@ namespace DotaHostBoxManager
             File.Delete(g_BASEPATH + "log.txt");
                
             // Update the dota install
-            updateDotaSource1();
+            //updateDotaSource1();
         }
 
         // This function ensures steamcmd is available
@@ -87,7 +102,35 @@ namespace DotaHostBoxManager
             }
         }
 
-        // This function updates dota 2
+        // This function ensures depot downloader is available
+        static void verifyDepotDownloader()
+        {
+            // Check if steamcmd exists
+            if (!File.Exists(g_BASEPATH + DEPOT_DOWNLOADER))
+            {
+                // Debug log
+                log("depotdownloader.exe not found, downloading...");
+
+                // Name of the zip to use
+                String depotDownloaderZip = "depotdownloader.zip";
+
+                // If there is an old version of steamcmd.zip, delete it
+                File.Delete(g_BASEPATH + depotDownloaderZip);
+
+                // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
+
+                // Download steamcmd zip
+                dlManager.DownloadFile(DOWNLOAD_PATH_DEPOT_DOWNLOADER, depotDownloaderZip);
+
+                // Extract the archive
+                ZipFile.ExtractToDirectory(depotDownloaderZip, g_BASEPATH + DEPOT_DOWNLOADER_PATH);
+
+                // Delete the zip
+                File.Delete(g_BASEPATH + depotDownloaderZip);
+            }
+        }
+
+        // This function updates dota 2 (source1)
         // If a source1 server isn't installed, this function will install it from scratch
         static void updateDotaSource1()
         {
@@ -127,6 +170,43 @@ namespace DotaHostBoxManager
             installD2Fixups();
             source1GameInfoPatch();
             patchSource1Maps();
+
+            log("Done!");
+        }
+
+        // This function updates dota 2 (source2)
+        // If a source2 server isn't installed, this function will install it from scratch
+        static void updateDotaSource2()
+        {
+            // Debug log
+            log("Updating dota 2 (source2)...");
+
+            // Ensure steamcmd exists
+            verifyDepotDownloader();
+
+            // Ensure the directory exists
+            Directory.CreateDirectory(SOURCE2_PATH);
+
+            // Build the update commmand
+            ProcessStartInfo proc = new ProcessStartInfo();
+            proc.WorkingDirectory = g_BASEPATH;
+            proc.FileName = DEPOT_DOWNLOADER;
+            proc.Arguments = STEAMCMD_SOURCE2_DOTA;
+
+            // Attempt to run the update
+            try
+            {
+                // Start the process
+                Process process = Process.Start(proc);
+
+                // Wait for it to end
+                process.WaitForExit();
+            }
+            catch
+            {
+                log("Failed to update!");
+                return;
+            }
 
             log("Done!");
         }
