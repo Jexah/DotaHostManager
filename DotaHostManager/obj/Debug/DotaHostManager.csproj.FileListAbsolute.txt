@@ -1,7 +1,0 @@
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\bin\Debug\DotaHostManager.exe.config
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\bin\Debug\DotaHostManager.exe
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\bin\Debug\DotaHostManager.pdb
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\bin\Debug\Alchemy.dll
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\obj\Debug\DotaHostManager.exe
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\obj\Debug\DotaHostManager.pdb
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManager\obj\Debug\DotaHostManager.csprojResolveAssemblyReference.cache

@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>0ccaccec-d1b2-4eeb-8ae1-3e2df12c01cc</ProjectGuid>
+    <ProjectGuid>{A081EADD-F793-4729-AAC9-F755ED5A0F80}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DotaHostBoxManager</RootNamespace>

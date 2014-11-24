@@ -1,7 +1,0 @@
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\bin\Debug\DotaHostManagerUpdate.exe.config
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\bin\Debug\DotaHostManagerUpdate.exe
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\bin\Debug\DotaHostManagerUpdate.pdb
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\obj\Debug\DotaHostManagerUpdate.exe
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\obj\Debug\DotaHostManagerUpdate.pdb
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\bin\Debug\Newtonsoft.Json.dll
-c:\users\jexah\documents\visual studio 2012\Projects\DotaHostManager\DotaHostManagerUpdate\bin\Debug\Newtonsoft.Json.xml
