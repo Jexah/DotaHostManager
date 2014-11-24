@@ -20,7 +20,7 @@ namespace DotaHostBoxManager
     class Program
     {
         // Where this executable is run from
-        static string g_BASEPATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
+        static string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
 
         // The path to steamcmd
         static readonly String STEAMCMD_PATH = "steamcmd\\";
@@ -77,7 +77,7 @@ namespace DotaHostBoxManager
         static void Main(string[] args)
         {
             // Delete the old log file
-            File.Delete(g_BASEPATH + "log.txt");
+            File.Delete(BASE_PATH + "log.txt");
                
             // Update the dota install
             //updateDotaSource1();
@@ -87,7 +87,7 @@ namespace DotaHostBoxManager
         static void verifySteamcmd()
         {
             // Check if steamcmd exists
-            if (!File.Exists(g_BASEPATH + STEAMCMD))
+            if (!File.Exists(BASE_PATH + STEAMCMD))
             {
                 // Debug log
                 log("steamcmd.exe not found, downloading...");
@@ -96,7 +96,7 @@ namespace DotaHostBoxManager
                 String steamZip = "steamcmd.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(g_BASEPATH + steamZip);
+                File.Delete(BASE_PATH + steamZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -104,10 +104,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_STEAMCMD, steamZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(steamZip, g_BASEPATH + STEAMCMD_PATH);
+                ZipFile.ExtractToDirectory(steamZip, BASE_PATH + STEAMCMD_PATH);
 
                 // Delete the zip
-                File.Delete(g_BASEPATH + steamZip);
+                File.Delete(BASE_PATH + steamZip);
             }
         }
 
@@ -115,7 +115,7 @@ namespace DotaHostBoxManager
         static void verifyDepotDownloader()
         {
             // Check if steamcmd exists
-            if (!File.Exists(g_BASEPATH + DEPOT_DOWNLOADER))
+            if (!File.Exists(BASE_PATH + DEPOT_DOWNLOADER))
             {
                 // Debug log
                 log("depotdownloader.exe not found, downloading...");
@@ -124,7 +124,7 @@ namespace DotaHostBoxManager
                 String depotDownloaderZip = "depotdownloader.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(g_BASEPATH + depotDownloaderZip);
+                File.Delete(BASE_PATH + depotDownloaderZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -132,10 +132,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_DEPOT_DOWNLOADER, depotDownloaderZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(depotDownloaderZip, g_BASEPATH + DEPOT_DOWNLOADER_PATH);
+                ZipFile.ExtractToDirectory(depotDownloaderZip, BASE_PATH + DEPOT_DOWNLOADER_PATH);
 
                 // Delete the zip
-                File.Delete(g_BASEPATH + depotDownloaderZip);
+                File.Delete(BASE_PATH + depotDownloaderZip);
             }
         }
 
@@ -154,7 +154,7 @@ namespace DotaHostBoxManager
 
             // Build the update commmand
             ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WorkingDirectory = g_BASEPATH;
+            proc.WorkingDirectory = BASE_PATH;
             proc.FileName = STEAMCMD;
             proc.Arguments = STEAMCMD_SOURCE1_DOTA;
 
@@ -198,7 +198,7 @@ namespace DotaHostBoxManager
 
             // Build the update commmand
             ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WorkingDirectory = g_BASEPATH;
+            proc.WorkingDirectory = BASE_PATH;
             proc.FileName = DEPOT_DOWNLOADER;
             proc.Arguments = STEAMCMD_SOURCE2_DOTA;
 
@@ -224,7 +224,7 @@ namespace DotaHostBoxManager
         static void installSRCDS()
         {
             // Check if metamod exists
-            if (!File.Exists(g_BASEPATH + SOURCE1_PATH + "srcds.exe"))
+            if (!File.Exists(BASE_PATH + SOURCE1_PATH + "srcds.exe"))
             {
                 // Debug log
                 log("SRCDS.exe not found, downloading...");
@@ -233,7 +233,7 @@ namespace DotaHostBoxManager
                 String srcdsZip = "srcds.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(g_BASEPATH + srcdsZip);
+                File.Delete(BASE_PATH + srcdsZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -241,10 +241,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_SRCDS, srcdsZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(srcdsZip, g_BASEPATH + SOURCE1_PATH);
+                ZipFile.ExtractToDirectory(srcdsZip, BASE_PATH + SOURCE1_PATH);
 
                 // Delete the zip
-                File.Delete(g_BASEPATH + srcdsZip);
+                File.Delete(BASE_PATH + srcdsZip);
             }
         }
 
@@ -252,7 +252,7 @@ namespace DotaHostBoxManager
         static void installMetamod()
         {
             // Check if metamod exists
-            if (!File.Exists(g_BASEPATH + SOURCE1_PATH + "dota\\addons\\metamod.vdf"))
+            if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod.vdf"))
             {
                 // Debug log
                 log("metamod not found, downloading...");
@@ -261,7 +261,7 @@ namespace DotaHostBoxManager
                 String metamodZip = "metamod.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(g_BASEPATH + metamodZip);
+                File.Delete(BASE_PATH + metamodZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -269,7 +269,7 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_METAMOD, metamodZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(metamodZip, g_BASEPATH + SOURCE1_PATH + "dota\\");
+                ZipFile.ExtractToDirectory(metamodZip, BASE_PATH + SOURCE1_PATH + "dota\\");
 
                 // Delete the zip
                 File.Delete(g_BASEPATH + metamodZip);
