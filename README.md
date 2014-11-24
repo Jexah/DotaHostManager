@@ -6,6 +6,19 @@ DotaHostManager
  - Alchemy Websockets
   - Using Visual Studio's package manager `Install-Package Alchemy`
 
+###Source1 Server Installer###
+ - This will download dota 2 (source1)
+ - It will download and install metamod
+ - It will download and install d2fixups
+ - It will patch the gameinfo.txt to load metamod
+ - It will patch all the large maps so they are loadable.
+ - It will install SRCDS
+ - It can be called again to update the server directly
+
+###Source2 Server Installer###
+ - This will attempt to download dota 2 (source2)
+ - Having issues with depot downloader where it will currupt a ton of files
+ - Not recommended to install until issues are solved
+
 ###Todo###
  - Everything XD
-
