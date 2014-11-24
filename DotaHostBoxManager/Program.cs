@@ -25,6 +25,9 @@ namespace DotaHostBoxManager
         // The path to download steamcmd from
         static readonly String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
 
+        // URL to download SRCDS from (Move this onto our own domain at some stage)
+        static readonly String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
+
         // URL to download metamod from (Move this onto our own domain at some stage)
         static readonly String DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
 
@@ -119,11 +122,41 @@ namespace DotaHostBoxManager
             }
 
             // Ensure everything is installed correctly
+            installSRCDS();
             installMetamod();
             installD2Fixups();
             source1GameInfoPatch();
+            patchSource1Maps();
 
             log("Done!");
+        }
+
+        // Ensures SRCDS is installed
+        static void installSRCDS()
+        {
+            // Check if metamod exists
+            if (!File.Exists(g_BASEPATH + SOURCE1_PATH + "srcds.exe"))
+            {
+                // Debug log
+                log("SRCDS.exe not found, downloading...");
+
+                // Local zip name
+                String srcdsZip = "srcds.zip";
+
+                // If there is an old version of steamcmd.zip, delete it
+                File.Delete(g_BASEPATH + srcdsZip);
+
+                // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
+
+                // Download steamcmd zip
+                dlManager.DownloadFile(DOWNLOAD_PATH_SRCDS, srcdsZip);
+
+                // Extract the archive
+                ZipFile.ExtractToDirectory(srcdsZip, g_BASEPATH + SOURCE1_PATH);
+
+                // Delete the zip
+                File.Delete(g_BASEPATH + srcdsZip);
+            }
         }
 
         // Ensures metamod is installed
@@ -215,11 +248,91 @@ namespace DotaHostBoxManager
             File.WriteAllText(g_BASEPATH + SOURCE1_PATH + "dota\\gameinfo.txt", gameinfo);
         }
 
+        // This function patches source1 maps
+        // This function could could issues with data[i++] if the map is made to fail on purpose
+        // This function won't fail on standard source maps, since we have control over this,
+        // Everything is good in the hood
+        static void patchSource1Maps()
+        {
+            // List of maps to patch
+            string[] maps = new string[]
+            {
+                "dota",
+                "dota_681",
+                "dota_autumn",
+                "dota_diretide_12",
+                "dota_winter"
+            };
+
+            // Path to the map folder
+            String mapPath = g_BASEPATH + SOURCE1_PATH + "dota\\maps\\";
+
+            // Loop over each map
+            foreach(String map in maps)
+            {
+                // Debug log
+                log("Attempting to patch " + map);
+
+                // Make a copy of the map
+                System.IO.File.Copy(mapPath + map + ".bsp", mapPath + map + ".bsp.tmp", true);
+
+                // Delete the original map
+                File.Delete(mapPath + map + ".bsp");
+
+                // Load up the map
+                using (FileStream fs = File.Open(mapPath + map + ".bsp.tmp", FileMode.Open))
+                {
+                    // Read in the map data
+                    byte[] data = new BinaryReader(fs).ReadBytes((int)fs.Length);
+
+                    // Search over data
+                    for (int i = 0; i < data.Length-10; )
+                    {
+                        // Searching for `world_maxs` basically
+                        if (data[i++] == 'w' &&
+                            data[i++] == 'o' &&
+                            data[i++] == 'r' &&
+                            data[i++] == 'l' &&
+                            data[i++] == 'd' &&
+                            data[i++] == '_' &&
+                            data[i++] == 'm' &&
+                            data[i++] == 'a' &&
+                            data[i++] == 'x' &&
+                            data[i++] == 's')
+                        {
+                            // Matched, lets find where the numbers begin
+                            while (i < data.Length && data[i++] != '"') ;
+                            while (i < data.Length && data[i++] != '"') ;
+
+                            // i is now positioned at the numbers
+                            data[i++] = (byte)'8';
+                            data[i++] = (byte)'3';
+                            data[i++] = (byte)'2';
+                            data[i++] = (byte)'0';
+
+                            // Store that we patched successfully
+                            log(map + " was patched successfully!");
+                        }
+                    }
+
+                    // Write the new map
+                    using (BinaryWriter writer = new BinaryWriter(File.Open(mapPath + map + ".bsp", FileMode.Create)))
+                    {
+                        // Write the data
+                        writer.Write(data);
+                    }
+                }
+
+                // Delete the copy of the map
+                File.Delete(mapPath + map + ".bsp.tmp");
+            }
+        }
+
         // Outputs to the console and stores a copy into log.txt
         static void log(string str)
         {
             Console.WriteLine(str);
-            File.AppendAllText(g_BASEPATH + "log.txt", str + "\n");
+            File.AppendAllText(g_BASEPATH + "log.txt", str + Environment.NewLine);
         }
     }
 }
