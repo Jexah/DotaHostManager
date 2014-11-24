@@ -20,5 +20,11 @@ DotaHostManager
  - Having issues with depot downloader where it will currupt a ton of files
  - Not recommended to install until issues are solved
 
+###Custom Server Scripts###
+ - Lobbies, options, team allocation and server closing is handled by Lua
+ - The following scripts will automatically be installed onto all dedicated servers
+  - https://github.com/ash47/Dota2ServerLoaderScripts
+  - These scripts aren't currently installed / tested
+
 ###Todo###
  - Everything XD
