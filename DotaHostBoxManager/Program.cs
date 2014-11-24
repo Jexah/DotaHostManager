@@ -31,8 +31,11 @@ namespace DotaHostBoxManager
         // The path to download steamcmd from
         static readonly String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
 
-        // The path to download depot downloader
+        // The path to download depot downloader (Move this onto our own domain at some stage)
         static readonly String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
+
+        // The path to download steam kit (Move this onto our own domain at some stage)
+        static readonly String DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
 
         // URL to download SRCDS from (Move this onto our own domain at some stage)
         static readonly String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
