@@ -1,4 +1,10 @@
-﻿
+﻿/*
+ * NOTES
+ * All the verify*() commands could be merged into one, since their code is basically exactly the same, just different URLs
+ * 
+ * */
+
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
