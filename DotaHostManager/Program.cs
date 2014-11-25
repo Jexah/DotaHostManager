@@ -1,6 +1,4 @@
-﻿using Alchemy;
-using Alchemy.Classes;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -19,56 +17,53 @@ namespace DotaHostManager
     class Program
     {
         // Program version
-        const short VERSION = 1;
+        private const short VERSION = 1;
         // Web root
-        const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
+        private const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
         //const string ROOT = "http://127.0.0.1/";
         //const string ROOT = "http://dotahost.net/";
 
         // Where this executable is run from
-        static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
+        private static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
 
         // GitHub download root
-        const string GITHUB = "https://codeload.github.com/ash47/";
+        private const string GITHUB = "https://codeload.github.com/ash47/";
 
         // AppData temporary folder
-        static string TEMP = System.IO.Path.GetTempPath() + @"dotahost\";
+        private static string TEMP = System.IO.Path.GetTempPath() + @"dotahost\";
 
         // Keep-alive timer
-        static System.Timers.Timer keepAlive;
+        private static System.Timers.Timer keepAlive;
 
         // Keep-alive duration
-        const int KEEP_ALIVE_DURATION = 60000; // 60 seconds
+        private const int KEEP_ALIVE_DURATION = 60000; // 60 seconds
 
         // Increments by 1 everytime an action is started, decrements every time an action is finished. The program will not close on timeout unless this is zero
-        static byte zeroCanClose = 0;
+        private static byte zeroCanClose = 0;
 
         // If this is true, the program requests close, but will not close until zeroCanClose is equal to zero
-        static bool requestClose = false;
+        private static bool requestClose = false;
 
         // This is our download manager.
-        static DownloadManager dlManager = new DownloadManager();
+        private static DownloadManager dlManager = new DownloadManager();
 
         // Path to dota, eg: C:\Program Files (x86)\Steam\steamapps\dota 2 beta\
-        static string dotaPath;
-
-        // Delegates for asynchronous socket and download events
-        delegate void socketDel(string[] args);
+        private static string dotaPath;
 
         // Dictionaries containing the socket and download functions
-        static Dictionary<string, socketDel> wSocketHooks = new Dictionary<string, socketDel>();
+        private static Dictionary<string, socketDel> wSocketHooks = new Dictionary<string, socketDel>();
 
         // Our web socket server
-        static WebSocketServer wSocket;
+        private static WebSocketServer wSocket;
 
         // Once a connection to the web socket server is established, this acts as a pointer to the context, so we may send messages to the client
-        static UserContext gContext;
+        private static UserContext gContext;
 
         // Web socket send queue, uses gContext
-        static Dictionary<string, bool> sendQueue = new Dictionary<string, bool>();
+        private static Dictionary<string, bool> sendQueue = new Dictionary<string, bool>();
 
 
-        static void Main(string[] i)
+        private static void Main(string[] i)
         {
             // Reset log file
             File.Delete(BASE_PATH + "log.txt");
@@ -110,7 +105,7 @@ namespace DotaHostManager
         }
 
         // Download the most up-to-date version file of the app
-        static void downloadAppVersion()
+        private static void downloadAppVersion()
         {
             dlManager.download(ROOT + "static/software/dotahostmanager/version", TEMP + "version", (e) => { }, (e) =>
             {
@@ -159,7 +154,7 @@ namespace DotaHostManager
         }
 
         // Called every time the app updater download progresses
-        static void appUpdaterDownloadProgress(int percentage)
+        private static void appUpdaterDownloadProgress(int percentage)
         {
             // If a socket connection has previously been opened, send the progress percentage in a formatted string
             if (gContext != null)
@@ -169,13 +164,13 @@ namespace DotaHostManager
         }
 
         // Exits the program as soon as it is finished the current task
-        static void exit(object sender, ElapsedEventArgs e)
+        private static void exit(object sender, ElapsedEventArgs e)
         {
             requestClose = true;
         }
 
         // Starts the updater and closes this program
-        static void startUpdater()
+        private static void startUpdater()
         {
             Helpers.log("[Update] Starting...");
             ProcessStartInfo proc = new ProcessStartInfo();
@@ -196,7 +191,7 @@ namespace DotaHostManager
         }
 
         // Function run when an addon finishes getting downloaded
-        static void downloadAddonComplete(string[] args)
+        private static void downloadAddonComplete(string[] args)
         {
             // Sets up properties from arguments and addonInfo file
             string id = args[0];
@@ -263,7 +258,7 @@ namespace DotaHostManager
         }
 
         // Function run when the addon info download is complete
-        static void downloadAddonInfoComplete(string addonID)
+        private static void downloadAddonInfoComplete(string addonID)
         {
             // Sets up properties from arguments and addonInfo file
             string id = addonID;
@@ -308,7 +303,7 @@ namespace DotaHostManager
         }
 
         // Begins download of addonInfo for given addon
-        static void updateAddon(string addonID)
+        private static void updateAddon(string addonID)
         {
             Helpers.log("[Downloading] " + ROOT + "static/addons/" + addonID + "/" + "info");
             dlManager.download(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
@@ -325,7 +320,7 @@ namespace DotaHostManager
         }
         
         // Generates a json structure of installed addon information, sends it to client
-        static void checkAddons()
+        private static void checkAddons()
         {
             // Define json structure
             string json = "{";
@@ -355,7 +350,7 @@ namespace DotaHostManager
         }
 
         // Attempts to find the dota path, returns false if not found
-        static bool checkDotaPath()
+        private static bool checkDotaPath()
         {
             bool failed = false;
 
@@ -389,7 +384,7 @@ namespace DotaHostManager
         }
         
         // Updates the dota path
-        static void updateDotaPath(string newPath)
+        private static void updateDotaPath(string newPath)
         {
             // Check if newPath is a valid directory
             if (!Directory.Exists(newPath))
@@ -415,7 +410,7 @@ namespace DotaHostManager
         }
 
         // Begins the web socket server
-        static void beginWSocket()
+        private static void beginWSocket()
         {
             // Hook the socket events and set up web socket server, then start it
             Helpers.log("[Socket] Connecting...");
@@ -433,7 +428,7 @@ namespace DotaHostManager
         }
        
         // Create and bind the functions for web socket events
-        static void hookWSocketEvents()
+        private static void hookWSocketEvents()
         {
             // "setDotaPath|C:\blah\blah\steam\steamapps\common\dota 2 beta\"
             wSocketHooks.Add("setDotaPath", (x) => { updateDotaPath(x[1]); });
@@ -444,7 +439,7 @@ namespace DotaHostManager
         }
       
         // Web socket server onReceive function
-        static void wSocket_OnReceive(UserContext context)
+        private static void wSocket_OnReceive(UserContext context)
         {
             // Refresh keep-alive timer
             appKeepAlive();
@@ -458,19 +453,19 @@ namespace DotaHostManager
         }
        
         // Web socket server onSend function
-        static void wSocket_OnSend(UserContext context)
+        private static void wSocket_OnSend(UserContext context)
         {
 
         }
 
         // Web socket server onConnect function
-        static void wSocket_OnConnect(UserContext context)
+        private static void wSocket_OnConnect(UserContext context)
         {
             Helpers.log("[Socket] Connecting...");
         }
 
         // Web socket server onConnected function
-        static void wSocket_OnConnected(UserContext context)
+        private static void wSocket_OnConnected(UserContext context)
         {
             // Once connected, send all messages in send queue
             Helpers.log("[Socket] Connected!");
@@ -486,13 +481,13 @@ namespace DotaHostManager
         }
 
         // Web socket server onDisconnect function
-        static void wSocket_OnDisconnect(UserContext context)
+        private static void wSocket_OnDisconnect(UserContext context)
         {
             Helpers.log("[Socket] Disconnected!");
         }
 
         // Removes the old timer, and ccreates and binds another one
-        static void appKeepAlive()
+        private static void appKeepAlive()
         {
             if (keepAlive != null)
             {
@@ -504,7 +499,7 @@ namespace DotaHostManager
         }
 
         // Application.DoEvents() + check closeRequest and zeroCanClose
-        static void doEvents()
+        private static void doEvents()
         {
             while (true)
             {
@@ -517,7 +512,7 @@ namespace DotaHostManager
         }
 
         // Function to request registration of the dotahost uri protocol
-        static void registerProtocol()
+        private static void registerProtocol()
         {
             // Begin task
             zeroCanClose++;

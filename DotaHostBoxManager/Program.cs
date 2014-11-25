@@ -18,64 +18,64 @@ using DotaHostLibrary;
 
 namespace DotaHostBoxManager
 {
-    class Program
+    private class Program
     {
         // Where this executable is run from
-        static string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
+        private static string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
 
         // The path to steamcmd
-        static readonly String STEAMCMD_PATH = "steamcmd\\";
+        private static readonly String STEAMCMD_PATH = "steamcmd\\";
 
         // The steam cmd file to run steam commands with
-        static readonly String STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
+        private static readonly String STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
 
         // The path to depot downloader
-        static readonly String DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
+        private static readonly String DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
 
         // The execute to run depot downloader
-        static readonly String DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
+        private static readonly String DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
 
         // The path to download steamcmd from
-        static readonly String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
+        private static readonly String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
 
         // The path to download depot downloader (Move this onto our own domain at some stage)
-        static readonly String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
+        private static readonly String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
 
         // The path to download steam kit (Move this onto our own domain at some stage)
-        static readonly String DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
+        private static readonly String DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
 
         // URL to download SRCDS from (Move this onto our own domain at some stage)
-        static readonly String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
+        private static readonly String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
 
         // URL to download metamod from (Move this onto our own domain at some stage)
-        static readonly String DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
+        private static readonly String DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
 
         // URL to download d2fixups from (Move this onto our own domain at some stage)
-        static readonly String DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=131627&d=1395058812";
+        private static readonly String DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=131627&d=1395058812";
 
         // The path to the source1 dota 2 server
-        static readonly String SOURCE1_PATH = "dota_s1\\";
+        private static readonly String SOURCE1_PATH = "dota_s1\\";
 
         // The path to the source2 dota 2 server
-        static readonly String SOURCE2_PATH = "dota_s2\\";
+        private static readonly String SOURCE2_PATH = "dota_s2\\";
 
         // The username to download files with (Username and password should probably be exported somewhere)
-        static readonly String STEAM_USERNAME = "dotahost_net";
+        private static readonly String STEAM_USERNAME = "dotahost_net";
 
         // The password to download files with
-        static readonly String STEAM_PASSWORD = "***REMOVED***";
+        private static readonly String STEAM_PASSWORD = "***REMOVED***";
 
         // The command to update dota (source1)
-        static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
+        private static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
 
         // The command to update dota (source2)
-        static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
+        private static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
 
         // Used for downloading files
-        static WebClient dlManager = new WebClient();
+        private static WebClient dlManager = new WebClient();
            
         // The main entry point into the program
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             // Delete the old log file
             File.Delete(BASE_PATH + "log.txt");
@@ -85,7 +85,7 @@ namespace DotaHostBoxManager
         }
 
         // This function ensures steamcmd is available
-        static void verifySteamcmd()
+        private static void verifySteamcmd()
         {
             // Check if steamcmd exists
             if (!File.Exists(BASE_PATH + STEAMCMD))
@@ -113,7 +113,7 @@ namespace DotaHostBoxManager
         }
 
         // This function ensures depot downloader is available
-        static void verifyDepotDownloader()
+        private static void verifyDepotDownloader()
         {
             // Check if steamcmd exists
             if (!File.Exists(BASE_PATH + DEPOT_DOWNLOADER))
@@ -142,7 +142,7 @@ namespace DotaHostBoxManager
 
         // This function updates dota 2 (source1)
         // If a source1 server isn't installed, this function will install it from scratch
-        static void updateDotaSource1()
+        private static void updateDotaSource1()
         {
             // Debug log
             Helpers.log("Updating dota 2 (source1)...");
@@ -186,7 +186,7 @@ namespace DotaHostBoxManager
 
         // This function updates dota 2 (source2)
         // If a source2 server isn't installed, this function will install it from scratch
-        static void updateDotaSource2()
+        private static void updateDotaSource2()
         {
             // Debug log
             Helpers.log("Updating dota 2 (source2)...");
@@ -222,7 +222,7 @@ namespace DotaHostBoxManager
         }
 
         // Ensures SRCDS is installed
-        static void installSRCDS()
+        private static void installSRCDS()
         {
             // Check if metamod exists
             if (!File.Exists(BASE_PATH + SOURCE1_PATH + "srcds.exe"))
@@ -250,7 +250,7 @@ namespace DotaHostBoxManager
         }
 
         // Ensures metamod is installed
-        static void installMetamod()
+        private static void installMetamod()
         {
             // Check if metamod exists
             if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod.vdf"))
@@ -278,7 +278,7 @@ namespace DotaHostBoxManager
         }
 
         // Ensures d2fixups is installed
-        static void installD2Fixups()
+        private static void installD2Fixups()
         {
             // Check if metamod exists
             if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod\\d2fixups.vdf"))
@@ -306,7 +306,7 @@ namespace DotaHostBoxManager
         }
 
         // Patches gameinfo.txt for source1
-        static void source1GameInfoPatch()
+        private static void source1GameInfoPatch()
         {
             // Gameinfo to load metamod
             String gameinfo = 
@@ -342,7 +342,7 @@ namespace DotaHostBoxManager
         // This function could could issues with data[i++] if the map is made to fail on purpose
         // This function won't fail on standard source maps, since we have control over this,
         // Everything is good in the hood
-        static void patchSource1Maps()
+        private static void patchSource1Maps()
         {
             // List of maps to patch
             string[] maps = new string[]
