@@ -4,7 +4,7 @@ DotaHostManager
 ###Requirnments for building###
  - Visual Studio 2013 (2012 should also work)
  - Alchemy Websockets
-  - Using Visual Studio's package manager `Install-Package Alchemy`
+  - Using Visual Studio's package manager, NuGet: `Install-Package Alchemy`
 
 ###Source1 Server Installer###
  - This will download dota 2 (source1)
@@ -17,7 +17,7 @@ DotaHostManager
 
 ###Source2 Server Installer###
  - This will attempt to download dota 2 (source2)
- - Having issues with depot downloader where it will currupt a ton of files
+ - Having issues with depot downloader where it will corrupt a ton of files
  - Not recommended to install until issues are solved
 
 ###Custom Server Scripts###

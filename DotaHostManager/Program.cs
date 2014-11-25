@@ -463,6 +463,8 @@ namespace DotaHostManager
             };
             wSocket.Start();
         }
+       
+        // Create the functions for web socket events
         static void hookWSocketEvents()
         {
             // "setDotaPath|C:\blah\blah\steam\steamapps\common\dota 2 beta\"
