@@ -15,7 +15,7 @@ namespace DotaHostManager
     class Program
     {
         // Program version
-        private const short VERSION = 1;
+        private const short VERSION = 2;
         // Web root
         private const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
         //const string ROOT = "http://127.0.0.1/";
@@ -69,6 +69,9 @@ namespace DotaHostManager
                 args = Helpers.RemoveIndex(args, args.Length - 1);
             }
 
+            // Hook the dotaHostManager socket events
+            hookWSocketEvents();
+
             // If first-run or requested autorun, attempt to register the uri protocol
             if (Properties.Settings.Default.autorun)
             {
@@ -84,6 +87,8 @@ namespace DotaHostManager
                 Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
                 Environment.Exit(0);
             }
+            // Start websocket server
+            wsServer.start();
 
             // Event loop to prevent program from exiting
             doEvents();
@@ -376,10 +381,10 @@ namespace DotaHostManager
         {
             wsServer.addHook("setDotaPath", (c, x) => { updateDotaPath(x[1]); });
             wsServer.addHook("exit", (c, x) => { requestClose = true; });
-            wsServer.addHook(WebSocketServer.CONNECTED, (c, x) => { c.Send("dotaPath|" + dotaPath); });
+            wsServer.addHook(WebSocketServer.CONNECTED, (c) => { Helpers.log("yolo"); wsServer.send("dotaPath|" + dotaPath); });
             wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
             wsServer.addHook("update", (c, x) => { updateAddon(x[1]); });
-            wsServer.addHook(WebSocketServer.RECEIVE, (c, x) => { appKeepAlive(); });
+            wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
         }
             
 

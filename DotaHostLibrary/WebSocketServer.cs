@@ -6,13 +6,13 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace DotaHostLibrary
 {
 
     // Delegates for asynchronous socket and download events
-    public delegate void socketDel(UserContext c, string[] args);
+    public delegate void receiveDel(UserContext c, string[] args);
+    public delegate void socketDel(UserContext c);
 
 
     public class WebSocketServer
@@ -24,7 +24,7 @@ namespace DotaHostLibrary
         private UserContext gContext;
 
         // Dictionaries containing the socket and download functions
-        private Dictionary<string, List<socketDel>> wsReceive = new Dictionary<string, List<socketDel>>();
+        private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
         private List<socketDel>[] wsHooks = new List<socketDel>[5];
 
         // Message queue
@@ -45,6 +45,9 @@ namespace DotaHostLibrary
                 wsHooks[i] = new List<socketDel>();
             }
 
+            // Hook default functions
+            hookDefaultFunctions();
+
             // Set up websocket server
             wsServer = new Alchemy.WebSocketServer(port, ip)
             {
@@ -55,13 +58,23 @@ namespace DotaHostLibrary
                 OnDisconnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[DISCONNECTED]); }),
                 TimeOut = new TimeSpan(24, 0, 0),
             };
+        }
+
+        // Starts the websocket server
+        public void start()
+        {
             wsServer.Start();
+            Helpers.log("[Socket] Server started!");
         }
 
         // Adds a default hook to onConnected
-        private void addOnConnected()
+        private void hookDefaultFunctions()
         {
-            addHook(CONNECTED, (c, x) =>
+            addHook(CONNECT, (c) =>
+            {
+                Helpers.log("[Socket] Connecting...");
+            });
+            addHook(CONNECTED, (c) =>
             {
                 Helpers.log("[Socket] Connected!");
                 
@@ -78,18 +91,17 @@ namespace DotaHostLibrary
         }
 
         // Loops through generic function calls for the given event type
-        private void callEventFunc(UserContext c, List<socketDel> state)
+        private void callEventFunc(UserContext c, List<socketDel> funcList)
         {
             // Find key if exists, run function with given args
-            string[] args = c.DataFrame.ToString().Split('|');
-            for (byte i = 0; i < state.Count; ++i)
+            for (byte i = 0; i < funcList.Count; ++i)
             {
-                state[i](c, args);
+                funcList[i](c);
             }
         }
 
         // Checks the received message for matching functions, and calls them all
-        private void checkAndCall(UserContext c, Dictionary<string, List<socketDel>> state)
+        private void checkAndCall(UserContext c, Dictionary<string, List<receiveDel>> state)
         {
             // Find key if exists, run function with given args
             string[] args = c.DataFrame.ToString().Split('|');
@@ -110,7 +122,7 @@ namespace DotaHostLibrary
         }
         
         // Adds a hook to onReceive with a given name
-        public void addHook(string funcName, socketDel func)
+        public void addHook(string funcName, receiveDel func)
         {
             // Add the hook to the given dictionary
             if (wsReceive.ContainsKey(funcName))
@@ -119,7 +131,7 @@ namespace DotaHostLibrary
             }
             else
             {
-                wsReceive.Add(funcName, new List<socketDel>(){func});
+                wsReceive.Add(funcName, new List<receiveDel>() { func });
             }
         }
 
