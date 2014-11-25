@@ -1,16 +1,14 @@
-﻿using Microsoft.Win32;
+﻿using DotaHostLibrary;
+using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Timers;
 using System.Windows.Forms;
-using DotaHostLibrary;
 
 namespace DotaHostManager
 {
@@ -50,18 +48,8 @@ namespace DotaHostManager
         // Path to dota, eg: C:\Program Files (x86)\Steam\steamapps\dota 2 beta\
         private static string dotaPath;
 
-        // Dictionaries containing the socket and download functions
-        private static Dictionary<string, socketDel> wSocketHooks = new Dictionary<string, socketDel>();
-
-        // Our web socket server
-        private static WebSocketServer wSocket;
-
-        // Once a connection to the web socket server is established, this acts as a pointer to the context, so we may send messages to the client
-        private static UserContext gContext;
-
-        // Web socket send queue, uses gContext
-        private static Dictionary<string, bool> sendQueue = new Dictionary<string, bool>();
-
+        // Our websocket server
+        private static WebSocketServer wsServer = new WebSocketServer(new IPAddress(new byte[]{127, 0, 0, 1}), 2074);
 
         private static void Main(string[] i)
         {
@@ -80,9 +68,6 @@ namespace DotaHostManager
                 args = Helpers.RemoveIndex(args, 0);
                 args = Helpers.RemoveIndex(args, args.Length - 1);
             }
-
-            // Begins the websocket server
-            beginWSocket();
 
             // If first-run or requested autorun, attempt to register the uri protocol
             if (Properties.Settings.Default.autorun)
@@ -156,11 +141,7 @@ namespace DotaHostManager
         // Called every time the app updater download progresses
         private static void appUpdaterDownloadProgress(int percentage)
         {
-            // If a socket connection has previously been opened, send the progress percentage in a formatted string
-            if (gContext != null)
-            {
-                gContext.Send("appUpdater|percent|" + percentage.ToString());
-            }
+            wsServer.send("appUpdater|percent|" + percentage.ToString());
         }
 
         // Exits the program as soon as it is finished the current task
@@ -219,14 +200,7 @@ namespace DotaHostManager
                 // Installation has failed, send formatted string to most recent connection
                 Helpers.log("[CRC] Mismatch!");
                 Helpers.log(" == Installation failed! == ");
-                if (gContext != null)
-                {
-                    gContext.Send("installationFailed|addon|" + id, false, true);
-                }
-                else
-                {
-                    sendQueue.Add("installationFailed|addon|" + id, true);
-                }
+                wsServer.send("installationFailed|addon|" + id);
             }
             else
             {
@@ -240,14 +214,7 @@ namespace DotaHostManager
                 Helpers.log(" == Installation successful! == ");
 
                 // Installation was successful, send formatted string to most recent connection
-                if (gContext != null)
-                {
-                    gContext.Send("installationComplete|addon|" + id, false, true);
-                }
-                else
-                {
-                    sendQueue.Add("installationComplete|addon|" + id, true);
-                }
+                wsServer.send("installationComplete|addon|" + id);
             }
 
             // Deletes the downloaded zip file
@@ -291,10 +258,7 @@ namespace DotaHostManager
             // Begins downloading addon from GitHub
             dlManager.download("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", (e) => 
             {
-                if (gContext != null)
-                {
-                    gContext.Send("addon|" + id + "|percent|" + e.ProgressPercentage.ToString());
-                }
+                wsServer.send("addon|" + id + "|percent|" + e.ProgressPercentage.ToString());
             }, (e) => 
             {
                 string[] args = { id, name, version };
@@ -309,10 +273,7 @@ namespace DotaHostManager
             dlManager.download(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
             {
                 // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                if (gContext != null)
-                {
-                    gContext.Send("addon|" + addonID + "|percent|" + e.ProgressPercentage.ToString());
-                }
+                wsServer.send("addon|" + addonID + "|percent|" + e.ProgressPercentage.ToString());
             }, (e) =>
             {
                 downloadAddonInfoComplete(addonID);
@@ -346,7 +307,7 @@ namespace DotaHostManager
 
             // Close and send
             json += "}";
-            sendQueue.Add(json, true);
+            wsServer.send(json);
         }
 
         // Attempts to find the dota path, returns false if not found
@@ -409,82 +370,18 @@ namespace DotaHostManager
             }
         }
 
-        // Begins the web socket server
-        private static void beginWSocket()
-        {
-            // Hook the socket events and set up web socket server, then start it
-            Helpers.log("[Socket] Connecting...");
-            hookWSocketEvents();
-            wSocket = new WebSocketServer(2074, new IPAddress(new byte[] { 127, 0, 0, 1 }))
-            {
-                OnReceive = wSocket_OnReceive,
-                OnSend = wSocket_OnSend,
-                OnConnect = wSocket_OnConnect,
-                OnConnected = wSocket_OnConnected,
-                OnDisconnect = wSocket_OnDisconnect,
-                TimeOut = new TimeSpan(0, 5, 0),
-            };
-            wSocket.Start();
-        }
        
         // Create and bind the functions for web socket events
         private static void hookWSocketEvents()
         {
-            // "setDotaPath|C:\blah\blah\steam\steamapps\common\dota 2 beta\"
-            wSocketHooks.Add("setDotaPath", (x) => { updateDotaPath(x[1]); });
-            wSocketHooks.Add("exit", (x) => { Environment.Exit(0); });
-            wSocketHooks.Add("connected", (x) => {  });
-            wSocketHooks.Add("autorun", (x) => { registerProtocol(); });
-            wSocketHooks.Add("update", (x) => { updateAddon(x[1]); });
+            wsServer.addHook("setDotaPath", (c, x) => { updateDotaPath(x[1]); });
+            wsServer.addHook("exit", (c, x) => { requestClose = true; });
+            wsServer.addHook(WebSocketServer.CONNECTED, (c, x) => { c.Send("dotaPath|" + dotaPath); });
+            wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
+            wsServer.addHook("update", (c, x) => { updateAddon(x[1]); });
+            wsServer.addHook(WebSocketServer.RECEIVE, (c, x) => { appKeepAlive(); });
         }
-      
-        // Web socket server onReceive function
-        private static void wSocket_OnReceive(UserContext context)
-        {
-            // Refresh keep-alive timer
-            appKeepAlive();
             
-            // Find and execute function for given input
-            string[] args = context.DataFrame.ToString().Split('|');
-            if (wSocketHooks.Keys.Contains(args[0]))
-            {
-                wSocketHooks[args[0]](args);
-            }
-        }
-       
-        // Web socket server onSend function
-        private static void wSocket_OnSend(UserContext context)
-        {
-
-        }
-
-        // Web socket server onConnect function
-        private static void wSocket_OnConnect(UserContext context)
-        {
-            Helpers.log("[Socket] Connecting...");
-        }
-
-        // Web socket server onConnected function
-        private static void wSocket_OnConnected(UserContext context)
-        {
-            // Once connected, send all messages in send queue
-            Helpers.log("[Socket] Connected!");
-            foreach (var i in sendQueue)
-            {
-                context.Send(i.Key, false, i.Value);
-            }
-            sendQueue.Clear();
-
-            // Set gContext to this connection
-            gContext = context;
-            gContext.Send("dotaPath|" + dotaPath);
-        }
-
-        // Web socket server onDisconnect function
-        private static void wSocket_OnDisconnect(UserContext context)
-        {
-            Helpers.log("[Socket] Disconnected!");
-        }
 
         // Removes the old timer, and ccreates and binds another one
         private static void appKeepAlive()

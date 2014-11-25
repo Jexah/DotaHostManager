@@ -18,7 +18,7 @@ using DotaHostLibrary;
 
 namespace DotaHostBoxManager
 {
-    private class Program
+    class Program
     {
         // Where this executable is run from
         private static string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
