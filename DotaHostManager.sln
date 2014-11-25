@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostManager", "DotaHostManager\DotaHostManager.csproj", "{54085FE0-EA27-401B-A07A-50B6EB48B499}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostManagerUpdater", "DotaHostManagerUpdate\DotaHostManagerUpdater.csproj", "{0F270891-5BDC-4D07-BFCF-13F4A808C70B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostManagerUpdater", "DotaHostManagerUpdater\DotaHostManagerUpdater.csproj", "{0F270891-5BDC-4D07-BFCF-13F4A808C70B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostBoxManager", "DotaHostBoxManager\DotaHostBoxManager.csproj", "{A081EADD-F793-4729-AAC9-F755ED5A0F80}"
 EndProject

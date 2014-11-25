@@ -26,7 +26,9 @@ namespace DotaHostLibrary
         // Request download with given parameters
         public void downloadSync(string sourceFile, string targetFile)
         {
+            Helpers.log("[Download] Begin: " + sourceFile + " -> " + targetFile);
             dlManager.DownloadFile(sourceFile, targetFile);
+            Helpers.log("[Download] Complete: " + sourceFile + " -> " + targetFile);
         }
         public void download(string sourceFile, string targetFile, DownloadProgressDel downloadProgress, DownloadCompleteDel downloadComplete)
         {
@@ -52,19 +54,22 @@ namespace DotaHostLibrary
         // Begins download of selected "currentDownload"
         private void beginDownload()
         {
+            Helpers.log("[Download] Begin: " + currentDownload.getSourceFile() + " -> " + currentDownload.getTargetFile());
             dlManager.DownloadFileAsync(new Uri(currentDownload.getSourceFile()), currentDownload.getTargetFile());
         }
 
         // Download progress hook
         private void dlManager_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
-            currentDownload.getDownloadProgress();
+            currentDownload.getDownloadProgress()(e);
         }
 
         // Download complete hook
         private void dlManager_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
-            currentDownload.getDownloadComplete();
+            Helpers.log("[Download] Complete");
+
+            currentDownload.getDownloadComplete()(e);
 
             // Starts the next download in the queue
             beginNext();

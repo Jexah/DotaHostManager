@@ -19,7 +19,7 @@ namespace DotaHostManager
     class Program
     {
         // Program version
-        const short VERSION = 2;
+        const short VERSION = 1;
         // Web root
         const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
         //const string ROOT = "http://127.0.0.1/";
@@ -112,7 +112,7 @@ namespace DotaHostManager
         // Download the most up-to-date version file of the app
         static void downloadAppVersion()
         {
-            dlManager.download(ROOT + "static/software/dotahostmanager/version", TEMP + "version", (x, e) => { }, (x, e) =>
+            dlManager.download(ROOT + "static/software/dotahostmanager/version", TEMP + "version", (e) => { }, (e) =>
             {
                 Helpers.log("[Update] Checking for updates...");
                 short version;
@@ -133,9 +133,9 @@ namespace DotaHostManager
                         {
                             Helpers.log("[Update] Downloading updater...");
 
-                            dlManager.download(ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", (x2, e2) => {
+                            dlManager.download(ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", (e2) => {
                                 appUpdaterDownloadProgress(e2.ProgressPercentage);
-                            }, (x2, e2) => {
+                            }, (e2) => {
                                 // Begin the updater
                                 startUpdater();
                             });
@@ -187,7 +187,7 @@ namespace DotaHostManager
             try
             {
                 Process.Start(proc);
-                //Environment.Exit(0);
+                Environment.Exit(0);
             }
             catch
             {
@@ -199,9 +199,9 @@ namespace DotaHostManager
         static void downloadAddonComplete(string[] args)
         {
             // Sets up properties from arguments and addonInfo file
-            string id = args[1];
-            string name = args[2];
-            string version = args[3];
+            string id = args[0];
+            string name = args[1];
+            string version = args[2];
 
             // Deletes current addon folder if it exists
             if (Directory.Exists(dotaPath + @"dota\addons\" + id + @"\")) { Directory.Delete(dotaPath + @"dota\addons\" + id + @"\", true); }
@@ -294,15 +294,16 @@ namespace DotaHostManager
             Helpers.log("[Downloading] " + "https://codeload.github.com/ash47/" + name + "/zip/" + version + ".zip");
 
             // Begins downloading addon from GitHub
-            dlManager.download("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", (x, e) => 
+            dlManager.download("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", (e) => 
             {
                 if (gContext != null)
                 {
                     gContext.Send("addon|" + id + "|percent|" + e.ProgressPercentage.ToString());
                 }
-            }, (x, e) => 
+            }, (e) => 
             {
-                downloadAddonComplete(info);
+                string[] args = { id, name, version };
+                downloadAddonComplete(args);
             });
         }
 
@@ -310,14 +311,14 @@ namespace DotaHostManager
         static void updateAddon(string addonID)
         {
             Helpers.log("[Downloading] " + ROOT + "static/addons/" + addonID + "/" + "info");
-            dlManager.download(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (x, e) =>
+            dlManager.download(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
             {
                 // If a socket connection has previously been opened, send the progress percentage in a formatted string
                 if (gContext != null)
                 {
                     gContext.Send("addon|" + addonID + "|percent|" + e.ProgressPercentage.ToString());
                 }
-            }, (x, e) =>
+            }, (e) =>
             {
                 downloadAddonInfoComplete(addonID);
             });
