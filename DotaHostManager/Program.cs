@@ -42,7 +42,7 @@ namespace DotaHostManager
         private static string dotaPath;
 
         // Our websocket server
-        private static WebSocketServer wsServer = new WebSocketServer(new IPAddress(new byte[]{127, 0, 0, 1}), 2074);
+        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse("127.0.0.1"), 2074);
 
         private static void Main(string[] i)
         {

@@ -9,24 +9,14 @@ using System.Threading.Tasks;
 
 namespace DotaHostLibrary
 {
-
-    // Delegates for asynchronous socket and download events
-    public delegate void receiveDel(UserContext c, string[] args);
-    public delegate void socketDel(UserContext c);
-
-
-    public class WebSocketServer
+    public class WebSocketClient
     {
-        // Web socket server we gonna use
-        private Alchemy.WebSocketServer wsServer;
+        // Web socket client we gonna use
+        private Alchemy.WebSocketClient wsClient;
 
         // Dictionaries containing the socket and download functions
         private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
         private List<socketDel>[] wsHooks = new List<socketDel>[5];
-
-        // List of currently connected users
-        private Dictionary<int, UserContext> userIdToContext = new Dictionary<int, UserContext>();
-        private Dictionary<UserContext, int> userContextToId = new Dictionary<UserContext, int>();
 
         // Message queue
         private List<string> wsQueue = new List<string>();
@@ -37,8 +27,10 @@ namespace DotaHostLibrary
         public const byte CONNECTED = 3;
         public const byte DISCONNECTED = 4;
 
+        private UserContext gContext;
 
-        public WebSocketServer(IPAddress ip, int port)
+
+        public WebSocketClient(IPAddress ip, int port)
         {
             // Initialize wsHooks
             for(byte i = 0; i < wsHooks.Length; ++i)
@@ -50,22 +42,23 @@ namespace DotaHostLibrary
             hookDefaultFunctions();
 
             // Set up websocket server
-            wsServer = new Alchemy.WebSocketServer(port, ip)
+            wsClient = new Alchemy.WebSocketClient("ws://" + ip + ":" + port)
             {
                 OnReceive = new Alchemy.OnEventDelegate((c) => { checkAndCall(c, wsReceive); callEventFunc(c, wsHooks[RECEIVE]); }),
                 OnSend = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[SEND]); }),
                 OnConnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[CONNECT]); }),
                 OnConnected = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[CONNECTED]); }),
-                OnDisconnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[DISCONNECTED]); }),
-                TimeOut = new TimeSpan(24, 0, 0),
+                OnDisconnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[DISCONNECTED]); })
             };
+
+            // Connect the websocket client to the server
+            start();
         }
 
-        // Starts the websocket server
+        // Connects the websocket client to the server
         public void start()
         {
-            wsServer.Start();
-            Helpers.log("[Socket] Server started!");
+            wsClient.Connect();
         }
 
         // Adds a default hook to onConnected
@@ -86,26 +79,8 @@ namespace DotaHostLibrary
                 }
                 wsQueue.Clear();
 
-                // Assign userid
-                for (int i = 0; i < 100000; ++i)
-                {
-                    if (!userIdToContext.ContainsKey(i))
-                    {
-                        // Send client uid
-                        c.Send("id|" + i, false, false);
-
-                        // Add connected user
-                        userIdToContext.Add(i, c);
-                        userContextToId.Add(c, i);
-                    }
-                }
-            });
-            addHook(DISCONNECTED, (c) =>
-            {
-                // Remove userid
-                Helpers.log("[Socket] Disconnected!");
-                userIdToContext.Remove(userContextToId[c]);
-                userContextToId.Remove(c);
+                // Set gContext to this connection
+                gContext = c;
             });
         }
 
@@ -154,21 +129,17 @@ namespace DotaHostLibrary
             }
         }
 
-        // Attempts to send a message to all connected users, otherwise stores it in the queue
+        // Attempts to send a message to gContext, otherwise stores it in the queue
         public void send(string message)
         {
-            if(userIdToContext.Count != 0)
+            if (gContext != null)
             {
-                foreach(int i in userIdToContext.Keys)
-                {
-                    userIdToContext[i].Send(message);
-                }
+                gContext.Send(message);
             }
             else
             {
                 wsQueue.Add(message);
             }
         }
-
     }
 }

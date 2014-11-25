@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DotaHostLibrary;
 
 namespace DotaHostControlPanel
 {
@@ -57,7 +58,6 @@ namespace DotaHostControlPanel
             boxRAMBar.Value = current;
             boxRAMLabel.Text = current + " / " + total;
             float percent = (float)current / (float)total;
-            Console.WriteLine(percent);
             if (percent < 0.75)
             {
                 boxRAMLabel.ForeColor = success;

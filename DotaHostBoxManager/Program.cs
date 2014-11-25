@@ -11,70 +11,120 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Collections.Generic;
 
 namespace DotaHostBoxManager
 {
     class Program
     {
         // The path to steamcmd
-        private const String STEAMCMD_PATH = "steamcmd\\";
+        private const string STEAMCMD_PATH = "steamcmd\\";
 
         // The steam cmd file to run steam commands with
-        private const String STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
+        private const string STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
 
         // The path to depot downloader
-        private const String DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
+        private const string DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
 
         // The execute to run depot downloader
-        private const String DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
+        private const string DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
 
         // The path to download steamcmd from
-        private const String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
+        private const string DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
 
         // The path to download depot downloader (Move this onto our own domain at some stage)
-        private const String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
+        private const string DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
 
         // The path to download steam kit (Move this onto our own domain at some stage)
-        private const String DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
+        private const string DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
 
         // URL to download SRCDS from (Move this onto our own domain at some stage)
-        private const String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
+        private const string DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
 
         // URL to download metamod from (Move this onto our own domain at some stage)
-        private const String DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
+        private const string DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
 
         // URL to download d2fixups from (Move this onto our own domain at some stage)
-        private const String DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=131627&d=1395058812";
+        private const string DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=131627&d=1395058812";
 
         // The path to the source1 dota 2 server
-        private const String SOURCE1_PATH = "dota_s1\\";
+        private const string SOURCE1_PATH = "dota_s1\\";
 
         // The path to the source2 dota 2 server
-        private const String SOURCE2_PATH = "dota_s2\\";
+        private const string SOURCE2_PATH = "dota_s2\\";
 
         // The username to download files with (Username and password should probably be exported somewhere)
-        private const String STEAM_USERNAME = "dotahost_net";
+        private const string STEAM_USERNAME = "dotahost_net";
 
         // The password to download files with
-        private const String STEAM_PASSWORD = "***REMOVED***";
+        private const string STEAM_PASSWORD = "***REMOVED***";
+        
+        // Performance monitoring
 
         // The command to update dota (source1)
-        private const String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
+        private static readonly string STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
 
         // The command to update dota (source2)
-        private const String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + Global.BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
+        private static readonly string STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + Global.BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
 
         // Used for downloading files
-        private static WebClient dlManager = new WebClient();
+        private static DownloadManager dlManager = new DownloadManager();
+
+        // Web socket client
+        private static WebSocketClient wsClient = new WebSocketClient(IPAddress.Parse("127.0.0.1"), 3875);
            
+        // Unique websocket client ID
+        private static int wsUID;
+
+        // Box server status
+        private static byte status;
+        private const byte ACTIVE = 0;
+        private const byte IDLE = 1;
+        private const byte MIA = 2;
+        private const byte INACTIVE = 3;
+
+        // List of game server running on the box
+        private static List<GameServer> gameServers = new List<GameServer>();
+
         // The main entry point into the program
         private static void Main(string[] args)
         {
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
-               
+
+
+
+            Console.ReadLine();
             // Update the dota install
             //updateDotaSource1();
+        }
+
+        // Hook websocket events
+        private static void hookWSocketEvents()
+        {
+            // Get unique socket identifier from server
+            wsClient.addHook("id", (c, x) =>
+            {
+                wsUID = int.Parse(x[1]);
+            });
+
+            // Get status overview
+            wsClient.addHook("status", (c, x) =>
+            {
+                string[] args = new string[4];
+                //args[0] = status.ToString();
+                //args[1] = getGameServersAsString();
+                //args[2] = getCurrentCpuUsage();
+                //args[3] = getAvailableRAM();
+                //args[4] = getTotalRAM();
+
+            });
+
+            // Create game server function
+            wsClient.addHook("create", (c, x) =>
+            {
+                // TODO: Add server creation
+            });
         }
 
         // This function ensures steamcmd is available
@@ -95,13 +145,15 @@ namespace DotaHostBoxManager
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
                 // Download steamcmd zip
-                dlManager.DownloadFile(DOWNLOAD_PATH_STEAMCMD, steamZip);
+                dlManager.download(DOWNLOAD_PATH_STEAMCMD, steamZip, (e) => { }, (e) =>
+                {
+                    // Extract the archive
+                    ZipFile.ExtractToDirectory(steamZip, Global.BASE_PATH + STEAMCMD_PATH);
 
-                // Extract the archive
-                ZipFile.ExtractToDirectory(steamZip, Global.BASE_PATH + STEAMCMD_PATH);
+                    // Delete the zip
+                    File.Delete(Global.BASE_PATH + steamZip);
+                });
 
-                // Delete the zip
-                File.Delete(Global.BASE_PATH + steamZip);
             }
         }
 
@@ -123,13 +175,15 @@ namespace DotaHostBoxManager
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
                 // Download steamcmd zip
-                dlManager.DownloadFile(DOWNLOAD_PATH_DEPOT_DOWNLOADER, depotDownloaderZip);
+                dlManager.download(DOWNLOAD_PATH_DEPOT_DOWNLOADER, depotDownloaderZip, (e) => { }, (e) =>
+                {
+                    // Extract the archive
+                    ZipFile.ExtractToDirectory(depotDownloaderZip, Global.BASE_PATH + DEPOT_DOWNLOADER_PATH);
 
-                // Extract the archive
-                ZipFile.ExtractToDirectory(depotDownloaderZip, Global.BASE_PATH + DEPOT_DOWNLOADER_PATH);
+                    // Delete the zip
+                    File.Delete(Global.BASE_PATH + depotDownloaderZip);
+                });
 
-                // Delete the zip
-                File.Delete(Global.BASE_PATH + depotDownloaderZip);
             }
         }
 
@@ -232,13 +286,14 @@ namespace DotaHostBoxManager
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
                 // Download steamcmd zip
-                dlManager.DownloadFile(DOWNLOAD_PATH_SRCDS, srcdsZip);
+                dlManager.download(DOWNLOAD_PATH_SRCDS, srcdsZip, (e) => { }, (e) =>
+                {
+                    // Extract the archive
+                    ZipFile.ExtractToDirectory(srcdsZip, Global.BASE_PATH + SOURCE1_PATH);
 
-                // Extract the archive
-                ZipFile.ExtractToDirectory(srcdsZip, Global.BASE_PATH + SOURCE1_PATH);
-
-                // Delete the zip
-                File.Delete(Global.BASE_PATH + srcdsZip);
+                    // Delete the zip
+                    File.Delete(Global.BASE_PATH + srcdsZip);
+                });
             }
         }
 
@@ -260,13 +315,14 @@ namespace DotaHostBoxManager
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
                 // Download steamcmd zip
-                dlManager.DownloadFile(DOWNLOAD_PATH_METAMOD, metamodZip);
+                dlManager.download(DOWNLOAD_PATH_METAMOD, metamodZip, (e) => { }, (e) =>
+                {
+                    // Extract the archive
+                    ZipFile.ExtractToDirectory(metamodZip, Global.BASE_PATH + SOURCE1_PATH + "dota\\");
 
-                // Extract the archive
-                ZipFile.ExtractToDirectory(metamodZip, Global.BASE_PATH + SOURCE1_PATH + "dota\\");
-
-                // Delete the zip
-                File.Delete(Global.BASE_PATH + metamodZip);
+                    // Delete the zip
+                    File.Delete(Global.BASE_PATH + metamodZip);
+                });
             }
         }
 
@@ -288,13 +344,14 @@ namespace DotaHostBoxManager
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
                 // Download steamcmd zip
-                dlManager.DownloadFile(DOWNLOAD_PATH_D2FIXUPS, d2fixupsZip);
+                dlManager.download(DOWNLOAD_PATH_D2FIXUPS, d2fixupsZip, (e) => { }, (e) =>
+                {
+                    // Extract the archive
+                    ZipFile.ExtractToDirectory(d2fixupsZip, Global.BASE_PATH + SOURCE1_PATH + "dota\\");
 
-                // Extract the archive
-                ZipFile.ExtractToDirectory(d2fixupsZip, Global.BASE_PATH + SOURCE1_PATH + "dota\\");
-
-                // Delete the zip
-                File.Delete(Global.BASE_PATH + d2fixupsZip);
+                    // Delete the zip
+                    File.Delete(Global.BASE_PATH + d2fixupsZip);
+                });
             }
         }
 
@@ -409,6 +466,20 @@ namespace DotaHostBoxManager
                 // Delete the copy of the map
                 File.Delete(mapPath + map + ".bsp.tmp");
             }
+        }
+
+        public static string getGameServersAsString()
+        {
+            string ret = "";
+            for (byte i = 0; i < gameServers.Count; ++i)
+            {
+                ret += gameServers[i].getName() + "|" + gameServers[i].getPlayers().Count + "|";
+            }
+            if (ret.Length > 0)
+            {
+                ret.Remove(ret.Length - 1, 1);
+            }
+            return ret;
         }
 
     }
