@@ -65,10 +65,10 @@ namespace DotaHostBoxManager
         static readonly String STEAM_PASSWORD = "***REMOVED***";
 
         // The command to update dota (source1)
-        static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + g_BASEPATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
+        static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
 
         // The command to update dota (source2)
-        static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + g_BASEPATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
+        static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
 
         // Used for downloading files
         static WebClient dlManager = new WebClient();
@@ -272,7 +272,7 @@ namespace DotaHostBoxManager
                 ZipFile.ExtractToDirectory(metamodZip, BASE_PATH + SOURCE1_PATH + "dota\\");
 
                 // Delete the zip
-                File.Delete(g_BASEPATH + metamodZip);
+                File.Delete(BASE_PATH + metamodZip);
             }
         }
 
@@ -280,7 +280,7 @@ namespace DotaHostBoxManager
         static void installD2Fixups()
         {
             // Check if metamod exists
-            if (!File.Exists(g_BASEPATH + SOURCE1_PATH + "dota\\addons\\metamod\\d2fixups.vdf"))
+            if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod\\d2fixups.vdf"))
             {
                 // Debug log
                 log("d2fixups not found, downloading...");
@@ -289,7 +289,7 @@ namespace DotaHostBoxManager
                 String d2fixupsZip = "metamod.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(g_BASEPATH + d2fixupsZip);
+                File.Delete(BASE_PATH + d2fixupsZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -297,10 +297,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_D2FIXUPS, d2fixupsZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(d2fixupsZip, g_BASEPATH + SOURCE1_PATH + "dota\\");
+                ZipFile.ExtractToDirectory(d2fixupsZip, BASE_PATH + SOURCE1_PATH + "dota\\");
 
                 // Delete the zip
-                File.Delete(g_BASEPATH + d2fixupsZip);
+                File.Delete(BASE_PATH + d2fixupsZip);
             }
         }
 
@@ -334,7 +334,7 @@ namespace DotaHostBoxManager
             // May need to add addon mounting here eventually
 
             // Write the metamod loader
-            File.WriteAllText(g_BASEPATH + SOURCE1_PATH + "dota\\gameinfo.txt", gameinfo);
+            File.WriteAllText(BASE_PATH + SOURCE1_PATH + "dota\\gameinfo.txt", gameinfo);
         }
 
         // This function patches source1 maps
@@ -354,7 +354,7 @@ namespace DotaHostBoxManager
             };
 
             // Path to the map folder
-            String mapPath = g_BASEPATH + SOURCE1_PATH + "dota\\maps\\";
+            String mapPath = BASE_PATH + SOURCE1_PATH + "dota\\maps\\";
 
             // Loop over each map
             foreach(String map in maps)
@@ -421,7 +421,7 @@ namespace DotaHostBoxManager
         static void log(string str)
         {
             Console.WriteLine(str);
-            File.AppendAllText(g_BASEPATH + "log.txt", str + Environment.NewLine);
+            File.AppendAllText(BASE_PATH + "log.txt", str + Environment.NewLine);
         }
     }
 }

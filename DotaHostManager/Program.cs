@@ -83,6 +83,8 @@ namespace DotaHostManager
             File.Delete(BASE_PATH + "log.txt");
             log("[DotaHost] Version " + VERSION);
 
+            registerProtocol();
+
             // Sets up uri protocol args if launched from browser
             if (i.Length > 0) { log("Requested: " + i[0]); }
             string[] args = new string[0];
@@ -464,7 +466,7 @@ namespace DotaHostManager
             wSocket.Start();
         }
        
-        // Create the functions for web socket events
+        // Create and bind the functions for web socket events
         static void hookWSocketEvents()
         {
             // "setDotaPath|C:\blah\blah\steam\steamapps\common\dota 2 beta\"
@@ -474,39 +476,56 @@ namespace DotaHostManager
             wSocketHooks.Add("autorun", (x) => { registerProtocol(); });
             wSocketHooks.Add("update", (x) => { updateAddon(x[1]); });
         }
+      
+        // Web socket server onReceive function
         static void wSocket_OnReceive(UserContext context)
         {
+            // Refresh keep-alive timer
             appKeepAlive();
+            
+            // Find and execute function for given input
             string[] args = context.DataFrame.ToString().Split('|');
             if (wSocketHooks.Keys.Contains(args[0]))
             {
                 wSocketHooks[args[0]](args);
             }
         }
+       
+        // Web socket server onSend function
         static void wSocket_OnSend(UserContext context)
         {
 
         }
+
+        // Web socket server onConnect function
         static void wSocket_OnConnect(UserContext context)
         {
             log("[Socket] Connecting...");
         }
+
+        // Web socket server onConnected function
         static void wSocket_OnConnected(UserContext context)
         {
+            // Once connected, send all messages in send queue
             log("[Socket] Connected!");
             foreach (var i in sendQueue)
             {
                 context.Send(i.Key, false, i.Value);
             }
             sendQueue.Clear();
+
+            // Set gContext to this connection
             gContext = context;
             gContext.Send("dotaPath|" + dotaPath);
         }
+
+        // Web socket server onDisconnect function
         static void wSocket_OnDisconnect(UserContext context)
         {
             log("[Socket] Disconnected!");
         }
 
+        // Removes the old timer, and ccreates and binds another one
         static void appKeepAlive()
         {
             if (keepAlive != null)
@@ -518,6 +537,7 @@ namespace DotaHostManager
             keepAlive.Start();
         }
 
+        // Application.DoEvents() + check closeRequest and zeroCanClose
         static void doEvents()
         {
             while (true)
@@ -530,13 +550,16 @@ namespace DotaHostManager
             }
         }
 
-       
-
+        // Downloads a given file to a given file, using a given downloadID (not unique)
         static void DownloadFile(string sourceFile, string targetName, string downloadID)
         {
+            // Increment zeroCanClose so the program doesn't exit on socket time-out
             zeroCanClose++;
+
+            // Gets the path of the target file
             string downloadPath = Path.GetDirectoryName(targetName) + @"\";
 
+            // If dlManager is currently downloading something, add to the download queue
             if (dlManager.IsBusy)
             {
                 toDownload.Add(new string[] { sourceFile, targetName, downloadID });
@@ -545,8 +568,11 @@ namespace DotaHostManager
             {
                 try
                 {
+                    // If the download path exists, begin the download of the file
                     if (Directory.Exists(downloadPath))
                     {
+                        // Download starts: zeroCanClose increments
+                        // This function finishes: zeroCanClose decrements
                         log("[Download] Begin download of " + sourceFile + " -> " + targetName);
                         dlManager.DownloadFileAsync(new Uri(sourceFile), targetName, downloadID);
                         return;
@@ -555,6 +581,7 @@ namespace DotaHostManager
                     {
                         try
                         {
+                            // Recursively create the download path
                             log("[File System] Creating directory: " + downloadPath);
                             Directory.CreateDirectory(downloadPath);
                         }
@@ -564,10 +591,12 @@ namespace DotaHostManager
                         }
                         catch
                         {
+                            // Create directory failed, function finished: zeroCanClose decrements
                             log("[File System] Failed to create directory.");
                             zeroCanClose--;
                             return;
                         }
+                        // Start downloading: zeroCanClose increments
                         log("[Download] Begin download of " + sourceFile + " -> " + targetName);
                         zeroCanClose++;
                         dlManager.DownloadFileAsync(new Uri(sourceFile), targetName, downloadID);
@@ -575,36 +604,134 @@ namespace DotaHostManager
                 }
                 catch (Exception)
                 {
+                    // Something bad happened
                     log("Uncaught exception.");
-                    zeroCanClose--;
                 }
+                // Function ends, zeroCanClose decrements
                 zeroCanClose--;
             }
         }
+        
+        // dlManager download progress changed hook
         static void dlManager_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
+            // Check the downloadProgressHooks list to see if a function matches this RPC
             string[] args = e.UserState.ToString().Split('|');
             if (downloadProgressHooks.Keys.Contains(args[0]))
             {
                 downloadProgressHooks[args[0]](args, e);
             }
         }
+        
+        // dlManager download file completed hook
         static void dlManager_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
+            // Check the downloadCompleteHooks list to see if a function matches this RPC
             string[] args = e.UserState.ToString().Split('|');
             log("[Downloading] " + e.UserState.ToString() + " Done!");
             if (downloadCompleteHooks.Keys.Contains(args[0]))
             {
                 downloadCompleteHooks[args[0]](args, e);
             }
+
+            // Start the next download in the queue, if any
             if (toDownload.Count > 0)
             {
                 DownloadFile(toDownload[0][0], toDownload[0][1], toDownload[0][2]);
                 toDownload.RemoveAt(0);
             }
+
+            // Download is complete, zeroCanClose decrements
             zeroCanClose--;
         }
 
+
+        // Function to request registration of the dotahost uri protocol
+        static void registerProtocol()
+        {
+            // Begin task
+            zeroCanClose++;
+
+            // Stores the full executable path of this application, file name included
+            string applicationPath = Assembly.GetEntryAssembly().Location;
+
+            // Opens the key "DotaHost" and stores it in key
+            RegistryKey key = Registry.ClassesRoot.OpenSubKey("DotaHost");
+
+            // If the protocol is not registered yet, we register it
+            if (key == null)
+            {
+                try
+                {
+                    // Creates the subkey in the registry
+                    key = Registry.ClassesRoot.CreateSubKey("DotaHost");
+
+                    // Register the URI protocol in registry
+                    key.SetValue(string.Empty, "URL:DotaHost Protocol");
+                    key.SetValue("URL Protocol", string.Empty);
+
+                    // Set URI to launch the application with one given argument
+                    key = key.CreateSubKey(@"shell\open\command");
+                    key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
+
+                    log("Registry added.");
+                }
+                catch
+                {
+                    if (MessageBox.Show("Would you like DotaHostManager to launch itself automatically when you visit the DotaHost.net website? (Requires Administrator Privillages)", "Autorun", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    {
+                        log("Failed to add registry. Launching as admin...");
+                        const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
+
+                        // Start a new instance of this executable as administrator
+                        ProcessStartInfo info = new ProcessStartInfo("DotaHostManager.exe");
+                        info.UseShellExecute = true;
+                        info.Verb = "runas";
+                        try
+                        {
+                            Process.Start(info);
+                        }
+                        catch (Win32Exception ex)
+                        {
+                            if (ex.NativeErrorCode == ERROR_CANCELLED)
+                            {
+                                log("Admin request denied.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Save user preference
+                        Properties.Settings.Default.autorun = false;
+                        Properties.Settings.Default.Save();
+                    }
+                }
+            }
+            // Check if the current executing path does not match the one in the registry
+            else if (key.OpenSubKey(@"shell\open\command").GetValue(string.Empty).ToString().ToLower() != ("\"" + applicationPath + "\" " + "%1").ToLower())
+            {
+                // Open the subkey
+                key = key.OpenSubKey(@"shell\open\command", true);
+
+                // Change the path to the current executing path
+                key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
+
+                log("Registry updated.");
+            }
+            else
+            {
+                log("No registry action taken.");
+            }
+
+            // We're done with the registry, close the key
+            key.Close();
+
+            // End task
+            zeroCanClose--;
+        }
+
+
+        // Helper function to calculate CRC, stolen from somewhere
         static string calculateCRC(string fileName)
         {
             zeroCanClose++;
@@ -619,78 +746,7 @@ namespace DotaHostManager
             return hash;
         }
 
-        static void registerProtocol()
-        {
-            zeroCanClose++;
-            string applicationPath = Assembly.GetEntryAssembly().Location;
-            RegistryKey key = Registry.ClassesRoot.OpenSubKey("DotaHost");
-            if (key == null)  //if the protocol is not registered yet...we register it
-            {
-                try
-                {
-                    key = Registry.ClassesRoot.CreateSubKey("DotaHost");
-                    key.SetValue(string.Empty, "URL:DotaHost Protocol");
-                    key.SetValue("URL Protocol", string.Empty);
-
-                    key = key.CreateSubKey(@"shell\open\command");
-                    key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
-
-                    log("Registry added.");
-                }
-                catch
-                {
-                    if (MessageBox.Show("Would you like DotaHostManager to launch itself automatically when you visit the DotaHost.net website? (Requires Administrator Privillages)", "Autorun", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    {
-                        log("Failed to add registry. Launching as admin...");
-                        const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
-
-                        ProcessStartInfo info = new ProcessStartInfo("DotaHostManager.exe");
-                        info.UseShellExecute = true;
-                        info.Verb = "runas";
-                        try
-                        {
-                            Process.Start(info);
-                        }
-                        catch (Win32Exception ex)
-                        {
-                            if (ex.NativeErrorCode == ERROR_CANCELLED)
-                            {
-                                Console.Write("Admin request denied. Exiting.");
-                                for (int i = 0; i < 2; ++i)
-                                {
-                                    System.Threading.Thread.Sleep(1000);
-                                    Console.Write(".");
-                                }
-                                System.Threading.Thread.Sleep(1000);
-                                Environment.Exit(0);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Properties.Settings.Default.autorun = false;
-                        Properties.Settings.Default.Save();
-                    }
-                    zeroCanClose--;
-                    return;
-                }
-            }
-            else if (key.OpenSubKey(@"shell\open\command").GetValue(string.Empty).ToString().ToLower() != ("\"" + applicationPath + "\" " + "%1").ToLower())
-            {
-                key = key.OpenSubKey(@"shell\open\command", true);
-                key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
-
-                log("Registry updated.");
-            }
-            else
-            {
-                log("No registry action taken.");
-            }
-            key.Close();
-            zeroCanClose--;
-        }
-
-
+        // Another helper function, stolen from somewhere else. StackExchange I believe
         static string[] RemoveIndex(string[] IndicesArray, int RemoveAt)
         {
             string[] newIndicesArray = new string[IndicesArray.Length - 1];
@@ -708,6 +764,7 @@ namespace DotaHostManager
             return newIndicesArray;
         }
 
+        // Helper function to log all outputs
         static void log(string str)
         {
             Console.WriteLine(str);
