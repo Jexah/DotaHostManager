@@ -17,52 +17,52 @@ namespace DotaHostBoxManager
     class Program
     {
         // The path to steamcmd
-        private static readonly String STEAMCMD_PATH = "steamcmd\\";
+        private const String STEAMCMD_PATH = "steamcmd\\";
 
         // The steam cmd file to run steam commands with
-        private static readonly String STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
+        private const String STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
 
         // The path to depot downloader
-        private static readonly String DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
+        private const String DEPOT_DOWNLOADER_PATH = "DepotDownloader\\";
 
         // The execute to run depot downloader
-        private static readonly String DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
+        private const String DEPOT_DOWNLOADER = DEPOT_DOWNLOADER_PATH + "DepotDownloader.exe";
 
         // The path to download steamcmd from
-        private static readonly String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
+        private const String DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
 
         // The path to download depot downloader (Move this onto our own domain at some stage)
-        private static readonly String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
+        private const String DOWNLOAD_PATH_DEPOT_DOWNLOADER = "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_2.1.1/depotdownloader-2.1.1.zip";
 
         // The path to download steam kit (Move this onto our own domain at some stage)
-        private static readonly String DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
+        private const String DOWNLOAD_PATH_STEAM_KIT = "https://github.com/SteamRE/SteamKit/releases/download/SteamKit_1.6.0/SteamKit2_1.6.0.zip";
 
         // URL to download SRCDS from (Move this onto our own domain at some stage)
-        private static readonly String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
+        private const String DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
 
         // URL to download metamod from (Move this onto our own domain at some stage)
-        private static readonly String DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
+        private const String DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
 
         // URL to download d2fixups from (Move this onto our own domain at some stage)
-        private static readonly String DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=131627&d=1395058812";
+        private const String DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=131627&d=1395058812";
 
         // The path to the source1 dota 2 server
-        private static readonly String SOURCE1_PATH = "dota_s1\\";
+        private const String SOURCE1_PATH = "dota_s1\\";
 
         // The path to the source2 dota 2 server
-        private static readonly String SOURCE2_PATH = "dota_s2\\";
+        private const String SOURCE2_PATH = "dota_s2\\";
 
         // The username to download files with (Username and password should probably be exported somewhere)
-        private static readonly String STEAM_USERNAME = "dotahost_net";
+        private const String STEAM_USERNAME = "dotahost_net";
 
         // The password to download files with
-        private static readonly String STEAM_PASSWORD = "***REMOVED***";
+        private const String STEAM_PASSWORD = "***REMOVED***";
 
         // The command to update dota (source1)
-        private static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
+        private const String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
 
         // The command to update dota (source2)
-        private static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + Global.BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
+        private const String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + Global.BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
 
         // Used for downloading files
         private static WebClient dlManager = new WebClient();
