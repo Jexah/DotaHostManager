@@ -9,9 +9,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Runtime.Serialization.Json;
 using System.Reflection;
-using System.Text;
 using System.Timers;
 using System.Windows.Forms;
 
@@ -41,8 +39,7 @@ namespace DotaHostManager
         // Keep-alive duration
         const int KEEP_ALIVE_DURATION = 60000; // 60 seconds
 
-        // Increments by 1 everytime an action is started, decrements every time an action is finished
-        // The program will not close on timeout unless this is zero
+        // Increments by 1 everytime an action is started, decrements every time an action is finished. The program will not close on timeout unless this is zero
         static byte zeroCanClose = 0;
 
         // If this is true, the program requests close, but will not close until zeroCanClose is equal to zero
@@ -645,7 +642,6 @@ namespace DotaHostManager
             zeroCanClose--;
         }
 
-
         // Function to request registration of the dotahost uri protocol
         static void registerProtocol()
         {
@@ -729,7 +725,6 @@ namespace DotaHostManager
             // End task
             zeroCanClose--;
         }
-
 
         // Helper function to calculate CRC, stolen from somewhere
         static string calculateCRC(string fileName)
