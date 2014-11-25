@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostManagerUpdater", "D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostBoxManager", "DotaHostBoxManager\DotaHostBoxManager.csproj", "{A081EADD-F793-4729-AAC9-F755ED5A0F80}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostLibrary", "DotaHostLibrary\DotaHostLibrary.csproj", "{F61404E4-F077-4126-872D-6149647698AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{A081EADD-F793-4729-AAC9-F755ED5A0F80}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A081EADD-F793-4729-AAC9-F755ED5A0F80}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A081EADD-F793-4729-AAC9-F755ED5A0F80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F61404E4-F077-4126-872D-6149647698AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F61404E4-F077-4126-872D-6149647698AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F61404E4-F077-4126-872D-6149647698AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F61404E4-F077-4126-872D-6149647698AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

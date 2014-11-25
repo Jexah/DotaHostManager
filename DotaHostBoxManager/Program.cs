@@ -14,6 +14,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using DotaHostLibrary;
 
 namespace DotaHostBoxManager
 {
@@ -90,7 +91,7 @@ namespace DotaHostBoxManager
             if (!File.Exists(BASE_PATH + STEAMCMD))
             {
                 // Debug log
-                log("steamcmd.exe not found, downloading...");
+                Helpers.log("steamcmd.exe not found, downloading...");
 
                 // Name of the zip to use
                 String steamZip = "steamcmd.zip";
@@ -118,7 +119,7 @@ namespace DotaHostBoxManager
             if (!File.Exists(BASE_PATH + DEPOT_DOWNLOADER))
             {
                 // Debug log
-                log("depotdownloader.exe not found, downloading...");
+                Helpers.log("depotdownloader.exe not found, downloading...");
 
                 // Name of the zip to use
                 String depotDownloaderZip = "depotdownloader.zip";
@@ -144,7 +145,7 @@ namespace DotaHostBoxManager
         static void updateDotaSource1()
         {
             // Debug log
-            log("Updating dota 2 (source1)...");
+            Helpers.log("Updating dota 2 (source1)...");
 
             // Ensure steamcmd exists
             verifySteamcmd();
@@ -169,7 +170,7 @@ namespace DotaHostBoxManager
             }
             catch
             {
-                log("Failed to update!");
+                Helpers.log("Failed to update!");
                 return;
             }
 
@@ -180,7 +181,7 @@ namespace DotaHostBoxManager
             source1GameInfoPatch();
             patchSource1Maps();
 
-            log("Done!");
+            Helpers.log("Done!");
         }
 
         // This function updates dota 2 (source2)
@@ -188,7 +189,7 @@ namespace DotaHostBoxManager
         static void updateDotaSource2()
         {
             // Debug log
-            log("Updating dota 2 (source2)...");
+            Helpers.log("Updating dota 2 (source2)...");
 
             // Ensure steamcmd exists
             verifyDepotDownloader();
@@ -213,11 +214,11 @@ namespace DotaHostBoxManager
             }
             catch
             {
-                log("Failed to update!");
+                Helpers.log("Failed to update!");
                 return;
             }
 
-            log("Done!");
+            Helpers.log("Done!");
         }
 
         // Ensures SRCDS is installed
@@ -227,7 +228,7 @@ namespace DotaHostBoxManager
             if (!File.Exists(BASE_PATH + SOURCE1_PATH + "srcds.exe"))
             {
                 // Debug log
-                log("SRCDS.exe not found, downloading...");
+                Helpers.log("SRCDS.exe not found, downloading...");
 
                 // Local zip name
                 String srcdsZip = "srcds.zip";
@@ -255,7 +256,7 @@ namespace DotaHostBoxManager
             if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod.vdf"))
             {
                 // Debug log
-                log("metamod not found, downloading...");
+                Helpers.log("metamod not found, downloading...");
 
                 // Local zip name
                 String metamodZip = "metamod.zip";
@@ -283,7 +284,7 @@ namespace DotaHostBoxManager
             if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod\\d2fixups.vdf"))
             {
                 // Debug log
-                log("d2fixups not found, downloading...");
+                Helpers.log("d2fixups not found, downloading...");
 
                 // Local zip name
                 String d2fixupsZip = "metamod.zip";
@@ -360,7 +361,7 @@ namespace DotaHostBoxManager
             foreach(String map in maps)
             {
                 // Debug log
-                log("Attempting to patch " + map);
+                Helpers.log("Attempting to patch " + map);
 
                 // Make a copy of the map
                 System.IO.File.Copy(mapPath + map + ".bsp", mapPath + map + ".bsp.tmp", true);
@@ -400,7 +401,7 @@ namespace DotaHostBoxManager
                             data[i++] = (byte)'0';
 
                             // Store that we patched successfully
-                            log(map + " was patched successfully!");
+                            Helpers.log(map + " was patched successfully!");
                         }
                     }
 
@@ -417,11 +418,5 @@ namespace DotaHostBoxManager
             }
         }
 
-        // Outputs to the console and stores a copy into log.txt
-        static void log(string str)
-        {
-            Console.WriteLine(str);
-            File.AppendAllText(BASE_PATH + "log.txt", str + Environment.NewLine);
-        }
     }
 }

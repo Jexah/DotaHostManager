@@ -12,6 +12,7 @@ using System.Net;
 using System.Reflection;
 using System.Timers;
 using System.Windows.Forms;
+using DotaHostLibrary;
 
 namespace DotaHostManager
 {
@@ -25,7 +26,7 @@ namespace DotaHostManager
         //const string ROOT = "http://dotahost.net/";
 
         // Where this executable is run from
-        static string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
+        static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
 
         // GitHub download root
         const string GITHUB = "https://codeload.github.com/ash47/";
@@ -45,24 +46,17 @@ namespace DotaHostManager
         // If this is true, the program requests close, but will not close until zeroCanClose is equal to zero
         static bool requestClose = false;
 
-        // This is a queue of files to download. They are stored in the format of: [downloadLocation, targetFile, typeOfDownload, targetFile]
-        static List<string[]> toDownload = new List<string[]>();
-
         // This is our download manager.
-        static WebClient dlManager = new WebClient();
+        static DownloadManager dlManager = new DownloadManager();
 
         // Path to dota, eg: C:\Program Files (x86)\Steam\steamapps\dota 2 beta\
         static string dotaPath;
 
         // Delegates for asynchronous socket and download events
         delegate void socketDel(string[] args);
-        delegate void downloadProgressDel(string[] args, DownloadProgressChangedEventArgs e);
-        delegate void downloadCompleteDel(string[] args, AsyncCompletedEventArgs e);
 
         // Dictionaries containing the socket and download functions
         static Dictionary<string, socketDel> wSocketHooks = new Dictionary<string, socketDel>();
-        static Dictionary<string, downloadProgressDel> downloadProgressHooks = new Dictionary<string, downloadProgressDel>();
-        static Dictionary<string, downloadCompleteDel> downloadCompleteHooks = new Dictionary<string, downloadCompleteDel>();
 
         // Our web socket server
         static WebSocketServer wSocket;
@@ -78,25 +72,19 @@ namespace DotaHostManager
         {
             // Reset log file
             File.Delete(BASE_PATH + "log.txt");
-            log("[DotaHost] Version " + VERSION);
+            Helpers.log("[DotaHost] Version " + VERSION);
 
 
             // Sets up uri protocol args if launched from browser
-            if (i.Length > 0) { log("Requested: " + i[0]); }
+            if (i.Length > 0) { Helpers.log("Requested: " + i[0]); }
             string[] args = new string[0];
             if (i.Length > 0)
             {
                 args = i[0].Split('/');
-                args = RemoveIndex(args, 0);
-                args = RemoveIndex(args, 0);
-                args = RemoveIndex(args, args.Length - 1);
+                args = Helpers.RemoveIndex(args, 0);
+                args = Helpers.RemoveIndex(args, 0);
+                args = Helpers.RemoveIndex(args, args.Length - 1);
             }
-
-            // Hook download events
-            hookDownloadEvents();
-
-            // Sets up custom download events, functions are found here
-            setupDownloadEvents();
 
             // Begins the websocket server
             beginWSocket();
@@ -108,18 +96,76 @@ namespace DotaHostManager
             }
 
             // Download the version file from website
-            DownloadFile(ROOT + "static/software/dotahostmanager/version", TEMP + "version", "appVersion");
+            downloadAppVersion();
 
             // Attempts to find the dota path, if it can't find it, it exits the program
             if (!checkDotaPath())
             {
-                log("[DotaHost] Dota path could not be found. Exiting...");
-                System.Threading.Thread.Sleep(5000);
+                Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
                 Environment.Exit(0);
             }
 
             // Event loop to prevent program from exiting
             doEvents();
+        }
+
+        // Download the most up-to-date version file of the app
+        static void downloadAppVersion()
+        {
+            dlManager.download(ROOT + "static/software/dotahostmanager/version", TEMP + "version", (x, e) => { }, (x, e) =>
+            {
+                Helpers.log("[Update] Checking for updates...");
+                short version;
+                try
+                {
+                    // Reads the version file from temp
+                    version = Convert.ToInt16(File.ReadAllText(TEMP + "version"));
+                    File.Delete(TEMP + "version");
+
+                    // Checks if the read version matches the const version
+                    if (version != VERSION)
+                    {
+                        // They do not match, download new version
+                        Helpers.log("[Update] New version detected!");
+
+                        // If the downloader does not exist, download it
+                        if (!File.Exists(TEMP + "DotaHostManagerUpdater.exe"))
+                        {
+                            Helpers.log("[Update] Downloading updater...");
+
+                            dlManager.download(ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", (x2, e2) => {
+                                appUpdaterDownloadProgress(e2.ProgressPercentage);
+                            }, (x2, e2) => {
+                                // Begin the updater
+                                startUpdater();
+                            });
+                        }
+                        else
+                        {
+                            // Begin the updater
+                            startUpdater();
+                        }
+                    }
+                    else
+                    {
+                        Helpers.log("[Update] DotaHost up-to-date!");
+                    }
+                }
+                catch
+                {
+                    Helpers.log("[Update] Updating failed.");
+                }
+            });
+        }
+
+        // Called every time the app updater download progresses
+        static void appUpdaterDownloadProgress(int percentage)
+        {
+            // If a socket connection has previously been opened, send the progress percentage in a formatted string
+            if (gContext != null)
+            {
+                gContext.Send("appUpdater|percent|" + percentage.ToString());
+            }
         }
 
         // Exits the program as soon as it is finished the current task
@@ -128,17 +174,10 @@ namespace DotaHostManager
             requestClose = true;
         }
 
-        // Hooks download events
-        static void hookDownloadEvents()
-        {
-            dlManager.DownloadProgressChanged += dlManager_DownloadProgressChanged;
-            dlManager.DownloadFileCompleted += dlManager_DownloadFileCompleted;
-        }
-
         // Starts the updater and closes this program
         static void startUpdater()
         {
-            log("[Update] Starting...");
+            Helpers.log("[Update] Starting...");
             ProcessStartInfo proc = new ProcessStartInfo();
             proc.UseShellExecute = true;
             proc.WorkingDirectory = TEMP;
@@ -156,203 +195,131 @@ namespace DotaHostManager
             }
         }
 
-        // Sets up the download functions
-        static void setupDownloadEvents()
+
+        static void downloadAddonComplete(string[] args)
         {
-            // Called every time an addon download progresses
-            #region downloadProgressHooks("addon");
-            downloadProgressHooks.Add("addon", (x, e) =>
+            // Sets up properties from arguments and addonInfo file
+            string id = args[1];
+            string name = args[2];
+            string version = args[3];
+
+            // Deletes current addon folder if it exists
+            if (Directory.Exists(dotaPath + @"dota\addons\" + id + @"\")) { Directory.Delete(dotaPath + @"dota\addons\" + id + @"\", true); }
+
+            // Downloads CRC from website, and stores it
+            Helpers.log("[CRC] Checking CRC...");
+            dlManager.downloadSync(ROOT + "static/addons/" + id + "/CRC", TEMP + id + "CRC");
+            string correctCRC = File.ReadAllText(TEMP + id + "CRC");
+
+            // Deletes CRC file
+            File.Delete(TEMP + id + "CRC");
+
+            // Generates new CRC of the zip just downloaded
+            string actualCRC = Helpers.calculateCRC(TEMP + id + ".zip");
+            Helpers.log("CRC: " + correctCRC + " == " + actualCRC);
+
+            // Matches the generated CRC with the downloaded CRC
+            if (correctCRC != actualCRC)
             {
-                string id = x[1];
-                // If a socket connection has previously been opened, send the progress percentage in a formatted string
+                // Installation has failed, send formatted string to most recent connection
+                Helpers.log("[CRC] Mismatch!");
+                Helpers.log(" == Installation failed! == ");
+                if (gContext != null)
+                {
+                    gContext.Send("installationFailed|addon|" + id, false, true);
+                }
+                else
+                {
+                    sendQueue.Add("installationFailed|addon|" + id, true);
+                }
+            }
+            else
+            {
+                // CRC check has passed, extract file to addons folder
+                Helpers.log("[Extract] Extracting...");
+                ZipFile.ExtractToDirectory(TEMP + id + ".zip", dotaPath + @"dota\addons\");
+
+                // Rename folder from default to addon ID
+                Directory.Move(dotaPath + @"dota\addons\" + name + "-" + version + @"\", dotaPath + @"dota\addons\" + id + @"\");
+                Helpers.log("[Extract] Done!");
+                Helpers.log(" == Installation successful! == ");
+
+                // Installation was successful, send formatted string to most recent connection
+                if (gContext != null)
+                {
+                    gContext.Send("installationComplete|addon|" + id, false, true);
+                }
+                else
+                {
+                    sendQueue.Add("installationComplete|addon|" + id, true);
+                }
+            }
+
+            // Deletes the downloaded zip file
+            Helpers.log("[Cleaning] Cleaning up...");
+            File.Delete(TEMP + id + ".zip");
+            Helpers.log("[Cleaning] Done!");
+            Helpers.log("[Socket] Sending confirmation update!");
+        }
+
+        static void downloadAddonInfoComplete(string addonID)
+        {
+            // Sets up properties from arguments and addonInfo file
+            string id = addonID;
+            string[] info = File.ReadAllLines(TEMP + id);
+            File.Delete(TEMP + id);
+            string name = info[0];
+            string version = info[1];
+
+            // Checks if the addon directory exists
+            if (Directory.Exists(dotaPath + @"dota\addons\" + id))
+            {
+                // Checks if the version file exists in the addon directory
+                if (File.Exists(dotaPath + @"dota\addons\" + id + @"\version"))
+                {
+                    // Sets the current version to the value in the version file
+                    string currentVersion = File.ReadAllText(dotaPath + @"dota\addons\" + id + @"\version");
+                    // Checks current version against the version found in the addonInfo file
+                    if (version == currentVersion)
+                    {
+                        Helpers.log("[Addon] " + id + " is up to date.");
+                        return;
+                    }
+                }
+            }
+
+            // Directory or file does not exist, or version does not match most recent
+            Helpers.log("[Addon] " + id + " out of date. New version: " + version);
+            Helpers.log("[Downloading] " + "https://codeload.github.com/ash47/" + name + "/zip/" + version + ".zip");
+
+            // Begins downloading addon from GitHub
+            dlManager.download("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", (x, e) => 
+            {
                 if (gContext != null)
                 {
                     gContext.Send("addon|" + id + "|percent|" + e.ProgressPercentage.ToString());
                 }
-            });
-            #endregion
-        
-            // Called every time the app updater download progresses
-            #region downloadProgressHooks("appUpdater");
-            downloadProgressHooks.Add("appUpdater", (x, e) =>
+            }, (x, e) => 
             {
-                string id = x[1];
-                // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                if (gContext != null)
-                {
-                    gContext.Send("appUpdater|percent|" + e.ProgressPercentage.ToString());
-                }
+                downloadAddonComplete(info);
             });
-            #endregion
-
-
-
-            // Called when the addonInfo download is complete
-            #region downloadCompleteHooks("addonInfo");
-            downloadCompleteHooks.Add("addonInfo", (x, e) =>
-            {
-                // Sets up properties from arguments and addonInfo file
-                string id = x[1];
-                string[] info = File.ReadAllLines(TEMP + id);
-                File.Delete(TEMP + id);
-                string name = info[0];
-                string version = info[1];
-
-                // Checks if the addon directory exists
-                if (Directory.Exists(dotaPath + @"dota\addons\" + id))
-                {
-                    // Checks if the version file exists in the addon directory
-                    if (File.Exists(dotaPath + @"dota\addons\" + id + @"\version"))
-                    {
-                        // Sets the current version to the value in the version file
-                        string currentVersion = File.ReadAllText(dotaPath + @"dota\addons\" + id + @"\version");
-                        // Checks current version against the version found in the addonInfo file
-                        if (version == currentVersion)
-                        {
-                            log("[Addon] " + id + " is up to date.");
-                            return;
-                        }
-                    }
-                }
-
-                // Directory or file does not exist, or version does not match most recent
-                log("[Addon] " + id + " out of date. New version: " + version);
-                log("[Downloading] " + "https://codeload.github.com/ash47/" + name + "/zip/" + version + ".zip");
-
-                // Begins downloading addon from GitHub
-                DownloadFile("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", "addon|" + id + "|" + name + "|" + version);
-            });
-            #endregion
-          
-            // Called when the addon download is complete
-            #region downloadCompleteHooks("addon")
-            downloadCompleteHooks.Add("addon", (x, e) =>
-            {
-                // Sets up properties from arguments and addonInfo file
-                string[] args = x;
-                string id = args[1];
-                string name = args[2];
-                string version = args[3];
-
-                // Deletes current addon folder if it exists
-                if (Directory.Exists(dotaPath + @"dota\addons\" + id + @"\")) { Directory.Delete(dotaPath + @"dota\addons\" + id + @"\", true); }
-
-                // Downloads CRC from website, and stores it
-                log("[CRC] Checking CRC...");
-                dlManager.DownloadFile(ROOT + "static/addons/" + id + "/CRC", TEMP + id + "CRC");
-                string correctCRC = File.ReadAllText(TEMP + id + "CRC");
-
-                // Deletes CRC file
-                File.Delete(TEMP + id + "CRC");
-
-                // Generates new CRC of the zip just downloaded
-                string actualCRC = calculateCRC(TEMP + id + ".zip");
-                log("CRC: " + correctCRC + " == " + actualCRC);
-
-                // Matches the generated CRC with the downloaded CRC
-                if (correctCRC != actualCRC)
-                {
-                    // Installation has failed, send formatted string to most recent connection
-                    log("[CRC] Mismatch!");
-                    log(" == Installation failed! == ");
-                    if (gContext != null)
-                    {
-                        gContext.Send("installationFailed|addon|" + id, false, true);
-                    }
-                    else
-                    {
-                        sendQueue.Add("installationFailed|addon|" + id, true);
-                    }
-                }
-                else
-                {
-                    // CRC check has passed, extract file to addons folder
-                    log("[Extract] Extracting...");
-                    ZipFile.ExtractToDirectory(TEMP + id + ".zip", dotaPath + @"dota\addons\");
-
-                    // Rename folder from default to addon ID
-                    Directory.Move(dotaPath + @"dota\addons\" + name + "-" + version + @"\", dotaPath + @"dota\addons\" + id + @"\");
-                    log("[Extract] Done!");
-                    log(" == Installation successful! == ");
-
-                    // Installation was successful, send formatted string to most recent connection
-                    if (gContext != null)
-                    {
-                        gContext.Send("installationComplete|addon|" + id, false, true);
-                    }
-                    else
-                    {
-                        sendQueue.Add("installationComplete|addon|" + id, true);
-                    }
-                }
-
-                // Deletes the downloaded zip file
-                log("[Cleaning] Cleaning up...");
-                File.Delete(TEMP + id + ".zip");
-                log("[Cleaning] Done!");
-                log("[Socket] Sending confirmation update!");
-            });
-            #endregion
-
-            // Called when the appVersion download is complete
-            #region  downloadCompleteHooks("appVersion")
-            downloadCompleteHooks.Add("appVersion", (x, e) =>
-            {
-                log("[Update] Checking for updates...");
-                short version;
-                try
-                {
-                    // Reads the version file from temp
-                    version = Convert.ToInt16(File.ReadAllText(TEMP + "version"));
-                    File.Delete(TEMP + "version");
-
-                    // Checks if the read version matches the const version
-                    if (version != VERSION)
-                    {
-                        // They do not match, download new version
-                        log("[Update] New version detected!");
-
-                        // If the downloader does not exist, download it
-                        if (!File.Exists(TEMP + "DotaHostManagerUpdater.exe"))
-                        {
-                            log("[Update] Downloading updater...");
-
-                            DownloadFile(ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", "appUpdater");
-                        }
-                        else
-                        {
-                            // Begin the updater
-                            startUpdater();
-                        }
-                    }
-                    else
-                    {
-                        log("[Update] DotaHost up-to-date!");
-                    }
-                }
-                catch
-                {
-                    log("[Update] Updating failed.");
-                }
-            });
-            #endregion
-
-            // Called when the appUpdater download is complete
-            #region downloadCompleteHooks("appUpdater");
-            downloadCompleteHooks.Add("appUpdater", (x, e) =>
-            {
-                // Begin the updater
-                startUpdater();
-            });
-            #endregion
-
         }
-        
+
         // Begins download of addonInfo for given addon
         static void updateAddon(string addonID)
         {
-            log("[Downloading] " + ROOT + "static/addons/" + addonID + "/" + "info");
-            DownloadFile(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, "addonInfo|" + addonID);
+            Helpers.log("[Downloading] " + ROOT + "static/addons/" + addonID + "/" + "info");
+            dlManager.download(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (x, e) =>
+            {
+                // If a socket connection has previously been opened, send the progress percentage in a formatted string
+                if (gContext != null)
+                {
+                    gContext.Send("addon|" + addonID + "|percent|" + e.ProgressPercentage.ToString());
+                }
+            }, (x, e) =>
+            {
+                downloadAddonInfoComplete(addonID);
+            });
         }
         
         // Generates a json structure of installed addon information, sends it to client
@@ -409,12 +376,12 @@ namespace DotaHostManager
             }
             if (failed)
             {
-                log("Could not find dota path.");
+                Helpers.log("Could not find dota path.");
                 return false;
             }
             else
             {
-                log("Found dota path: " + dotaPath);
+                Helpers.log("Found dota path: " + dotaPath);
                 return true;
             }
         }
@@ -425,7 +392,7 @@ namespace DotaHostManager
             // Check if newPath is a valid directory
             if (!Directory.Exists(newPath))
             {
-                log("Directory does not exist: " +  newPath);
+                Helpers.log("Directory does not exist: " +  newPath);
             }
             else
             {
@@ -435,12 +402,12 @@ namespace DotaHostManager
                     dotaPath = newPath;
                     Properties.Settings.Default.dotaPath = dotaPath;
                     Properties.Settings.Default.Save();
-                    log("Updated dota path: " + dotaPath);
+                    Helpers.log("Updated dota path: " + dotaPath);
                 }
                 catch
                 {
                     // Whoops, something went wrong
-                    log("Failed to update path: Uncaught exception");
+                    Helpers.log("Failed to update path: Uncaught exception");
                 }
             }
         }
@@ -449,7 +416,7 @@ namespace DotaHostManager
         static void beginWSocket()
         {
             // Hook the socket events and set up web socket server, then start it
-            log("[Socket] Connecting...");
+            Helpers.log("[Socket] Connecting...");
             hookWSocketEvents();
             wSocket = new WebSocketServer(2074, new IPAddress(new byte[] { 127, 0, 0, 1 }))
             {
@@ -497,14 +464,14 @@ namespace DotaHostManager
         // Web socket server onConnect function
         static void wSocket_OnConnect(UserContext context)
         {
-            log("[Socket] Connecting...");
+            Helpers.log("[Socket] Connecting...");
         }
 
         // Web socket server onConnected function
         static void wSocket_OnConnected(UserContext context)
         {
             // Once connected, send all messages in send queue
-            log("[Socket] Connected!");
+            Helpers.log("[Socket] Connected!");
             foreach (var i in sendQueue)
             {
                 context.Send(i.Key, false, i.Value);
@@ -519,7 +486,7 @@ namespace DotaHostManager
         // Web socket server onDisconnect function
         static void wSocket_OnDisconnect(UserContext context)
         {
-            log("[Socket] Disconnected!");
+            Helpers.log("[Socket] Disconnected!");
         }
 
         // Removes the old timer, and ccreates and binds another one
@@ -570,7 +537,7 @@ namespace DotaHostManager
                     {
                         // Download starts: zeroCanClose increments
                         // This function finishes: zeroCanClose decrements
-                        log("[Download] Begin download of " + sourceFile + " -> " + targetName);
+                        Helpers.log("[Download] Begin download of " + sourceFile + " -> " + targetName);
                         dlManager.DownloadFileAsync(new Uri(sourceFile), targetName, downloadID);
                         return;
                     }
@@ -579,7 +546,7 @@ namespace DotaHostManager
                         try
                         {
                             // Recursively create the download path
-                            log("[File System] Creating directory: " + downloadPath);
+                            Helpers.log("[File System] Creating directory: " + downloadPath);
                             Directory.CreateDirectory(downloadPath);
                         }
                         catch (UnauthorizedAccessException e)
@@ -589,12 +556,12 @@ namespace DotaHostManager
                         catch
                         {
                             // Create directory failed, function finished: zeroCanClose decrements
-                            log("[File System] Failed to create directory.");
+                            Helpers.log("[File System] Failed to create directory.");
                             zeroCanClose--;
                             return;
                         }
                         // Start downloading: zeroCanClose increments
-                        log("[Download] Begin download of " + sourceFile + " -> " + targetName);
+                        Helpers.log("[Download] Begin download of " + sourceFile + " -> " + targetName);
                         zeroCanClose++;
                         dlManager.DownloadFileAsync(new Uri(sourceFile), targetName, downloadID);
                     }
@@ -602,7 +569,7 @@ namespace DotaHostManager
                 catch (Exception)
                 {
                     // Something bad happened
-                    log("Uncaught exception.");
+                    Helpers.log("Uncaught exception.");
                 }
                 // Function ends, zeroCanClose decrements
                 zeroCanClose--;
@@ -625,7 +592,7 @@ namespace DotaHostManager
         {
             // Check the downloadCompleteHooks list to see if a function matches this RPC
             string[] args = e.UserState.ToString().Split('|');
-            log("[Downloading] " + e.UserState.ToString() + " Done!");
+            Helpers.log("[Downloading] " + e.UserState.ToString() + " Done!");
             if (downloadCompleteHooks.Keys.Contains(args[0]))
             {
                 downloadCompleteHooks[args[0]](args, e);
@@ -670,13 +637,13 @@ namespace DotaHostManager
                     key = key.CreateSubKey(@"shell\open\command");
                     key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
 
-                    log("Registry added.");
+                    Helpers.log("Registry added.");
                 }
                 catch
                 {
                     if (MessageBox.Show("Would you like DotaHostManager to launch itself automatically when you visit the DotaHost.net website? (Requires Administrator Privillages)", "Autorun", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
-                        log("Failed to add registry. Launching as admin...");
+                        Helpers.log("Failed to add registry. Launching as admin...");
                         const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
 
                         // Start a new instance of this executable as administrator
@@ -691,7 +658,7 @@ namespace DotaHostManager
                         {
                             if (ex.NativeErrorCode == ERROR_CANCELLED)
                             {
-                                log("Admin request denied.");
+                                Helpers.log("Admin request denied.");
                             }
                         }
                     }
@@ -712,11 +679,11 @@ namespace DotaHostManager
                 // Change the path to the current executing path
                 key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
 
-                log("Registry updated.");
+                Helpers.log("Registry updated.");
             }
             else
             {
-                log("No registry action taken.");
+                Helpers.log("No registry action taken.");
             }
 
             // We're done with the registry, close the key
@@ -727,46 +694,6 @@ namespace DotaHostManager
 
             // End task
             zeroCanClose--;
-        }
-
-        // Helper function to calculate CRC, stolen from somewhere
-        static string calculateCRC(string fileName)
-        {
-            zeroCanClose++;
-            Crc32 crc32 = new Crc32();
-            String hash = String.Empty;
-            using (FileStream fs = File.Open(fileName, FileMode.Open))
-                foreach (byte b in crc32.ComputeHash(fs))
-                {
-                    hash += b.ToString("x2").ToLower();
-                }
-            zeroCanClose--;
-            return hash;
-        }
-
-        // Another helper function, stolen from somewhere else. StackExchange I believe
-        static string[] RemoveIndex(string[] IndicesArray, int RemoveAt)
-        {
-            string[] newIndicesArray = new string[IndicesArray.Length - 1];
-            int i = 0;
-            int j = 0;
-            while (i < IndicesArray.Length)
-            {
-                if (i != RemoveAt)
-                {
-                    newIndicesArray[j] = IndicesArray[i];
-                    j++;
-                }
-                i++;
-            }
-            return newIndicesArray;
-        }
-
-        // Helper function to log all outputs
-        static void log(string str)
-        {
-            Console.WriteLine(str);
-            File.AppendAllText(BASE_PATH + "log.txt", str + "\n");
         }
 
     }
