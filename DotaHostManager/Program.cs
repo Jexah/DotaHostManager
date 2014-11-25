@@ -80,7 +80,6 @@ namespace DotaHostManager
             File.Delete(BASE_PATH + "log.txt");
             log("[DotaHost] Version " + VERSION);
 
-            registerProtocol();
 
             // Sets up uri protocol args if launched from browser
             if (i.Length > 0) { log("Requested: " + i[0]); }
@@ -140,16 +139,16 @@ namespace DotaHostManager
         static void startUpdater()
         {
             log("[Update] Starting...");
-            ProcessStartInfo proc2 = new ProcessStartInfo();
-            proc2.UseShellExecute = true;
-            proc2.WorkingDirectory = TEMP;
-            proc2.FileName = "DotaHostUpdater.exe";
-            proc2.Verb = "runas";
-            proc2.Arguments = "\"" + BASE_PATH;
+            ProcessStartInfo proc = new ProcessStartInfo();
+            proc.UseShellExecute = true;
+            proc.WorkingDirectory = TEMP;
+            proc.FileName = "DotaHostManagerUpdater.exe";
+            //proc2.Verb = "runas";
+            proc.Arguments = "\"" + BASE_PATH;
             try
             {
-                Process.Start(proc2);
-                Environment.Exit(0);
+                Process.Start(proc);
+                //Environment.Exit(0);
             }
             catch
             {
@@ -314,10 +313,11 @@ namespace DotaHostManager
                         log("[Update] New version detected!");
 
                         // If the downloader does not exist, download it
-                        if (!File.Exists(TEMP + "DotaHostUpdater.exe"))
+                        if (!File.Exists(TEMP + "DotaHostManagerUpdater.exe"))
                         {
                             log("[Update] Downloading updater...");
-                            DownloadFile(ROOT + "downloads/software/dotahost/DotaHostUpdater.exe", TEMP + "DotaHostUpdater.exe", "appUpdater");
+
+                            DownloadFile(ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", "appUpdater");
                         }
                         else
                         {
@@ -720,7 +720,10 @@ namespace DotaHostManager
             }
 
             // We're done with the registry, close the key
-            key.Close();
+            if (key != null)
+            {
+                key.Close();
+            }
 
             // End task
             zeroCanClose--;

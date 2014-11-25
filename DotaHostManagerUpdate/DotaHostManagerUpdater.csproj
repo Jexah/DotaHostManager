@@ -7,8 +7,8 @@
     <ProjectGuid>{0F270891-5BDC-4D07-BFCF-13F4A808C70B}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DotaHostManagerUpdate</RootNamespace>
-    <AssemblyName>DotaHostManagerUpdate</AssemblyName>
+    <RootNamespace>DotaHostManagerUpdater</RootNamespace>
+    <AssemblyName>DotaHostManagerUpdater</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
