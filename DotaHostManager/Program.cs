@@ -16,13 +16,6 @@ namespace DotaHostManager
     {
         // Program version
         private const short VERSION = 2;
-        // Web root
-        private const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
-        //const string ROOT = "http://127.0.0.1/";
-        //const string ROOT = "http://dotahost.net/";
-
-        // Where this executable is run from
-        private static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
 
         // GitHub download root
         private const string GITHUB = "https://codeload.github.com/ash47/";
@@ -54,7 +47,7 @@ namespace DotaHostManager
         private static void Main(string[] i)
         {
             // Reset log file
-            File.Delete(BASE_PATH + "log.txt");
+            File.Delete(Global.BASE_PATH + "log.txt");
             Helpers.log("[DotaHost] Version " + VERSION);
 
 
@@ -97,7 +90,7 @@ namespace DotaHostManager
         // Download the most up-to-date version file of the app
         private static void downloadAppVersion()
         {
-            dlManager.download(ROOT + "static/software/dotahostmanager/version", TEMP + "version", (e) => { }, (e) =>
+            dlManager.download(Global.ROOT + "static/software/dotahostmanager/version", TEMP + "version", (e) => { }, (e) =>
             {
                 Helpers.log("[Update] Checking for updates...");
                 short version;
@@ -118,7 +111,7 @@ namespace DotaHostManager
                         {
                             Helpers.log("[Update] Downloading updater...");
 
-                            dlManager.download(ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", (e2) => {
+                            dlManager.download(Global.ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", (e2) => {
                                 appUpdaterDownloadProgress(e2.ProgressPercentage);
                             }, (e2) => {
                                 // Begin the updater
@@ -164,7 +157,7 @@ namespace DotaHostManager
             proc.WorkingDirectory = TEMP;
             proc.FileName = "DotaHostManagerUpdater.exe";
             //proc2.Verb = "runas";
-            proc.Arguments = "\"" + BASE_PATH;
+            proc.Arguments = "\"" + Global.BASE_PATH;
             try
             {
                 Process.Start(proc);
@@ -189,7 +182,7 @@ namespace DotaHostManager
 
             // Downloads CRC from website, and stores it
             Helpers.log("[CRC] Checking CRC...");
-            dlManager.downloadSync(ROOT + "static/addons/" + id + "/CRC", TEMP + id + "CRC");
+            dlManager.downloadSync(Global.ROOT + "static/addons/" + id + "/CRC", TEMP + id + "CRC");
             string correctCRC = File.ReadAllText(TEMP + id + "CRC");
 
             // Deletes CRC file
@@ -274,8 +267,8 @@ namespace DotaHostManager
         // Begins download of addonInfo for given addon
         private static void updateAddon(string addonID)
         {
-            Helpers.log("[Downloading] " + ROOT + "static/addons/" + addonID + "/" + "info");
-            dlManager.download(ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
+            Helpers.log("[Downloading] " + Global.ROOT + "static/addons/" + addonID + "/" + "info");
+            dlManager.download(Global.ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
             {
                 // If a socket connection has previously been opened, send the progress percentage in a formatted string
                 wsServer.send("addon|" + addonID + "|percent|" + e.ProgressPercentage.ToString());
@@ -375,7 +368,6 @@ namespace DotaHostManager
             }
         }
 
-       
         // Create and bind the functions for web socket events
         private static void hookWSocketEvents()
         {
@@ -387,7 +379,6 @@ namespace DotaHostManager
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
         }
             
-
         // Removes the old timer, and ccreates and binds another one
         private static void appKeepAlive()
         {

@@ -5,24 +5,17 @@
  * */
 
 
+using DotaHostLibrary;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using DotaHostLibrary;
 
 namespace DotaHostBoxManager
 {
     class Program
     {
-        // Where this executable is run from
-        private static string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
-
         // The path to steamcmd
         private static readonly String STEAMCMD_PATH = "steamcmd\\";
 
@@ -66,10 +59,10 @@ namespace DotaHostBoxManager
         private static readonly String STEAM_PASSWORD = "***REMOVED***";
 
         // The command to update dota (source1)
-        private static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
+        private static readonly String STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
 
         // The command to update dota (source2)
-        private static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
+        private static readonly String STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + Global.BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
 
         // Used for downloading files
         private static WebClient dlManager = new WebClient();
@@ -78,7 +71,7 @@ namespace DotaHostBoxManager
         private static void Main(string[] args)
         {
             // Delete the old log file
-            File.Delete(BASE_PATH + "log.txt");
+            File.Delete(Global.BASE_PATH + "log.txt");
                
             // Update the dota install
             //updateDotaSource1();
@@ -88,7 +81,7 @@ namespace DotaHostBoxManager
         private static void verifySteamcmd()
         {
             // Check if steamcmd exists
-            if (!File.Exists(BASE_PATH + STEAMCMD))
+            if (!File.Exists(Global.BASE_PATH + STEAMCMD))
             {
                 // Debug log
                 Helpers.log("steamcmd.exe not found, downloading...");
@@ -97,7 +90,7 @@ namespace DotaHostBoxManager
                 String steamZip = "steamcmd.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(BASE_PATH + steamZip);
+                File.Delete(Global.BASE_PATH + steamZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -105,10 +98,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_STEAMCMD, steamZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(steamZip, BASE_PATH + STEAMCMD_PATH);
+                ZipFile.ExtractToDirectory(steamZip, Global.BASE_PATH + STEAMCMD_PATH);
 
                 // Delete the zip
-                File.Delete(BASE_PATH + steamZip);
+                File.Delete(Global.BASE_PATH + steamZip);
             }
         }
 
@@ -116,7 +109,7 @@ namespace DotaHostBoxManager
         private static void verifyDepotDownloader()
         {
             // Check if steamcmd exists
-            if (!File.Exists(BASE_PATH + DEPOT_DOWNLOADER))
+            if (!File.Exists(Global.BASE_PATH + DEPOT_DOWNLOADER))
             {
                 // Debug log
                 Helpers.log("depotdownloader.exe not found, downloading...");
@@ -125,7 +118,7 @@ namespace DotaHostBoxManager
                 String depotDownloaderZip = "depotdownloader.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(BASE_PATH + depotDownloaderZip);
+                File.Delete(Global.BASE_PATH + depotDownloaderZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -133,10 +126,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_DEPOT_DOWNLOADER, depotDownloaderZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(depotDownloaderZip, BASE_PATH + DEPOT_DOWNLOADER_PATH);
+                ZipFile.ExtractToDirectory(depotDownloaderZip, Global.BASE_PATH + DEPOT_DOWNLOADER_PATH);
 
                 // Delete the zip
-                File.Delete(BASE_PATH + depotDownloaderZip);
+                File.Delete(Global.BASE_PATH + depotDownloaderZip);
             }
         }
 
@@ -155,7 +148,7 @@ namespace DotaHostBoxManager
 
             // Build the update commmand
             ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WorkingDirectory = BASE_PATH;
+            proc.WorkingDirectory = Global.BASE_PATH;
             proc.FileName = STEAMCMD;
             proc.Arguments = STEAMCMD_SOURCE1_DOTA;
 
@@ -199,7 +192,7 @@ namespace DotaHostBoxManager
 
             // Build the update commmand
             ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WorkingDirectory = BASE_PATH;
+            proc.WorkingDirectory = Global.BASE_PATH;
             proc.FileName = DEPOT_DOWNLOADER;
             proc.Arguments = STEAMCMD_SOURCE2_DOTA;
 
@@ -225,7 +218,7 @@ namespace DotaHostBoxManager
         private static void installSRCDS()
         {
             // Check if metamod exists
-            if (!File.Exists(BASE_PATH + SOURCE1_PATH + "srcds.exe"))
+            if (!File.Exists(Global.BASE_PATH + SOURCE1_PATH + "srcds.exe"))
             {
                 // Debug log
                 Helpers.log("SRCDS.exe not found, downloading...");
@@ -234,7 +227,7 @@ namespace DotaHostBoxManager
                 String srcdsZip = "srcds.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(BASE_PATH + srcdsZip);
+                File.Delete(Global.BASE_PATH + srcdsZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -242,10 +235,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_SRCDS, srcdsZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(srcdsZip, BASE_PATH + SOURCE1_PATH);
+                ZipFile.ExtractToDirectory(srcdsZip, Global.BASE_PATH + SOURCE1_PATH);
 
                 // Delete the zip
-                File.Delete(BASE_PATH + srcdsZip);
+                File.Delete(Global.BASE_PATH + srcdsZip);
             }
         }
 
@@ -253,7 +246,7 @@ namespace DotaHostBoxManager
         private static void installMetamod()
         {
             // Check if metamod exists
-            if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod.vdf"))
+            if (!File.Exists(Global.BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod.vdf"))
             {
                 // Debug log
                 Helpers.log("metamod not found, downloading...");
@@ -262,7 +255,7 @@ namespace DotaHostBoxManager
                 String metamodZip = "metamod.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(BASE_PATH + metamodZip);
+                File.Delete(Global.BASE_PATH + metamodZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -270,10 +263,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_METAMOD, metamodZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(metamodZip, BASE_PATH + SOURCE1_PATH + "dota\\");
+                ZipFile.ExtractToDirectory(metamodZip, Global.BASE_PATH + SOURCE1_PATH + "dota\\");
 
                 // Delete the zip
-                File.Delete(BASE_PATH + metamodZip);
+                File.Delete(Global.BASE_PATH + metamodZip);
             }
         }
 
@@ -281,7 +274,7 @@ namespace DotaHostBoxManager
         private static void installD2Fixups()
         {
             // Check if metamod exists
-            if (!File.Exists(BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod\\d2fixups.vdf"))
+            if (!File.Exists(Global.BASE_PATH + SOURCE1_PATH + "dota\\addons\\metamod\\d2fixups.vdf"))
             {
                 // Debug log
                 Helpers.log("d2fixups not found, downloading...");
@@ -290,7 +283,7 @@ namespace DotaHostBoxManager
                 String d2fixupsZip = "metamod.zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(BASE_PATH + d2fixupsZip);
+                File.Delete(Global.BASE_PATH + d2fixupsZip);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
@@ -298,10 +291,10 @@ namespace DotaHostBoxManager
                 dlManager.DownloadFile(DOWNLOAD_PATH_D2FIXUPS, d2fixupsZip);
 
                 // Extract the archive
-                ZipFile.ExtractToDirectory(d2fixupsZip, BASE_PATH + SOURCE1_PATH + "dota\\");
+                ZipFile.ExtractToDirectory(d2fixupsZip, Global.BASE_PATH + SOURCE1_PATH + "dota\\");
 
                 // Delete the zip
-                File.Delete(BASE_PATH + d2fixupsZip);
+                File.Delete(Global.BASE_PATH + d2fixupsZip);
             }
         }
 
@@ -335,7 +328,7 @@ namespace DotaHostBoxManager
             // May need to add addon mounting here eventually
 
             // Write the metamod loader
-            File.WriteAllText(BASE_PATH + SOURCE1_PATH + "dota\\gameinfo.txt", gameinfo);
+            File.WriteAllText(Global.BASE_PATH + SOURCE1_PATH + "dota\\gameinfo.txt", gameinfo);
         }
 
         // This function patches source1 maps
@@ -355,7 +348,7 @@ namespace DotaHostBoxManager
             };
 
             // Path to the map folder
-            String mapPath = BASE_PATH + SOURCE1_PATH + "dota\\maps\\";
+            String mapPath = Global.BASE_PATH + SOURCE1_PATH + "dota\\maps\\";
 
             // Loop over each map
             foreach(String map in maps)
