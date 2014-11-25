@@ -381,7 +381,7 @@ namespace DotaHostManager
         {
             wsServer.addHook("setDotaPath", (c, x) => { updateDotaPath(x[1]); });
             wsServer.addHook("exit", (c, x) => { requestClose = true; });
-            wsServer.addHook(WebSocketServer.CONNECTED, (c) => { Helpers.log("yolo"); wsServer.send("dotaPath|" + dotaPath); });
+            wsServer.addHook(WebSocketServer.CONNECTED, (c) => { wsServer.send("dotaPath|" + dotaPath); });
             wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
             wsServer.addHook("update", (c, x) => { updateAddon(x[1]); });
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
