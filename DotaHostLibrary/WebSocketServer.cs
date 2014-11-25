@@ -92,7 +92,7 @@ namespace DotaHostLibrary
                     if (!userIdToContext.ContainsKey(i))
                     {
                         // Send client uid
-                        c.Send("id|" + i, false, false);
+                        c.Send("id;" + i, false, false);
 
                         // Add connected user
                         userIdToContext.Add(i, c);
@@ -123,7 +123,7 @@ namespace DotaHostLibrary
         private void checkAndCall(UserContext c, Dictionary<string, List<receiveDel>> state)
         {
             // Find key if exists, run function with given args
-            string[] args = c.DataFrame.ToString().Split('|');
+            string[] args = c.DataFrame.ToString().Split(';');
             if (state.ContainsKey(args[0]))
             {
                 for (byte i = 0; i < state[args[0]].Count; ++i)

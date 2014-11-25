@@ -123,7 +123,17 @@ namespace DotaHostBoxManager
             // Create game server function
             wsClient.addHook("create", (c, x) =>
             {
-                // TODO: Add server creation
+                Dictionary<string, string> lobbyArgs = new Dictionary<string, string>();
+                for (byte i = 1; i < x.Length - 2; ++i)
+                {
+                    string[] keyValue = x[i].Split('=');
+                    string key = keyValue[0];
+                    string value = keyValue[1];
+                    lobbyArgs[key] = value;
+                }
+
+                GameServer gameServer = new GameServer(lobbyArgs["name"], playerList);
+
             });
         }
 
@@ -473,7 +483,7 @@ namespace DotaHostBoxManager
             string ret = "";
             for (byte i = 0; i < gameServers.Count; ++i)
             {
-                ret += gameServers[i].getName() + "|" + gameServers[i].getPlayers().Count + "|";
+                ret += gameServers[i].getName() + ";" + gameServers[i].getPlayers().Count + ";";
             }
             if (ret.Length > 0)
             {

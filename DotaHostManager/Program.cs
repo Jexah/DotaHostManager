@@ -139,7 +139,7 @@ namespace DotaHostManager
         // Called every time the app updater download progresses
         private static void appUpdaterDownloadProgress(int percentage)
         {
-            wsServer.send("appUpdater|percent|" + percentage.ToString());
+            wsServer.send("appUpdater;percent;" + percentage.ToString());
         }
 
         // Exits the program as soon as it is finished the current task
@@ -198,7 +198,7 @@ namespace DotaHostManager
                 // Installation has failed, send formatted string to most recent connection
                 Helpers.log("[CRC] Mismatch!");
                 Helpers.log(" == Installation failed! == ");
-                wsServer.send("installationFailed|addon|" + id);
+                wsServer.send("installationFailed;addon;" + id);
             }
             else
             {
@@ -212,7 +212,7 @@ namespace DotaHostManager
                 Helpers.log(" == Installation successful! == ");
 
                 // Installation was successful, send formatted string to most recent connection
-                wsServer.send("installationComplete|addon|" + id);
+                wsServer.send("installationComplete;addon;" + id);
             }
 
             // Deletes the downloaded zip file
@@ -256,7 +256,7 @@ namespace DotaHostManager
             // Begins downloading addon from GitHub
             dlManager.download("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", (e) => 
             {
-                wsServer.send("addon|" + id + "|percent|" + e.ProgressPercentage.ToString());
+                wsServer.send("addon;" + id + ";percent;" + e.ProgressPercentage.ToString());
             }, (e) => 
             {
                 string[] args = { id, name, version };
@@ -271,7 +271,7 @@ namespace DotaHostManager
             dlManager.download(Global.ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
             {
                 // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                wsServer.send("addon|" + addonID + "|percent|" + e.ProgressPercentage.ToString());
+                wsServer.send("addon;" + addonID + ";percent;" + e.ProgressPercentage.ToString());
             }, (e) =>
             {
                 downloadAddonInfoComplete(addonID);
@@ -373,7 +373,7 @@ namespace DotaHostManager
         {
             wsServer.addHook("setDotaPath", (c, x) => { updateDotaPath(x[1]); });
             wsServer.addHook("exit", (c, x) => { requestClose = true; });
-            wsServer.addHook(WebSocketServer.CONNECTED, (c) => { wsServer.send("dotaPath|" + dotaPath); });
+            wsServer.addHook(WebSocketServer.CONNECTED, (c) => { wsServer.send("dotaPath;" + dotaPath); });
             wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
             wsServer.addHook("update", (c, x) => { updateAddon(x[1]); });
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
