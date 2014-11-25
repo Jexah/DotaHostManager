@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CRC32.cs" />
     <Compile Include="DownloadInstructions.cs" />
     <Compile Include="DownloadManager.cs" />
     <Compile Include="Helpers.cs" />

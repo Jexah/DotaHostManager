@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace DotaHostLibrary
 {
+    // Define the delegates in a public scope so everything can use them
     public delegate void DownloadProgressDel(string[] args, DownloadProgressChangedEventArgs e);
     public delegate void DownloadCompleteDel(string[] args, AsyncCompletedEventArgs e);
 

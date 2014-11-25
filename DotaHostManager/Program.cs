@@ -195,7 +195,7 @@ namespace DotaHostManager
             }
         }
 
-
+        // Function run when an addon finishes getting downloaded
         static void downloadAddonComplete(string[] args)
         {
             // Sets up properties from arguments and addonInfo file
@@ -262,6 +262,7 @@ namespace DotaHostManager
             Helpers.log("[Socket] Sending confirmation update!");
         }
 
+        // Function run when the addon info download is complete
         static void downloadAddonInfoComplete(string addonID)
         {
             // Sets up properties from arguments and addonInfo file
@@ -512,101 +513,6 @@ namespace DotaHostManager
                     Environment.Exit(0);
                 }
             }
-        }
-
-        // Downloads a given file to a given file, using a given downloadID (not unique)
-        static void DownloadFile(string sourceFile, string targetName, string downloadID)
-        {
-            // Increment zeroCanClose so the program doesn't exit on socket time-out
-            zeroCanClose++;
-
-            // Gets the path of the target file
-            string downloadPath = Path.GetDirectoryName(targetName) + @"\";
-
-            // If dlManager is currently downloading something, add to the download queue
-            if (dlManager.IsBusy)
-            {
-                toDownload.Add(new string[] { sourceFile, targetName, downloadID });
-            }
-            else
-            {
-                try
-                {
-                    // If the download path exists, begin the download of the file
-                    if (Directory.Exists(downloadPath))
-                    {
-                        // Download starts: zeroCanClose increments
-                        // This function finishes: zeroCanClose decrements
-                        Helpers.log("[Download] Begin download of " + sourceFile + " -> " + targetName);
-                        dlManager.DownloadFileAsync(new Uri(sourceFile), targetName, downloadID);
-                        return;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            // Recursively create the download path
-                            Helpers.log("[File System] Creating directory: " + downloadPath);
-                            Directory.CreateDirectory(downloadPath);
-                        }
-                        catch (UnauthorizedAccessException e)
-                        {
-                            throw e;
-                        }
-                        catch
-                        {
-                            // Create directory failed, function finished: zeroCanClose decrements
-                            Helpers.log("[File System] Failed to create directory.");
-                            zeroCanClose--;
-                            return;
-                        }
-                        // Start downloading: zeroCanClose increments
-                        Helpers.log("[Download] Begin download of " + sourceFile + " -> " + targetName);
-                        zeroCanClose++;
-                        dlManager.DownloadFileAsync(new Uri(sourceFile), targetName, downloadID);
-                    }
-                }
-                catch (Exception)
-                {
-                    // Something bad happened
-                    Helpers.log("Uncaught exception.");
-                }
-                // Function ends, zeroCanClose decrements
-                zeroCanClose--;
-            }
-        }
-        
-        // dlManager download progress changed hook
-        static void dlManager_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            // Check the downloadProgressHooks list to see if a function matches this RPC
-            string[] args = e.UserState.ToString().Split('|');
-            if (downloadProgressHooks.Keys.Contains(args[0]))
-            {
-                downloadProgressHooks[args[0]](args, e);
-            }
-        }
-        
-        // dlManager download file completed hook
-        static void dlManager_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
-        {
-            // Check the downloadCompleteHooks list to see if a function matches this RPC
-            string[] args = e.UserState.ToString().Split('|');
-            Helpers.log("[Downloading] " + e.UserState.ToString() + " Done!");
-            if (downloadCompleteHooks.Keys.Contains(args[0]))
-            {
-                downloadCompleteHooks[args[0]](args, e);
-            }
-
-            // Start the next download in the queue, if any
-            if (toDownload.Count > 0)
-            {
-                DownloadFile(toDownload[0][0], toDownload[0][1], toDownload[0][2]);
-                toDownload.RemoveAt(0);
-            }
-
-            // Download is complete, zeroCanClose decrements
-            zeroCanClose--;
         }
 
         // Function to request registration of the dotahost uri protocol
