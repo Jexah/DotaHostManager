@@ -17,6 +17,8 @@ namespace DotaHostLibrary
         // Dictionaries containing the socket and download functions
         private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
         private List<socketDel>[] wsHooks = new List<socketDel>[5];
+        private delegate void FailedConnection();
+        private FailedConnection failedFunc;
 
         // Message queue
         private List<string> wsQueue = new List<string>();
@@ -26,11 +28,12 @@ namespace DotaHostLibrary
         public const byte CONNECT = 2;
         public const byte CONNECTED = 3;
         public const byte DISCONNECTED = 4;
+        public const byte FAILED = 4;
 
+        // Connection toserver
         private UserContext gContext;
 
-
-        public WebSocketClient(IPAddress ip, int port)
+        public WebSocketClient(string connectionLocation)
         {
             // Initialize wsHooks
             for(byte i = 0; i < wsHooks.Length; ++i)
@@ -38,11 +41,8 @@ namespace DotaHostLibrary
                 wsHooks[i] = new List<socketDel>();
             }
 
-            // Hook default functions
-            hookDefaultFunctions();
-
             // Set up websocket server
-            wsClient = new Alchemy.WebSocketClient("ws://" + ip + ":" + port)
+            wsClient = new Alchemy.WebSocketClient(connectionLocation)
             {
                 OnReceive = new Alchemy.OnEventDelegate((c) => { checkAndCall(c, wsReceive); callEventFunc(c, wsHooks[RECEIVE]); }),
                 OnSend = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[SEND]); }),
@@ -51,6 +51,9 @@ namespace DotaHostLibrary
                 OnDisconnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[DISCONNECTED]); })
             };
 
+            // Hook default functions
+            hookDefaultFunctions();
+
             // Connect the websocket client to the server
             start();
         }
@@ -58,7 +61,26 @@ namespace DotaHostLibrary
         // Connects the websocket client to the server
         public void start()
         {
-            wsClient.Connect();
+            try
+            {
+                // Attempt to connect to server
+                wsClient.Connect();
+            }
+            catch
+            {
+                // Failed to connect to server
+                Helpers.log("[Socket] Failed to connect to server.");
+                if (failedFunc != null)
+                {
+                    failedFunc();
+                }
+            }
+        }
+
+        // Sets on failure function
+        public void onFailure(FailedConnection func)
+        {
+            failedFunc = func;
         }
 
         // Adds a default hook to onConnected
@@ -75,12 +97,12 @@ namespace DotaHostLibrary
                 // Loop through queue and send all waiting packets
                 for (byte i = 0; i < wsQueue.Count; ++i)
                 {
-                    c.Send(wsQueue[i], false, false);
+                    //c.Send(wsQueue[i], false, false);
                 }
                 wsQueue.Clear();
 
                 // Set gContext to this connection
-                gContext = c;
+               gContext = c;
             });
         }
 
@@ -93,7 +115,7 @@ namespace DotaHostLibrary
                 funcList[i](c);
             }
         }
-
+        
         // Checks the received message for matching functions, and calls them all
         private void checkAndCall(UserContext c, Dictionary<string, List<receiveDel>> state)
         {
@@ -107,7 +129,7 @@ namespace DotaHostLibrary
                 }
             }
         }
-
+        
         // Adds a hook of the given type
         public void addHook(byte type, socketDel func)
         {

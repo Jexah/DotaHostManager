@@ -9,13 +9,13 @@ namespace DotaHostBoxManager
     public class Player
     {
         private string steamID;
-        private string IP;
+        private string playerID;
         private string alias;
 
-        public Player(string steamID, string IP, string alias)
+        public Player(string steamID, string playerID, string alias)
         {
             this.steamID = steamID;
-            this.IP = IP;
+            this.playerID = playerID;
             this.alias = alias;
         }
     }

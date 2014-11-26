@@ -59,19 +59,23 @@ namespace DotaHostBoxManager
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
         
+
+        
         // Performance monitoring
+        private static PerformanceCounter cpuCounter = new PerformanceCounter();
+        private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
 
         // The command to update dota (source1)
         private static readonly string STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
-
+        
         // The command to update dota (source2)
         private static readonly string STEAMCMD_SOURCE2_DOTA = "-username " + STEAM_USERNAME + " -password " + STEAM_PASSWORD + " -dir " + Global.BASE_PATH + "\\" + SOURCE2_PATH + " -app 570 -depot 313250";
-
+        
         // Used for downloading files
         private static DownloadManager dlManager = new DownloadManager();
-
+        
         // Web socket client
-        private static WebSocketClient wsClient = new WebSocketClient(IPAddress.Parse("127.0.0.1"), 3875);
+        private static WebSocketClient wsClient = new WebSocketClient("ws://127.0.0.1:2074/");
            
         // Unique websocket client ID
         private static int wsUID;
@@ -85,27 +89,31 @@ namespace DotaHostBoxManager
 
         // List of game server running on the box
         private static List<GameServer> gameServers = new List<GameServer>();
-
+        
         // The main entry point into the program
         private static void Main(string[] args)
         {
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
 
+            setupSystemDiagnostics();
 
+            Helpers.log(getCurrentCpuUsage());
+            Helpers.log(getAvailableRAM());
 
             Console.ReadLine();
+            
             // Update the dota install
             //updateDotaSource1();
         }
-
+        
         // Hook websocket events
         private static void hookWSocketEvents()
         {
             // Get unique socket identifier from server
             wsClient.addHook("id", (c, x) =>
             {
-                wsUID = int.Parse(x[1]);
+                //wsUID = int.Parse(x[1]);
             });
 
             // Get status overview
@@ -121,10 +129,24 @@ namespace DotaHostBoxManager
             });
 
             // Create game server function
+            #region wsClient.addHook("Create");
             wsClient.addHook("create", (c, x) =>
             {
+                // Socket msg: "create;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1=
+                // Lobby args: "addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1=
+
+                // Create server object to handle game server info
+                GameServer gameServer = new GameServer();
+
+                // Remove the first element of the array (function name ("create"))
+                string[] gameServerArgs = Helpers.RemoveIndex(x, 0);
+
+                // Re-add the seperators
+                string gameServerArgsStr = String.Join(";", gameServerArgs);
+
+                // Set up the properties for the lobby in case we want to retrieve them later
                 Dictionary<string, string> lobbyArgs = new Dictionary<string, string>();
-                for (byte i = 1; i < x.Length - 2; ++i)
+                for (byte i = 1; i < x.Length; ++i)
                 {
                     string[] keyValue = x[i].Split('=');
                     string key = keyValue[0];
@@ -132,9 +154,61 @@ namespace DotaHostBoxManager
                     lobbyArgs[key] = value;
                 }
 
-                GameServer gameServer = new GameServer(lobbyArgs["name"], playerList);
+                // Set the the options to the game server
+                gameServer.setOptions(lobbyArgs);
+
+                // Read teams from input arguments
+                List<List<Player>> team = new List<List<Player>>();
+                for(byte i = 0; i < 10; ++i){
+                    if (lobbyArgs.ContainsKey("team" + i))
+                    {
+                        team[i] = new List<Player>();
+                        string[] teamPlayers = lobbyArgs["team" + i].Split('|');
+                        for (int j = 0; j < teamPlayers.Length; ++j)
+                        {
+                            string[] properties = teamPlayers[j].Split('-');
+                            string playerID = properties[0];
+                            string alias = properties[1];
+                            string steamID = properties[2];
+                            Player player = new Player(steamID, playerID, alias);
+                            team[i].Add(player);
+                        }
+                    }
+                }
+
+                // Read addons from input arguments
+                List<Addon> addons = new List<Addon>();
+                for (byte i = 0; i < 10; ++i)
+                {
+                    if (lobbyArgs.ContainsKey("addon" + i))
+                    {
+                        Dictionary<string, string> addonProperties = new Dictionary<string, string>();
+                        string[] addonOptions = lobbyArgs["addon" + i + "options"].Split('|');
+                        for (int j = 0; j < addonOptions.Length; ++j)
+                        {
+                            string[] properties = addonOptions[j].Split('-');
+                            string key = properties[0];
+                            string value = properties[1];
+                            addonProperties.Add(key, value);
+                        }
+                        Addon addon = new Addon(lobbyArgs["addon" + i], addonProperties);
+                    }
+                }
+
+                // Launch the server using the string options
+                gameServer.launchServer(gameServerArgsStr);
 
             });
+            #endregion
+
+        }
+
+        // Set up system diagnostics
+        private static void setupSystemDiagnostics()
+        {
+            cpuCounter.CategoryName = "Processor";
+            cpuCounter.CounterName = "% Processor Time";
+            cpuCounter.InstanceName = "_Total";
         }
 
         // This function ensures steamcmd is available
@@ -491,6 +565,16 @@ namespace DotaHostBoxManager
             }
             return ret;
         }
+
+        public static string getCurrentCpuUsage()
+        {
+            return cpuCounter.NextValue() + "%";
+        }
+
+        public static string getAvailableRAM()
+        {
+            return ramCounter.NextValue() + "MB";
+        } 
 
     }
 }
