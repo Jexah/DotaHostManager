@@ -25,8 +25,8 @@ namespace DotaHostLibrary
         private List<socketDel>[] wsHooks = new List<socketDel>[5];
 
         // List of currently connected users
-        private Dictionary<int, UserContext> userIdToContext = new Dictionary<int, UserContext>();
-        private Dictionary<UserContext, int> userContextToId = new Dictionary<UserContext, int>();
+        private Dictionary<string, UserContext> userIdToContext = new Dictionary<string, UserContext>();
+        private Dictionary<UserContext, string> userContextToId = new Dictionary<UserContext, string>();
 
         // Message queue
         private List<string> wsQueue = new List<string>();
@@ -87,17 +87,19 @@ namespace DotaHostLibrary
                 wsQueue.Clear();
 
                 // Assign userid
-                for (int i = 0; i < 100000; ++i)
+                
+                string ip = c.ClientAddress.ToString();
+                if (!userIdToContext.ContainsKey(ip))
                 {
-                    if (!userIdToContext.ContainsKey(i))
-                    {
-                        // Send client uid
-                        c.Send("id;" + i, false, false);
+                    // Send client uid
+                    c.Send("id;" + ip);
 
-                        // Add connected user
-                        userIdToContext.Add(i, c);
-                        userContextToId.Add(c, i);
-                    }
+                    // Add connected user
+                    try { userIdToContext.Add(ip, c); }
+                    catch { }
+                    try { userContextToId.Add(c, ip); }
+                    catch { }
+                        
                 }
             });
             addHook(DISCONNECTED, (c) =>
@@ -159,7 +161,7 @@ namespace DotaHostLibrary
         {
             if(userIdToContext.Count != 0)
             {
-                foreach(int i in userIdToContext.Keys)
+                foreach(string i in userIdToContext.Keys)
                 {
                     userIdToContext[i].Send(message);
                 }

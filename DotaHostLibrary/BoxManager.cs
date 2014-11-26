@@ -1,9 +1,4 @@
-﻿using DotaHostLibrary;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace DotaHostLibrary
 {
@@ -17,9 +12,9 @@ namespace DotaHostLibrary
         public const byte INACTIVE = 3;
 
         private string ip;
-        private string boxName;
         private byte cpuPercent;
         private short[] ram;
+        private int[] network;
         private byte status;
 
         private List<GameServer> GameServers;
@@ -37,15 +32,6 @@ namespace DotaHostLibrary
         public void setIP(string ip)
         {
             this.ip = ip;
-        }
-        // Get/set box name
-        public string getName()
-        {
-            return this.boxName;
-        }
-        public void setName(string name)
-        {
-            this.boxName = name;
         }
 
         // Get/set cpu status
@@ -66,6 +52,16 @@ namespace DotaHostLibrary
         public void setRam(short[] ramPair)
         {
             this.ram = ramPair;
+        }
+
+        // Get/set network status
+        public int[] getNetwork()
+        {
+            return this.network;
+        }
+        public void setNetwork(int[] network)
+        {
+            this.network = network;
         }
 
         // Get/set box status

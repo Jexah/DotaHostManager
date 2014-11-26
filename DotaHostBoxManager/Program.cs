@@ -82,7 +82,7 @@ namespace DotaHostBoxManager
         private static WebSocketClient wsClient = new WebSocketClient("ws://" + Global.SERVER_MANAGER_IP + ":" + Global.SERVER_MANAGER_PORT + "/");
            
         // Unique websocket client ID
-        private static int wsUID;
+        private static string websocketUserID;
 
         // Box server status
         private static byte status;
@@ -103,7 +103,11 @@ namespace DotaHostBoxManager
             status = IDLE;
 
             setupSystemDiagnostics();
-            
+
+            hookWSocketEvents();
+
+            wsClient.start();
+
             // Update the dota install
             //updateDotaSource1();
         }
@@ -111,10 +115,20 @@ namespace DotaHostBoxManager
         // Hook websocket events
         private static void hookWSocketEvents()
         {
+            wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
+            {
+                Helpers.log(c.DataFrame.ToString());
+            });
+
+            wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
+            {
+                c.Send("box");
+            });
+
             // Get unique socket identifier from server
             wsClient.addHook("id", (c, x) =>
             {
-                wsUID = int.Parse(x[1]);
+                websocketUserID = x[1];
             });
 
             // Get status overview
@@ -131,7 +145,7 @@ namespace DotaHostBoxManager
                     status = ACTIVE;
                 }
                 // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
-                wsClient.send("system;" + status + ";" + String.Join(";", args));
+                c.Send("system;" + status + ";" + String.Join(";", args));
             });
             #endregion
 
@@ -585,6 +599,8 @@ namespace DotaHostBoxManager
         // Gets the current CPU usage in percent
         public static int getCurrentCpuUsage()
         {
+            cpuCounter.NextValue();
+            System.Threading.Thread.Sleep(1000);
             return (int)Math.Round(cpuCounter.NextValue());
         }
        

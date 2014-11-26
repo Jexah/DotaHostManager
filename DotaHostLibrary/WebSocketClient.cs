@@ -52,9 +52,6 @@ namespace DotaHostLibrary
 
             // Hook default functions
             hookDefaultFunctions();
-
-            // Connect the websocket client to the server
-            start();
         }
 
         // Connects the websocket client to the server

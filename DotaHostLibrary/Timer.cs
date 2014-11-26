@@ -18,7 +18,6 @@ namespace DotaHostLibrary
 
         public static void newTimer(int duration, byte type, TimerCallback func)
         {
-            System.Timers.Timer timer;
             int properDuration;
             switch (type)
             {
@@ -36,8 +35,9 @@ namespace DotaHostLibrary
                     break;
             }
 
-            timer = new System.Timers.Timer();
+            System.Timers.Timer timer = new System.Timers.Timer(properDuration);
             timer.Elapsed += (sender, e) => { func(); timer.Dispose(); };
+            timer.Enabled = true;
         }
     }
 }
