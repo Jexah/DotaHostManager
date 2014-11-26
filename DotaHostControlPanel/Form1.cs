@@ -1,21 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+﻿using DotaHostLibrary;
+using System;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using DotaHostLibrary;
 
 namespace DotaHostControlPanel
 {
     public partial class Form1 : Form
     {
-        Color success = Color.Green;
-        Color warning = Color.Orange;
-        Color error = Color.Red;
+        private static Color success = Color.Green;
+        private static Color warning = Color.Orange;
+        private static Color error = Color.Red;
+
+        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Global.SERVER_MANAGER_IP + ":" + Global.SERVER_MANAGER_PORT + "/");
 
         public Form1()
         {
@@ -29,11 +25,15 @@ namespace DotaHostControlPanel
         
         private void Form1_Load(object sender, EventArgs e)
         {
+
+
             boxesList.SelectedIndex = 0;
             setCurrentBoxAsActiveGUI();
             setCurrentBoxRAMGUI(2800, 3080);
             setCurrentBoxCPUGUI(78);
         }
+
+        private static void connectTo
         
         private void Form1_Shown(object sender, EventArgs e)
         {

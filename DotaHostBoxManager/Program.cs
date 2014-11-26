@@ -7,11 +7,11 @@
 
 using DotaHostLibrary;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DotaHostBoxManager
 {
@@ -613,7 +613,7 @@ namespace DotaHostBoxManager
             }
         }
 
-        public static string getGameServersAsString()
+        private static string getGameServersAsString()
         {
             string ret = "";
             for (byte i = 0; i < gameServers.Count; ++i)
@@ -628,7 +628,7 @@ namespace DotaHostBoxManager
         }
 
         // Gets the current CPU usage in percent
-        public static int getCurrentCpuUsage()
+        private static int getCurrentCpuUsage()
         {
             cpuCounter.NextValue();
             System.Threading.Thread.Sleep(1000);
@@ -636,37 +636,37 @@ namespace DotaHostBoxManager
         }
        
         // Gets the available RAM in the system in megabytes
-        public static int getAvailableRAM()
+        private static int getAvailableRAM()
         {
             return Convert.ToInt32(Math.Round(ramCounter.NextValue()));
         }
 
         // Gets the total RAM available in the system in megabytes
-        public static int getTotalRAM()
+        private static int getTotalRAM()
         {
             return  Convert.ToInt32(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
         }
 
         // Gets the total bandwidth available in the system in bytes
-        public static int getBandwidth()
+        private static int getBandwidth()
         {
             return  Convert.ToInt32(Math.Round(bandwidthCounter.NextValue()));
         }
 
         // Gets the current upload speed in bytes/second
-        public static int getUploadSpeed()
+        private static int getUploadSpeed()
         {
             return  Convert.ToInt32(Math.Round(dataSentCounter.NextValue()));
         }
 
         // Gets the current download speed in bytes/second
-        public static int getDownloadSpeed()
+        private static int getDownloadSpeed()
         {
             return Convert.ToInt32(Math.Round(dataReceivedCounter.NextValue()));
         }
 
         // Prints all network interface card reference names
-        public static void printNetworkCards()
+        private static void printNetworkCards()
         {
             PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
             String[] instancename = category.GetInstanceNames();
