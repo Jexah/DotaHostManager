@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DotaHostLibrary;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,11 +11,12 @@ namespace DotaHostControlPanel
     
     public class BoxManager
     {
-        private const byte ACTIVE = 0;
-        private const byte IDLE = 1;
-        private const byte MIA = 2;
-        private const byte INACTIVE = 3;
+        public const byte ACTIVE = 0;
+        public const byte IDLE = 1;
+        public const byte MIA = 2;
+        public const byte INACTIVE = 3;
 
+        private string ip;
         private string boxName;
         private byte cpuPercent;
         private short[] ram;
@@ -27,6 +29,15 @@ namespace DotaHostControlPanel
 
         }
 
+        // Get/set ip
+        public string getIP()
+        {
+            return ip;
+        }
+        public void setIP(string ip)
+        {
+            this.ip = ip;
+        }
         // Get/set box name
         public string getName()
         {

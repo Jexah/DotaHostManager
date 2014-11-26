@@ -118,6 +118,7 @@ namespace DotaHostBoxManager
             });
 
             // Get status overview
+            #region wsClient.addHook("system");
             wsClient.addHook("system", (c, x) =>
             {
                 int[] args = getSystemDiagnostics();
@@ -132,6 +133,7 @@ namespace DotaHostBoxManager
                 // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
                 wsClient.send("system;" + status + ";" + String.Join(";", args));
             });
+            #endregion
 
             // Create game server function
             #region wsClient.addHook("Create");
