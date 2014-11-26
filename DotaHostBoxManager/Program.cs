@@ -59,10 +59,15 @@ namespace DotaHostBoxManager
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
         
+        // Network card name
+        private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
         private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+        private static PerformanceCounter bandwidthCounter = new PerformanceCounter("Network Interface", "Current Bandwidth", NETWORK_CARD);
+        private static PerformanceCounter dataSentCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", NETWORK_CARD);
+        private static PerformanceCounter dataReceivedCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", NETWORK_CARD);
 
         // The command to update dota (source1)
         private static readonly string STEAMCMD_SOURCE1_DOTA = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +force_install_dir " + Global.BASE_PATH + "\\" + SOURCE1_PATH + " +app_update 570 +quit";
@@ -95,12 +100,9 @@ namespace DotaHostBoxManager
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
 
+            status = IDLE;
+
             setupSystemDiagnostics();
-
-            Helpers.log(getCurrentCpuUsage());
-            Helpers.log(getAvailableRAM());
-
-            Console.ReadLine();
             
             // Update the dota install
             //updateDotaSource1();
@@ -118,13 +120,17 @@ namespace DotaHostBoxManager
             // Get status overview
             wsClient.addHook("status", (c, x) =>
             {
-                string[] args = new string[4];
-                //args[0] = status.ToString();
-                //args[1] = getGameServersAsString();
-                //args[2] = getCurrentCpuUsage();
-                //args[3] = getAvailableRAM();
-                //args[4] = getTotalRAM();
-
+                int[] args = getSystemDiagnostics();
+                if (gameServers.Count == 0)
+                {
+                    status = IDLE;
+                }
+                else
+                {
+                    status = ACTIVE;
+                }
+                // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
+                wsClient.send("status;" + status + ";" +  String.Join(";", args));
             });
 
             // Create game server function
@@ -208,6 +214,12 @@ namespace DotaHostBoxManager
             cpuCounter.CategoryName = "Processor";
             cpuCounter.CounterName = "% Processor Time";
             cpuCounter.InstanceName = "_Total";
+        }
+
+        // Get system diagnostics such as CPU % usage, RAM used and RAM remaining
+        private static int[] getSystemDiagnostics()
+        {
+            return new int[] { getCurrentCpuUsage(), getAvailableRAM(), getTotalRAM(), getBandwidth(), getUploadSpeed(), getDownloadSpeed() };
         }
 
         // This function ensures steamcmd is available
@@ -565,15 +577,53 @@ namespace DotaHostBoxManager
             return ret;
         }
 
-        public static string getCurrentCpuUsage()
+        // Gets the current CPU usage in percent
+        public static int getCurrentCpuUsage()
         {
-            return cpuCounter.NextValue() + "%";
+            return (int)Math.Round(cpuCounter.NextValue());
+        }
+       
+        // Gets the available RAM in the system in megabytes
+        public static int getAvailableRAM()
+        {
+            return Convert.ToInt32(Math.Round(ramCounter.NextValue()));
         }
 
-        public static string getAvailableRAM()
+        // Gets the total RAM available in the system in megabytes
+        public static int getTotalRAM()
         {
-            return ramCounter.NextValue() + "MB";
-        } 
+            return  Convert.ToInt32(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
+        }
+
+        // Gets the total bandwidth available in the system in bytes
+        public static int getBandwidth()
+        {
+            return  Convert.ToInt32(Math.Round(bandwidthCounter.NextValue()));
+        }
+
+        // Gets the current upload speed in bytes/second
+        public static int getUploadSpeed()
+        {
+            return  Convert.ToInt32(Math.Round(dataSentCounter.NextValue()));
+        }
+
+        // Gets the current download speed in bytes/second
+        public static int getDownloadSpeed()
+        {
+            return Convert.ToInt32(Math.Round(dataReceivedCounter.NextValue()));
+        }
+
+        // Prints all network interface card reference names
+        public static void printNetworkCards()
+        {
+            PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
+            String[] instancename = category.GetInstanceNames();
+
+            foreach (string name in instancename)
+            {
+                Helpers.log(name);
+            }
+        }
 
     }
 }
