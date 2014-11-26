@@ -60,7 +60,7 @@ namespace DotaHostBoxManager
         private const string STEAM_PASSWORD = "***REMOVED***";
         
         // Network card name
-        private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
+        private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
@@ -162,7 +162,7 @@ namespace DotaHostBoxManager
             #endregion
 
             // Create game server function
-            #region wsClient.addHook("Create");
+            #region wsClient.addHook("create");
             wsClient.addHook("create", (c, x) =>
             {
                 // Socket msg: "create;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
@@ -232,10 +232,16 @@ namespace DotaHostBoxManager
                 gameServers.Add(gameServer);
 
                 // Launch the server using the string options
-                gameServer.launchServer(gameServerArgsStr);
+                launchGameServer(gameServer, gameServerArgsStr);
 
             });
             #endregion
+
+        }
+
+        // Starts a specific game server with a specific set of arguments
+        private static void launchGameServer(GameServer gameServer, string gameServerArgs)
+        {
 
         }
 
