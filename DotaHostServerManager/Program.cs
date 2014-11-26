@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DotaHostLibrary;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +9,22 @@ namespace DotaHostServerManager
 {
     class Program
     {
+        private static List<BoxManager> boxManagers = new List<BoxManager>();
+
         static void Main(string[] args)
         {
 
+        }
+
+        private static void addBoxManager()
+        {
+            // TODO: Code to start up new box, box will then contact this server once it's started.
+        }
+
+        private static void removeBoxManager(BoxManager boxManager)
+        {
+            // TODO: Code to destroy box server
+            boxManagers.Remove(boxManager);
         }
     }
 }

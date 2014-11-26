@@ -22,5 +22,8 @@ namespace DotaHostLibrary
 
         // Server Manager Port
         public const int SERVER_MANAGER_PORT = 3875;
+
+        // Regions
+
     }
 }
