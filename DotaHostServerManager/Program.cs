@@ -33,7 +33,6 @@ namespace DotaHostServerManager
 
             // When a server is started, it sends box function, so this tells the servermanager "Hey, there's a new box in town" and the server manager does it's things to accomodate
             wsServer.addHook("box", (c, x) => { 
-                // TODO: Add new box code
                 BoxManager boxManager = new BoxManager();
                 boxManager.setIP(c.ClientAddress.ToString());
                 boxManagers.Add(c.ClientAddress.ToString(), boxManager);
@@ -41,6 +40,7 @@ namespace DotaHostServerManager
                 c.Send("system");
             });
 
+            // Receives the system status from the box manager, loops
             wsServer.addHook("system", (c, x) =>
             {
                 Helpers.log("Update thingo");
@@ -53,22 +53,26 @@ namespace DotaHostServerManager
             });
         }
 
+        // Create a new box instance using snapshot
         private static void addBoxManager()
         {
             // TODO: Code to start up new box, box will then contact this server once it's started.
         }
 
+        // Destroy box instance
         private static void removeBoxManager(BoxManager boxManager)
         {
             // TODO: Code to destroy box server
             boxManagers.Remove(boxManager.getIP());
         }
 
+        // Finds a server to host the gamemode selected, in the region selected
         private static void findServer(byte region, string addonID)
         {
             // TODO: Add server finding algorithm
         }
 
+        // Reboots the selected box
         private static void restartBox(BoxManager boxManager)
         {
             // TODO: Add box restart code here

@@ -90,6 +90,7 @@ namespace DotaHostBoxManager
         private const byte IDLE = 1;
         private const byte MIA = 2;
         private const byte INACTIVE = 3;
+        private const byte DEACTIVATED = 4;
 
         // List of game server running on the box
         private static List<GameServer> gameServers = new List<GameServer>();
@@ -125,6 +126,13 @@ namespace DotaHostBoxManager
                 c.Send("box");
             });
 
+            // Begin server reboot
+            wsClient.addHook("reboot", (c, x) =>
+            {
+                status = DEACTIVATED;
+
+            });
+
             // Get unique socket identifier from server
             wsClient.addHook("id", (c, x) =>
             {
@@ -136,14 +144,18 @@ namespace DotaHostBoxManager
             wsClient.addHook("system", (c, x) =>
             {
                 int[] args = getSystemDiagnostics();
-                if (gameServers.Count == 0)
+                if (status != DEACTIVATED)
                 {
-                    status = IDLE;
+                    if (gameServers.Count == 0)
+                    {
+                        status = IDLE;
+                    }
+                    else
+                    {
+                        status = ACTIVE;
+                    }
                 }
-                else
-                {
-                    status = ACTIVE;
-                }
+                
                 // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
                 c.Send("system;" + status + ";" + String.Join(";", args));
             });
@@ -225,6 +237,19 @@ namespace DotaHostBoxManager
             });
             #endregion
 
+        }
+
+        // Reboot check look
+        private static void rebootLoop()
+        {
+            if (gameServers.Count > 0)
+            {
+                Timer.newTimer(60, Timer.SECONDS, () => { rebootLoop(); });
+            }
+            else
+            {
+                System.Diagnostics.Process.Start("shutdown.exe", "-r -t 0");
+            }
         }
 
         // Set up system diagnostics
