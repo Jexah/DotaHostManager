@@ -20,6 +20,11 @@ DotaHostManager
 
 The Server Installer needs further testing. D2fixups (among other things) NEED to be deployed to our own HTTP server ASAP, it has already caused issues by not being able to download it due to the download moving.
 
+###Server Launcher###
+ - The server launcher can launch both source1 and source2 servers
+ - Most server launcher arguments are HARD CODED
+ - We need to find a way to add a `loading/waiting for players` screen to the start of the match like the old days
+
 ###Custom Server Scripts###
  - Lobbies, options, team allocation and server closing is handled by Lua
  - The following scripts will automatically be installed onto all dedicated servers
