@@ -101,7 +101,6 @@ namespace DotaHostServerManager
             setCurrentBoxCPUGUI(78);
         }
 
-        private static void connectTo
         
         private void Form1_Shown(object sender, EventArgs e)
         {
