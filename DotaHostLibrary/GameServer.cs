@@ -18,11 +18,6 @@ namespace DotaHostLibrary
 
         }
 
-        public void launchServer(string args)
-        {
-            // TODO: Server launching code
-        }
-
         public string getName()
         {
             return this.name;

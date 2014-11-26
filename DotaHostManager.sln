@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostLibrary", "DotaHost
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostControlPanel", "DotaHostControlPanel\DotaHostControlPanel.csproj", "{5B407730-0835-43BF-90ED-EDC95CD43C72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostServerManager", "DotaHostServerManager\DotaHostServerManager.csproj", "{8DCAF350-1241-4929-9461-2B08D88C7848}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostServerManagerConsole", "DotaHostServerManagerConsole\DotaHostServerManagerConsole.csproj", "{8DCAF350-1241-4929-9461-2B08D88C7848}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

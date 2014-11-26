@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Net;
-using System.IO;
 using System.Diagnostics;
+using System.Net;
 
 namespace DotaHostManagerUpdater
 {

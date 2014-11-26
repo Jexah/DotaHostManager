@@ -7,11 +7,11 @@
 
 using DotaHostLibrary;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DotaHostBoxManager
 {
@@ -45,7 +45,7 @@ namespace DotaHostBoxManager
         private const string STEAM_PASSWORD = "***REMOVED***";
         
         // Network card name
-        private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
+        private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
@@ -75,6 +75,7 @@ namespace DotaHostBoxManager
         private const byte IDLE = 1;
         private const byte MIA = 2;
         private const byte INACTIVE = 3;
+        private const byte DEACTIVATED = 4;
 
         // List of game server running on the box
         private static List<GameServer> gameServers = new List<GameServer>();
@@ -112,6 +113,13 @@ namespace DotaHostBoxManager
                 c.Send("box");
             });
 
+            // Begin server reboot
+            wsClient.addHook("reboot", (c, x) =>
+            {
+                status = DEACTIVATED;
+
+            });
+
             // Get unique socket identifier from server
             wsClient.addHook("id", (c, x) =>
             {
@@ -123,21 +131,25 @@ namespace DotaHostBoxManager
             wsClient.addHook("system", (c, x) =>
             {
                 int[] args = getSystemDiagnostics();
-                if (gameServers.Count == 0)
+                if (status != DEACTIVATED)
                 {
-                    status = IDLE;
+                    if (gameServers.Count == 0)
+                    {
+                        status = IDLE;
+                    }
+                    else
+                    {
+                        status = ACTIVE;
+                    }
                 }
-                else
-                {
-                    status = ACTIVE;
-                }
+                
                 // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
                 c.Send("system;" + status + ";" + String.Join(";", args));
             });
             #endregion
 
             // Create game server function
-            #region wsClient.addHook("Create");
+            #region wsClient.addHook("create");
             wsClient.addHook("create", (c, x) =>
             {
                 // Socket msg: "create;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
@@ -207,11 +219,30 @@ namespace DotaHostBoxManager
                 gameServers.Add(gameServer);
 
                 // Launch the server using the string options
-                gameServer.launchServer(gameServerArgsStr);
+                launchGameServer(gameServer, gameServerArgsStr);
 
             });
             #endregion
 
+        }
+
+        // Starts a specific game server with a specific set of arguments
+        private static void launchGameServer(GameServer gameServer, string gameServerArgs)
+        {
+
+        }
+
+        // Reboot check look
+        private static void rebootLoop()
+        {
+            if (gameServers.Count > 0)
+            {
+                Timer.newTimer(60, Timer.SECONDS, () => { rebootLoop(); });
+            }
+            else
+            {
+                System.Diagnostics.Process.Start("shutdown.exe", "-r -t 0");
+            }
         }
 
         // Set up system diagnostics
@@ -439,7 +470,7 @@ namespace DotaHostBoxManager
             }
         }
 
-        public static string getGameServersAsString()
+        private static string getGameServersAsString()
         {
             string ret = "";
             for (byte i = 0; i < gameServers.Count; ++i)
@@ -454,7 +485,7 @@ namespace DotaHostBoxManager
         }
 
         // Gets the current CPU usage in percent
-        public static int getCurrentCpuUsage()
+        private static int getCurrentCpuUsage()
         {
             cpuCounter.NextValue();
             System.Threading.Thread.Sleep(1000);
@@ -462,37 +493,37 @@ namespace DotaHostBoxManager
         }
        
         // Gets the available RAM in the system in megabytes
-        public static int getAvailableRAM()
+        private static int getAvailableRAM()
         {
             return Convert.ToInt32(Math.Round(ramCounter.NextValue()));
         }
 
         // Gets the total RAM available in the system in megabytes
-        public static int getTotalRAM()
+        private static int getTotalRAM()
         {
             return  Convert.ToInt32(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
         }
 
         // Gets the total bandwidth available in the system in bytes
-        public static int getBandwidth()
+        private static int getBandwidth()
         {
             return  Convert.ToInt32(Math.Round(bandwidthCounter.NextValue()));
         }
 
         // Gets the current upload speed in bytes/second
-        public static int getUploadSpeed()
+        private static int getUploadSpeed()
         {
             return  Convert.ToInt32(Math.Round(dataSentCounter.NextValue()));
         }
 
         // Gets the current download speed in bytes/second
-        public static int getDownloadSpeed()
+        private static int getDownloadSpeed()
         {
             return Convert.ToInt32(Math.Round(dataReceivedCounter.NextValue()));
         }
 
         // Prints all network interface card reference names
-        public static void printNetworkCards()
+        private static void printNetworkCards()
         {
             PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
             String[] instancename = category.GetInstanceNames();
