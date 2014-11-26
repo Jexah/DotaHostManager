@@ -59,7 +59,6 @@ namespace DotaHostBoxManager
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
         
-
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
@@ -113,7 +112,7 @@ namespace DotaHostBoxManager
             // Get unique socket identifier from server
             wsClient.addHook("id", (c, x) =>
             {
-                //wsUID = int.Parse(x[1]);
+                wsUID = int.Parse(x[1]);
             });
 
             // Get status overview
@@ -132,8 +131,8 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("Create");
             wsClient.addHook("create", (c, x) =>
             {
-                // Socket msg: "create;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1=
-                // Lobby args: "addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1=
+                // Socket msg: "create;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
+                // Lobby args: "addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
 
                 // Create server object to handle game server info
                 GameServer gameServer = new GameServer();

@@ -50,7 +50,7 @@ namespace DotaHostLibrary
             hookDefaultFunctions();
 
             // Set up websocket server
-            wsServer = new Alchemy.WebSocketServer(port, ip)
+            wsServer = new Alchemy.WebSocketServer(true, port, ip)
             {
                 OnReceive = new Alchemy.OnEventDelegate((c) => { checkAndCall(c, wsReceive); callEventFunc(c, wsHooks[RECEIVE]); }),
                 OnSend = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[SEND]); }),

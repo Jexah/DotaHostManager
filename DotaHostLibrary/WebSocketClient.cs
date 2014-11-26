@@ -17,7 +17,7 @@ namespace DotaHostLibrary
         // Dictionaries containing the socket and download functions
         private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
         private List<socketDel>[] wsHooks = new List<socketDel>[5];
-        private delegate void FailedConnection();
+        public delegate void FailedConnection();
         private FailedConnection failedFunc;
 
         // Message queue
@@ -28,7 +28,6 @@ namespace DotaHostLibrary
         public const byte CONNECT = 2;
         public const byte CONNECTED = 3;
         public const byte DISCONNECTED = 4;
-        public const byte FAILED = 4;
 
         // Connection toserver
         private UserContext gContext;
@@ -61,26 +60,13 @@ namespace DotaHostLibrary
         // Connects the websocket client to the server
         public void start()
         {
-            try
-            {
-                // Attempt to connect to server
-                wsClient.Connect();
-            }
-            catch
-            {
-                // Failed to connect to server
-                Helpers.log("[Socket] Failed to connect to server.");
-                if (failedFunc != null)
-                {
-                    failedFunc();
-                }
-            }
+            wsClient.Connect();
         }
 
         // Sets on failure function
         public void onFailure(FailedConnection func)
         {
-            failedFunc = func;
+            this.failedFunc = func;
         }
 
         // Adds a default hook to onConnected

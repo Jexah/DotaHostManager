@@ -16,5 +16,11 @@ namespace DotaHostLibrary
 
         // GitHub download root
         private const string GITHUB = "https://codeload.github.com/ash47/";
+
+        // Server Manager IP
+        private const string SERVER_MANAGER_IP = "127.0.0.1";
+
+        // Server Manager Port
+        private const int SERVER_MANAGER_PORT = 3875;
     }
 }
