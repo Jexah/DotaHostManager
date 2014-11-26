@@ -79,7 +79,7 @@ namespace DotaHostBoxManager
         private static DownloadManager dlManager = new DownloadManager();
         
         // Web socket client
-        private static WebSocketClient wsClient = new WebSocketClient("ws://127.0.0.1:2074/");
+        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Global.SERVER_MANAGER_IP + ":" + Global.SERVER_MANAGER_PORT + "/");
            
         // Unique websocket client ID
         private static int wsUID;
@@ -118,7 +118,7 @@ namespace DotaHostBoxManager
             });
 
             // Get status overview
-            wsClient.addHook("status", (c, x) =>
+            wsClient.addHook("system", (c, x) =>
             {
                 int[] args = getSystemDiagnostics();
                 if (gameServers.Count == 0)
@@ -130,7 +130,7 @@ namespace DotaHostBoxManager
                     status = ACTIVE;
                 }
                 // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
-                wsClient.send("status;" + status + ";" +  String.Join(";", args));
+                wsClient.send("system;" + status + ";" + String.Join(";", args));
             });
 
             // Create game server function
@@ -199,6 +199,9 @@ namespace DotaHostBoxManager
                         Addon addon = new Addon(lobbyArgs["addon" + i], addonProperties);
                     }
                 }
+
+                // Add game server to list
+                gameServers.Add(gameServer);
 
                 // Launch the server using the string options
                 gameServer.launchServer(gameServerArgsStr);

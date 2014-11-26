@@ -15,12 +15,12 @@ namespace DotaHostLibrary
         public static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
 
         // GitHub download root
-        private const string GITHUB = "https://codeload.github.com/ash47/";
+        public const string GITHUB = "https://codeload.github.com/ash47/";
 
         // Server Manager IP
-        private const string SERVER_MANAGER_IP = "127.0.0.1";
+        public const string SERVER_MANAGER_IP = "127.0.0.1";
 
         // Server Manager Port
-        private const int SERVER_MANAGER_PORT = 3875;
+        public const int SERVER_MANAGER_PORT = 3875;
     }
 }
