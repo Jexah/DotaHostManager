@@ -24,6 +24,10 @@ namespace DotaHostLibrary
         public const int SERVER_MANAGER_PORT = 3875;
 
         // Regions
+        public const byte USA = 0;
+        public const byte GERMANY = 1;
+        public const byte AUSTRALIA = 2;
+
 
     }
 }

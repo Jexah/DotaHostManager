@@ -26,5 +26,15 @@ namespace DotaHostServerManager
             // TODO: Code to destroy box server
             boxManagers.Remove(boxManager);
         }
+
+        private static void findServer(byte region, string addonID)
+        {
+            // TODO: Add server finding algorithm
+        }
+
+        private static void restartBox(BoxManager boxManager)
+        {
+            // TODO: Add box restart code here
+        }
     }
 }
