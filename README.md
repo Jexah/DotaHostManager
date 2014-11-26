@@ -1,6 +1,9 @@
 DotaHostManager
 ===============
 
+###Notes
+ - LoD requires reserve of 350mb RAM and 15% CPU
+
 ###Requirnments for building###
  - Visual Studio 2013 (2012 should also work)
  - Alchemy Websockets

@@ -7,25 +7,31 @@ namespace DotaHostServerManager
 {
     class Program
     {
+        // Initialize boxManagers dictionary
         private static Dictionary<string, BoxManager> boxManagers = new Dictionary<string, BoxManager>();
+
+        // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse(Global.SERVER_MANAGER_IP), Global.SERVER_MANAGER_PORT);
 
         static void Main(string[] args)
         {
+            // Hook socket events
             hookWSocketServerEvents();
 
+            // Start the websocket server, wait for incomming connections
             wsServer.start();
         }
 
+        // Socket hooks go here
         private static void hookWSocketServerEvents()
         {
-
+            // Print received messages to console for debugging
             wsServer.addHook(WebSocketClient.RECEIVE, (c) =>
             {
                 Helpers.log(c.DataFrame.ToString());
             });
 
-
+            // When a server is started, it sends box function, so this tells the servermanager "Hey, there's a new box in town" and the server manager does it's things to accomodate
             wsServer.addHook("box", (c, x) => { 
                 // TODO: Add new box code
                 BoxManager boxManager = new BoxManager();
