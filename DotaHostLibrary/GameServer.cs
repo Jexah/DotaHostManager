@@ -8,8 +8,13 @@ namespace DotaHostLibrary
 {
     public class GameServer
     {
+
         private string name = String.Empty;
+
+        // List of addons to load
         private List<Addon> addons = new List<Addon>();
+
+        // List of players
         private List<List<Player>> players = new List<List<Player>>();
         private Dictionary<string, string> options = new Dictionary<string, string>();
 

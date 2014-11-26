@@ -15,7 +15,7 @@ namespace DotaHostLibrary
         public static void log(string str)
         {
             Console.WriteLine(str);
-            File.AppendAllText(BASE_PATH + "log.txt", str + "\n");
+            File.AppendAllText(BASE_PATH + "log.txt", str + Environment.NewLine);
         }
 
         // Another helper function, stolen from somewhere else. StackExchange I believe

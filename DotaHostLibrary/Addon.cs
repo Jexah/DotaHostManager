@@ -4,7 +4,10 @@ namespace DotaHostLibrary
 {
     public class Addon
     {
+        // ID of the addon
         private string id;
+
+        // List of options for this addon
         private Dictionary<string, string> options = new Dictionary<string, string>();
 
         public Addon(string id, Dictionary<string, string> options)
