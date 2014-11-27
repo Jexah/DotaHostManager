@@ -97,6 +97,7 @@ namespace DotaHostServerManager
         private void addBoxManager()
         {
             // TODO: Code to start up new box, box will then contact this server once it's started.
+
         }
 
         // Destroy box instance
