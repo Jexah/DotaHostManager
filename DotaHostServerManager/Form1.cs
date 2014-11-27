@@ -34,20 +34,31 @@ namespace DotaHostServerManager
         private void hookWSocketServerEvents()
         {
             // Print received messages to console for debugging
+            #region wsServer.addHook
             wsServer.addHook(WebSocketClient.RECEIVE, (c) =>
             {
                 Helpers.log(c.DataFrame.ToString());
             });
+            #endregion
 
             // When a server is started, it sends box function, so this tells the servermanager "Hey, there's a new box in town" and the server manager does it's things to accomodate
+            #region wsServer.addHook("box");
             wsServer.addHook("box", (c, x) => { 
+
+                // Create the BoxManager object and append it to the BoxManagers list
                 BoxManager boxManager = new BoxManager();
                 boxManager.setIP(c.ClientAddress.ToString());
                 boxManagers.Add(c.ClientAddress.ToString(), boxManager);
+
+                // Add BoxManager to the GUI List
                 modGUI(boxesList, () => { boxesList.Items.Add(c.ClientAddress.ToString()); });
+                
                 c.Send("system");
             });
+            #endregion
 
+
+            #region wsServer.addhook("system");
             // Receives the system status from the box manager, loops
             wsServer.addHook("system", (c, x) =>
             {
@@ -57,20 +68,29 @@ namespace DotaHostServerManager
                 boxManager.setRam(new short[] { Convert.ToInt16(x[3]), Convert.ToInt16(x[4]) });
                 boxManager.setNetwork(new int[] { Convert.ToInt32(x[5]), Convert.ToInt32(x[6]), Convert.ToInt32(x[7]) });
 
-                setCurrentBoxStatusGUI(boxManager);
-                setCurrentBoxCPUGUI(boxManager);
-                setCurrentBoxRAMGUI(boxManager);
-                //setCurrentBoxNetworkGUI(boxManager);
+                modGUI(boxesList, () =>
+                {
+                    if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == c.ClientAddress.ToString())
+                    {
+                        setCurrentBoxStatsGUI(boxManager);
+                    }
+                });
 
-                DotaHostLibrary.Timer.newTimer(10, DotaHostLibrary.Timer.SECONDS, () => { c.Send("system"); });
+                DotaHostLibrary.Timer.newTimer(1, DotaHostLibrary.Timer.SECONDS, () => { c.Send("system"); });
             });
+            #endregion
 
+
+            #region wsServer.addHook(WebSocketServer.DISCONNECTED);
             wsServer.addHook(WebSocketServer.DISCONNECTED, (c) =>
             {
                 boxManagers.Remove(c.ClientAddress.ToString());
                 modGUI(boxesList, () => { boxesList.Items.Remove(c.ClientAddress.ToString()); });
 
             });
+            #endregion
+
+
         }
 
         // Create a new box instance using snapshot
@@ -104,12 +124,18 @@ namespace DotaHostServerManager
             if(selectedItem != null && selectedItem.ToString() != "")
             {
                 string boxIP = boxesList.SelectedItem.ToString();
-                boxNameLabel.Text = boxIP;
                 setCurrentBoxStatsGUI(boxManagers[boxIP]);
             }
             else
             {
-                setBoxDefaultGUI();
+                if (boxesList.Items.Count > 0)
+                {
+                    boxesList.SelectedIndex = 0;
+                }
+                else
+                {
+                    setBoxDefaultGUI();
+                }
             }
         }
         
@@ -118,7 +144,6 @@ namespace DotaHostServerManager
             setBoxDefaultGUI();
         }
 
-        
         private void Form1_Shown(object sender, EventArgs e)
         {
 
@@ -126,14 +151,11 @@ namespace DotaHostServerManager
 
         private void setBoxDefaultGUI()
         {
+            setBoxNameGUI("None");
             setBoxStatusGUI(BoxManager.INACTIVE);
             setBoxRAMGUI(0, 0);
             setBoxCPUGUI(0);
-        }
-
-        private void setCurrentBoxStatusGUI(BoxManager boxManager)
-        {
-            setBoxStatusGUI(boxManager.getStatus());
+            setBoxNetworkGUI(0, 0, 0);
         }
 
         private void modGUI(Control o, Action a)
@@ -143,9 +165,26 @@ namespace DotaHostServerManager
 
         private void setCurrentBoxStatsGUI(BoxManager boxManager)
         {
+            setCurrentBoxNameGUI(boxManager);
             setCurrentBoxStatusGUI(boxManager);
             setCurrentBoxCPUGUI(boxManager);
             setCurrentBoxRAMGUI(boxManager);
+            setCurrentBoxNetworkGUI(boxManager);
+        }
+
+        private void setCurrentBoxNameGUI(BoxManager boxManager)
+        {
+            setBoxNameGUI(boxManager.getIP());
+        }
+
+        private void setBoxNameGUI(string name)
+        {
+            modGUI(boxNameLabel, () => { boxNameLabel.Text = name; });
+        }
+
+        private void setCurrentBoxStatusGUI(BoxManager boxManager)
+        {
+            setBoxStatusGUI(boxManager.getStatus());
         }
 
         private void setBoxStatusGUI(byte status)
@@ -222,6 +261,42 @@ namespace DotaHostServerManager
             else
             {
                 modGUI(boxCPULabel, () => { boxCPULabel.ForeColor = danger; });
+            }
+        }
+
+        private void setCurrentBoxNetworkGUI(BoxManager boxManager)
+        {
+            int[] network = boxManager.getNetwork();
+            setBoxNetworkGUI(network[0], network[1], network[2]);
+        }
+
+        private void setBoxNetworkGUI(int bandwidth, int upload, int download)
+        {
+            modGUI(boxUploadLabel, () => { boxUploadLabel.Text = (upload * 8 / 1000) + " kb/s"; });
+            modGUI(boxDownloadLabel, () => { boxDownloadLabel.Text = (download * 8 / 1000) + " kb/s"; });
+            if (upload < 7500000)
+            {
+                modGUI(boxUploadLabel, () => { boxUploadLabel.ForeColor = success; });
+            }
+            else if (upload < 9000000)
+            {
+                modGUI(boxUploadLabel, () => { boxUploadLabel.ForeColor = warning; });
+            }
+            else
+            {
+                modGUI(boxUploadLabel, () => { boxUploadLabel.ForeColor = danger; });
+            }
+            if (download < 7500000)
+            {
+                modGUI(boxDownloadLabel, () => { boxDownloadLabel.ForeColor = success; });
+            }
+            else if (upload < 9000000)
+            {
+                modGUI(boxDownloadLabel, () => { boxDownloadLabel.ForeColor = warning; });
+            }
+            else
+            {
+                modGUI(boxDownloadLabel, () => { boxDownloadLabel.ForeColor = danger; });
             }
         }
 
