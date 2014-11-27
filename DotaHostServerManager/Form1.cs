@@ -44,21 +44,32 @@ namespace DotaHostServerManager
                 BoxManager boxManager = new BoxManager();
                 boxManager.setIP(c.ClientAddress.ToString());
                 boxManagers.Add(c.ClientAddress.ToString(), boxManager);
-                Helpers.log("IP: " + c.ClientAddress.ToString());
-                boxesList.BeginInvoke(new MethodInvoker(delegate { boxesList.Items.Add(c.ClientAddress.ToString()); }));
+                modGUI(boxesList, () => { boxesList.Items.Add(c.ClientAddress.ToString()); });
                 c.Send("system");
             });
 
             // Receives the system status from the box manager, loops
             wsServer.addHook("system", (c, x) =>
             {
-                Helpers.log("Update thingo");
                 BoxManager boxManager = boxManagers[c.ClientAddress.ToString()];
                 boxManager.setStatus(Convert.ToByte(x[1]));
                 boxManager.setCpuPercent(Convert.ToByte(x[2]));
                 boxManager.setRam(new short[] { Convert.ToInt16(x[3]), Convert.ToInt16(x[4]) });
                 boxManager.setNetwork(new int[] { Convert.ToInt32(x[5]), Convert.ToInt32(x[6]), Convert.ToInt32(x[7]) });
+
+                setCurrentBoxStatusGUI(boxManager);
+                setCurrentBoxCPUGUI(boxManager);
+                setCurrentBoxRAMGUI(boxManager);
+                //setCurrentBoxNetworkGUI(boxManager);
+
                 DotaHostLibrary.Timer.newTimer(10, DotaHostLibrary.Timer.SECONDS, () => { c.Send("system"); });
+            });
+
+            wsServer.addHook(WebSocketServer.DISCONNECTED, (c) =>
+            {
+                boxManagers.Remove(c.ClientAddress.ToString());
+                modGUI(boxesList, () => { boxesList.Items.Remove(c.ClientAddress.ToString()); });
+
             });
         }
 
@@ -89,14 +100,22 @@ namespace DotaHostServerManager
 
         private void boxesList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            boxNameLabel.Text = boxesList.SelectedItem.ToString();
+            object selectedItem = boxesList.SelectedItem;
+            if(selectedItem != null && selectedItem.ToString() != "")
+            {
+                string boxIP = boxesList.SelectedItem.ToString();
+                boxNameLabel.Text = boxIP;
+                setCurrentBoxStatsGUI(boxManagers[boxIP]);
+            }
+            else
+            {
+                setBoxDefaultGUI();
+            }
         }
         
         private void Form1_Load(object sender, EventArgs e)
         {
-            setBoxStatusGUI(BoxManager.INACTIVE);
-            setBoxRAMGUI(0, 0);
-            setBoxCPUGUI(0);
+            setBoxDefaultGUI();
         }
 
         
@@ -105,11 +124,28 @@ namespace DotaHostServerManager
 
         }
 
-
+        private void setBoxDefaultGUI()
+        {
+            setBoxStatusGUI(BoxManager.INACTIVE);
+            setBoxRAMGUI(0, 0);
+            setBoxCPUGUI(0);
+        }
 
         private void setCurrentBoxStatusGUI(BoxManager boxManager)
         {
             setBoxStatusGUI(boxManager.getStatus());
+        }
+
+        private void modGUI(Control o, Action a)
+        {
+            o.BeginInvoke(new MethodInvoker(delegate { a(); }));
+        }
+
+        private void setCurrentBoxStatsGUI(BoxManager boxManager)
+        {
+            setCurrentBoxStatusGUI(boxManager);
+            setCurrentBoxCPUGUI(boxManager);
+            setCurrentBoxRAMGUI(boxManager);
         }
 
         private void setBoxStatusGUI(byte status)
@@ -117,23 +153,23 @@ namespace DotaHostServerManager
             switch (status)
             {
                 case BoxManager.ACTIVE:
-                    boxStatusLabel.Text = "Active";
+                    modGUI(boxStatusLabel, () => { boxStatusLabel.Text = "Active"; });
                     boxStatusLabel.ForeColor = success;
                     break;
                 case BoxManager.MIA:
-                    boxStatusLabel.Text = "MIA";
+                    modGUI(boxStatusLabel, () => { boxStatusLabel.Text = "MIA"; });
                     boxStatusLabel.ForeColor = warning;
                     break;
                 case BoxManager.IDLE:
-                    boxStatusLabel.Text = "Idle";
+                    modGUI(boxStatusLabel, () => { boxStatusLabel.Text = "Idle"; });
                     boxStatusLabel.ForeColor = success;
                     break;
                 case BoxManager.INACTIVE:
-                    boxStatusLabel.Text = "Inactive";
+                    modGUI(boxStatusLabel, () => { boxStatusLabel.Text = "Inactive"; });
                     boxStatusLabel.ForeColor = danger;
                     break;
                 case BoxManager.DEACTIVATED:
-                    boxStatusLabel.Text = "Deactivated";
+                    modGUI(boxStatusLabel, () => { boxStatusLabel.Text = "Deactivated"; });
                     boxStatusLabel.ForeColor = warning;
                     break;
             }
@@ -144,24 +180,25 @@ namespace DotaHostServerManager
             short[] ram = boxManager.getRam();
             setBoxRAMGUI(ram[0], ram[1]);
         }
+
         private void setBoxRAMGUI(short remaining, short total)
         {
             short current = (short)(total - remaining);
-            boxRAMBar.Maximum = total;
-            boxRAMBar.Value = current;
-            boxRAMLabel.Text = current + " / " + total;
+            modGUI(boxRAMBar, () => { boxRAMBar.Maximum = total; });
+            modGUI(boxRAMBar, () => { boxRAMBar.Value = current; });
+            modGUI(boxRAMLabel, () => { boxRAMLabel.Text = current + " / " + total; });
             float percent = (float)current / (float)total;
             if (percent < 0.75)
             {
-                boxRAMLabel.ForeColor = success;
+                modGUI(boxRAMLabel, () => { boxRAMLabel.ForeColor = success; });
             }
             else if (percent < 0.9)
             {
-                boxRAMLabel.ForeColor = warning;
+                modGUI(boxRAMLabel, () => { boxRAMLabel.ForeColor = warning; });
             }
             else
             {
-                boxRAMLabel.ForeColor = danger;
+                modGUI(boxRAMLabel, () => { boxRAMLabel.ForeColor = danger; });
             }
         }
 
@@ -169,21 +206,22 @@ namespace DotaHostServerManager
         {
             setBoxCPUGUI(boxManager.getCpuPercent());
         }
+
         private void setBoxCPUGUI(int percent)
         {
-            boxCPUBar.Value = percent;
-            boxCPULabel.Text = percent + "%";
+            modGUI(boxCPUBar, () => { boxCPUBar.Value = percent; });
+            modGUI(boxCPULabel, () => { boxCPULabel.Text = percent + "%"; });
             if (percent < 75)
             {
-                boxCPULabel.ForeColor = success;
+                modGUI(boxCPULabel, () => { boxCPULabel.ForeColor = success; });
             }
             else if (percent < 90)
             {
-                boxCPULabel.ForeColor = warning;
+                modGUI(boxCPULabel, () => { boxCPULabel.ForeColor = warning; });
             }
             else
             {
-                boxCPULabel.ForeColor = danger;
+                modGUI(boxCPULabel, () => { boxCPULabel.ForeColor = danger; });
             }
         }
 

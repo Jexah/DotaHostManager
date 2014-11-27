@@ -45,7 +45,10 @@ namespace DotaHostBoxManager
         private const string STEAM_PASSWORD = "***REMOVED***";
         
         // Network card name
-        private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
+        // Mine
+        private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
+        // Vultr Server's
+        //private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
@@ -599,7 +602,7 @@ namespace DotaHostBoxManager
         // Gets the total bandwidth available in the system in bytes
         private static int getBandwidth()
         {
-            return  Convert.ToInt32(Math.Round(bandwidthCounter.NextValue()));
+            return  Convert.ToInt32(Math.Round(bandwidthCounter.NextValue() / 1000));
         }
 
         // Gets the current upload speed in bytes/second
