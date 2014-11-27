@@ -93,6 +93,7 @@ namespace DotaHostBoxManager
 
             hookWSocketEvents();
 
+
             wsClient.start();
 
             // Update the dota install
@@ -346,7 +347,7 @@ namespace DotaHostBoxManager
         private static void installServerFile(string localFileCheck, string downloadURL, string extractTo, string friendlyName, Action callback)
         {
             // Check if steamcmd exists
-            if (!File.Exists(localFileCheck))
+            if (!File.Exists("localFileCheck"))
             {
                 // Debug log
                 Helpers.log(friendlyName+" not found, downloading...");

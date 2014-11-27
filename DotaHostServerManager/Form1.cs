@@ -37,7 +37,7 @@ namespace DotaHostServerManager
             #region wsServer.addHook
             wsServer.addHook(WebSocketClient.RECEIVE, (c) =>
             {
-                Helpers.log(c.DataFrame.ToString());
+                // Helpers.log(c.DataFrame.ToString());
             });
             #endregion
 
@@ -97,7 +97,7 @@ namespace DotaHostServerManager
         private void addBoxManager()
         {
             // TODO: Code to start up new box, box will then contact this server once it's started.
-
+            System.Diagnostics.Process.Start("DotaHostBoxManager.exe");
         }
 
         // Destroy box instance
@@ -304,6 +304,11 @@ namespace DotaHostServerManager
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             Environment.Exit(0);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            addBoxManager();
         }
 
 
