@@ -452,7 +452,7 @@ namespace DotaHostBoxManager
             }
             else
             {
-                additonalMount = additonalMount + Environment.NewLine;
+                additonalMount = "Game " + additonalMount + Environment.NewLine;
             }
 
             // Gameinfo to load metamod
@@ -475,7 +475,7 @@ namespace DotaHostBoxManager
                                 "GameBin |gameinfo_path|addons/metamod/bin" + Environment.NewLine +
                                 "Game |gameinfo_path|." + Environment.NewLine +
                                 "Game platform" + Environment.NewLine +
-                                "Game " + additonalMount +
+                                additonalMount +
                             "}" + Environment.NewLine +
                         "}" + Environment.NewLine +
                     "}";
