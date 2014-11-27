@@ -209,6 +209,7 @@ namespace DotaHostManager
                 {
                     Directory.CreateDirectory(dotaPath + @"dota\addons_dotahost");
                 }
+                File.Delete(TEMP + id + ".zip");
                 File.Move(TEMP + id + ".zip", dotaPath + @"dota\addons_dotahost\" + id + ".zip");
 
                 // Rename folder from default to addon ID
