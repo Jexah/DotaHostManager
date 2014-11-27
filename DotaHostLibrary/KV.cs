@@ -129,8 +129,6 @@ namespace DotaHostLibrary
                                         chr = (byte)'\\';
                                         --i;
                                         break;
-
-
                                 }
                             }
 
