@@ -202,9 +202,15 @@ namespace DotaHostManager
             }
             else
             {
-                // CRC check has passed, extract file to addons folder
+                // CRC check has passed, extract file to addons folder, and move the zip to dota\addons_dotahost\
                 Helpers.log("[Extract] Extracting...");
                 ZipFile.ExtractToDirectory(TEMP + id + ".zip", dotaPath + @"dota\addons\");
+                if (!Directory.Exists(dotaPath + @"dota\addons_dotahost"))
+                {
+                    Directory.CreateDirectory(dotaPath + @"dota\addons_dotahost");
+                }
+                File.Delete(TEMP + id + ".zip");
+                File.Move(TEMP + id + ".zip", dotaPath + @"dota\addons_dotahost\" + id + ".zip");
 
                 // Rename folder from default to addon ID
                 Directory.Move(dotaPath + @"dota\addons\" + name + "-" + version + @"\", dotaPath + @"dota\addons\" + id + @"\");
