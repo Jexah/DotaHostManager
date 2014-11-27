@@ -13,7 +13,7 @@ namespace DotaHostLibrary
         private static readonly byte TYPE_BLOCK = 0;
 
         // Array type
-        private static readonly byte TYPE_ARRAY = 0;
+        private static readonly byte TYPE_ARRAY = 1;
 
         // Reads the KV file at the given path
         public static Dictionary<string, object> read(string path)
