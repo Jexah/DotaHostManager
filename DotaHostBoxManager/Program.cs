@@ -69,17 +69,12 @@ namespace DotaHostBoxManager
         // Unique websocket client ID
         private static string websocketUserID;
 
-        // Box server status
-        private static byte status;
-        private const byte ACTIVE = 0;
-        private const byte IDLE = 1;
-        private const byte MIA = 2;
-        private const byte INACTIVE = 3;
-        private const byte DEACTIVATED = 4;
-
         // List of game server running on the box
         private static List<GameServer> gameServers = new List<GameServer>();
         
+        // Box Server status
+        private static byte status;
+
         // The main entry point into the program
         private static void Main(string[] args)
         {
@@ -89,7 +84,7 @@ namespace DotaHostBoxManager
             //updateServers();
             //launchGameServer(null, null);
 
-            status = IDLE;
+            status = BoxManager.IDLE;
 
             setupSystemDiagnostics();
 
@@ -117,7 +112,7 @@ namespace DotaHostBoxManager
             // Begin server reboot
             wsClient.addHook("reboot", (c, x) =>
             {
-                status = DEACTIVATED;
+                status = BoxManager.DEACTIVATED;
 
             });
 
@@ -132,15 +127,15 @@ namespace DotaHostBoxManager
             wsClient.addHook("system", (c, x) =>
             {
                 int[] args = getSystemDiagnostics();
-                if (status != DEACTIVATED)
+                if (status != BoxManager.DEACTIVATED)
                 {
                     if (gameServers.Count == 0)
                     {
-                        status = IDLE;
+                        status = BoxManager.IDLE;
                     }
                     else
                     {
-                        status = ACTIVE;
+                        status = BoxManager.ACTIVE;
                     }
                 }
                 

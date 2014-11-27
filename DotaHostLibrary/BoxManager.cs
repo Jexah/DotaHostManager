@@ -10,6 +10,7 @@ namespace DotaHostLibrary
         public const byte IDLE = 1;
         public const byte MIA = 2;
         public const byte INACTIVE = 3;
+        public const byte DEACTIVATED = 4;
 
         private string ip;
         private byte cpuPercent;

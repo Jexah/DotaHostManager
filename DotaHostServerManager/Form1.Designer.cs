@@ -47,9 +47,6 @@
             // boxesList
             // 
             this.boxesList.FormattingEnabled = true;
-            this.boxesList.Items.AddRange(new object[] {
-            "box1",
-            "box2"});
             this.boxesList.Location = new System.Drawing.Point(9, 36);
             this.boxesList.Margin = new System.Windows.Forms.Padding(2);
             this.boxesList.Name = "boxesList";
@@ -96,7 +93,7 @@
             this.label4.Location = new System.Drawing.Point(121, 62);
             this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(106, 26);
+            this.label4.Size = new System.Drawing.Size(78, 26);
             this.label4.TabIndex = 5;
             this.label4.Text = "Status:";
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -104,10 +101,10 @@
             // boxStatusLabel
             // 
             this.boxStatusLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.boxStatusLabel.Location = new System.Drawing.Point(231, 62);
+            this.boxStatusLabel.Location = new System.Drawing.Point(203, 62);
             this.boxStatusLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxStatusLabel.Name = "boxStatusLabel";
-            this.boxStatusLabel.Size = new System.Drawing.Size(53, 26);
+            this.boxStatusLabel.Size = new System.Drawing.Size(81, 26);
             this.boxStatusLabel.TabIndex = 6;
             this.boxStatusLabel.Text = "Active!";
             this.boxStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -213,6 +210,7 @@
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.Text = "DostHost Control Panel";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Shown += new System.EventHandler(this.Form1_Shown);
             this.ResumeLayout(false);

@@ -11,7 +11,7 @@ namespace DotaHostServerManager
     {
         private static Color success = Color.Green;
         private static Color warning = Color.Orange;
-        private static Color error = Color.Red;
+        private static Color danger = Color.Red;
 
         // Initialize boxManagers dictionary
         private static Dictionary<string, BoxManager> boxManagers = new Dictionary<string, BoxManager>();
@@ -31,7 +31,7 @@ namespace DotaHostServerManager
         }
 
          // Socket hooks go here
-        private static void hookWSocketServerEvents()
+        private void hookWSocketServerEvents()
         {
             // Print received messages to console for debugging
             wsServer.addHook(WebSocketClient.RECEIVE, (c) =>
@@ -45,6 +45,7 @@ namespace DotaHostServerManager
                 boxManager.setIP(c.ClientAddress.ToString());
                 boxManagers.Add(c.ClientAddress.ToString(), boxManager);
                 Helpers.log("IP: " + c.ClientAddress.ToString());
+                boxesList.BeginInvoke(new MethodInvoker(delegate { boxesList.Items.Add(c.ClientAddress.ToString()); }));
                 c.Send("system");
             });
 
@@ -62,26 +63,26 @@ namespace DotaHostServerManager
         }
 
         // Create a new box instance using snapshot
-        private static void addBoxManager()
+        private void addBoxManager()
         {
             // TODO: Code to start up new box, box will then contact this server once it's started.
         }
 
         // Destroy box instance
-        private static void removeBoxManager(BoxManager boxManager)
+        private void removeBoxManager(BoxManager boxManager)
         {
             // TODO: Code to destroy box server
             boxManagers.Remove(boxManager.getIP());
         }
 
         // Finds a server to host the gamemode selected, in the region selected
-        private static void findServer(byte region, string addonID)
+        private void findServer(byte region, string addonID)
         {
             // TODO: Add server finding algorithm
         }
 
         // Reboots the selected box
-        private static void restartBox(BoxManager boxManager)
+        private void restartBox(BoxManager boxManager)
         {
             // TODO: Add box restart code here
         }
@@ -93,12 +94,9 @@ namespace DotaHostServerManager
         
         private void Form1_Load(object sender, EventArgs e)
         {
-
-
-            boxesList.SelectedIndex = 0;
-            setCurrentBoxAsActiveGUI();
-            setCurrentBoxRAMGUI(2800, 3080);
-            setCurrentBoxCPUGUI(78);
+            setBoxStatusGUI(BoxManager.INACTIVE);
+            setBoxRAMGUI(0, 0);
+            setBoxCPUGUI(0);
         }
 
         
@@ -109,18 +107,46 @@ namespace DotaHostServerManager
 
 
 
-        private void setCurrentBoxAsActiveGUI()
+        private void setCurrentBoxStatusGUI(BoxManager boxManager)
         {
-            boxStatusLabel.Text = "Active!";
-            boxStatusLabel.ForeColor = success;
+            setBoxStatusGUI(boxManager.getStatus());
         }
-        private void setCurrentBoxAsMIAGUI()
+
+        private void setBoxStatusGUI(byte status)
         {
-            boxStatusLabel.Text = "MIA";
-            boxStatusLabel.ForeColor = warning;
+            switch (status)
+            {
+                case BoxManager.ACTIVE:
+                    boxStatusLabel.Text = "Active";
+                    boxStatusLabel.ForeColor = success;
+                    break;
+                case BoxManager.MIA:
+                    boxStatusLabel.Text = "MIA";
+                    boxStatusLabel.ForeColor = warning;
+                    break;
+                case BoxManager.IDLE:
+                    boxStatusLabel.Text = "Idle";
+                    boxStatusLabel.ForeColor = success;
+                    break;
+                case BoxManager.INACTIVE:
+                    boxStatusLabel.Text = "Inactive";
+                    boxStatusLabel.ForeColor = danger;
+                    break;
+                case BoxManager.DEACTIVATED:
+                    boxStatusLabel.Text = "Deactivated";
+                    boxStatusLabel.ForeColor = warning;
+                    break;
+            }
         }
-        private void setCurrentBoxRAMGUI(int current, int total)
+
+        private void setCurrentBoxRAMGUI(BoxManager boxManager)
         {
+            short[] ram = boxManager.getRam();
+            setBoxRAMGUI(ram[0], ram[1]);
+        }
+        private void setBoxRAMGUI(short remaining, short total)
+        {
+            short current = (short)(total - remaining);
             boxRAMBar.Maximum = total;
             boxRAMBar.Value = current;
             boxRAMLabel.Text = current + " / " + total;
@@ -135,10 +161,15 @@ namespace DotaHostServerManager
             }
             else
             {
-                boxRAMLabel.ForeColor = error;
+                boxRAMLabel.ForeColor = danger;
             }
         }
-        private void setCurrentBoxCPUGUI(int percent)
+
+        private void setCurrentBoxCPUGUI(BoxManager boxManager)
+        {
+            setBoxCPUGUI(boxManager.getCpuPercent());
+        }
+        private void setBoxCPUGUI(int percent)
         {
             boxCPUBar.Value = percent;
             boxCPULabel.Text = percent + "%";
@@ -152,8 +183,13 @@ namespace DotaHostServerManager
             }
             else
             {
-                boxCPULabel.ForeColor = error;
+                boxCPULabel.ForeColor = danger;
             }
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Environment.Exit(0);
         }
 
 
