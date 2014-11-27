@@ -9,6 +9,7 @@ using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
@@ -83,6 +84,11 @@ namespace DotaHostBoxManager
 
             //updateServers();
             //launchGameServer(null, null);
+
+            /*dynamic kv = KV.read("test.kv");
+            string a = kv["DOTAUnits"]["npc_dota_venomancer_scourge_ward_1"]["BaseClass"][0];
+
+            Helpers.log(a);*/
 
             status = BoxManager.IDLE;
 
