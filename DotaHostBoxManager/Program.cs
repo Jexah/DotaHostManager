@@ -208,8 +208,10 @@ namespace DotaHostBoxManager
                             addonProperties.Add(key, value);
                         }
                         Addon addon = new Addon(lobbyArgs["addon" + i], addonProperties);
+                        addons.Add(addon);
                     }
                 }
+                gameServer.setAddons(addons);
 
                 // Add game server to list
                 gameServers.Add(gameServer);
