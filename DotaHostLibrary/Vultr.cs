@@ -13,6 +13,9 @@ namespace DotaHostLibrary
         public const byte EUROPE = 7; // Amsterdam, Nederlands
         public const byte AUSTRALIA = 19; // Sydney, Australia
 
+        // Define string -> byte region map
+        public static readonly Dictionary<string, byte> NAME_TO_REGION_ID;
+
         // Vultr API key
         public const string VULTR_API_KEY = "enter key here";
 
@@ -39,16 +42,19 @@ namespace DotaHostLibrary
                 { EUROPE, EUROPE_PLAN_ID },
                 { AUSTRALIA, AUSTRALIA_PLAN_ID }
             };
+
+            NAME_TO_REGION_ID = new Dictionary<string, byte>()
+            {
+                { "Australia", AUSTRALIA },
+                { "Amsterdam", EUROPE },
+                { "Dallas", AMERICA }
+            };
         }
 
         // Vultr API functions
         public static void createServer(byte region)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) =>
-            {
-                string subid = jsonObj["SUBID"];
-                // Do stuff after creating server
-            }, new Dictionary<string, string>(){
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
                 { "api_key", VULTR_API_KEY },
                 { "DCID", region.ToString() },
                 { "VPSPLANID", PLAN_IDS[region].ToString() },
@@ -58,11 +64,16 @@ namespace DotaHostLibrary
         }
         public static void destroyServer(int subID)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) =>
-            {
-                // Server is destroyed  
-            }, new Dictionary<string, string>(){
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
+                { "api_key", VULTR_API_KEY },
                 { "SUBID", subID.ToString() }
+            });
+        }
+
+        public static void getServers(Action<dynamic> func)
+        {
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "GET", func, new Dictionary<string, string>(){
+                { "api_key", VULTR_API_KEY }
             });
         }
     

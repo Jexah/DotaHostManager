@@ -155,9 +155,9 @@ namespace DotaHostLibrary
         // Attempts to send a message to all connected users, otherwise stores it in the queue
         public void send(string message)
         {
-            if(userIdToContext.Count != 0)
+            if (userIdToContext.Count != 0)
             {
-                foreach(string i in userIdToContext.Keys)
+                foreach (string i in userIdToContext.Keys)
                 {
                     userIdToContext[i].Send(message);
                 }
@@ -166,6 +166,12 @@ namespace DotaHostLibrary
             {
                 wsQueue.Add(message);
             }
+        }
+
+        // Sends the message to the connected context with matching ID
+        public void send(string message, string id)
+        {
+            userIdToContext[id].Send(message);
         }
 
     }

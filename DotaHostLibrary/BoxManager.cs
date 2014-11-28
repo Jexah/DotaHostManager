@@ -90,6 +90,19 @@ namespace DotaHostLibrary
             }
         }
 
+        private int subID;
+        public int SubID
+        {
+            get
+            {
+                return subID;
+            }
+            set
+            {
+                subID = value;
+            }
+        }
+
 
         private List<GameServer> gameServers;
         

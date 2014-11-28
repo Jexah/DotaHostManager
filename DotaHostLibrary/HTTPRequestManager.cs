@@ -13,7 +13,8 @@ namespace DotaHostLibrary
     {
         public static void startRequest(string url, string method, Action<dynamic> responseAction, Dictionary<string, string> sendData)
         {
-            HttpWebRequest request =(HttpWebRequest)WebRequest.Create(url);
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = method;
             if (method == "POST")
             {
                 NameValueCollection outgoingQueryString = HttpUtility.ParseQueryString(String.Empty);
@@ -41,14 +42,21 @@ namespace DotaHostLibrary
                     url = url.Substring(0, url.Length - 1);
                 }
             }
-            request.Method = method;
             Action wrapperAction = () =>
             {
                 request.BeginGetResponse(new AsyncCallback((iar) =>
                 {
-                    var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
-                    var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                    dynamic data = JsonConvert.DeserializeObject(body);
+                    dynamic data;
+                    try
+                    {
+                        var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
+                        var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                        data = JsonConvert.DeserializeObject(body);
+                    }
+                    catch
+                    {
+                        data = null;
+                    }
                     responseAction(data);
                 }), request);
             };

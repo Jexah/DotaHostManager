@@ -74,9 +74,12 @@ namespace DotaHostBoxManager
 
         // List of game server running on the box
         private static List<GameServer> gameServers = new List<GameServer>();
-        
+
         // Box Server status
         private static byte status;
+
+        // Box Server subID
+        private static int subID;
 
         // The main entry point into the program
         private static void Main(string[] args)
@@ -117,7 +120,29 @@ namespace DotaHostBoxManager
             wsClient.addHook("reboot", (c, x) =>
             {
                 status = BoxManager.DEACTIVATED;
+                rebootLoop();
+            });
 
+            // Server destroy (soft/hard)
+            wsClient.addHook("destroy", (c, x) =>
+            {
+                if (x.Length > 1 && x[1] == "hard")
+                {
+                    // Hard destroy, no waiting, no timeout
+                    destroy();
+                }
+                else
+                {
+                    // Soft destroy, waits for games to finish, polls every minute
+                    status = BoxManager.DEACTIVATED;
+                    destroyLoop();
+                }
+            });
+
+            // Receive subid from server manager
+            wsClient.addHook("subid", (c, x) =>
+            {
+                subID = Convert.ToInt32(x[1]);
             });
 
             // Get unique socket identifier from server
@@ -316,7 +341,7 @@ namespace DotaHostBoxManager
             }
         }
 
-        // Reboot check look
+        // Reboot check loop
         private static void rebootLoop()
         {
             if (gameServers.Count > 0)
@@ -327,6 +352,25 @@ namespace DotaHostBoxManager
             {
                 System.Diagnostics.Process.Start("shutdown.exe", "-r -t 0");
             }
+        }
+
+        // Destroy check loop
+        private static void destroyLoop()
+        {
+            if (gameServers.Count > 0)
+            {
+                Timer.newTimer(60, Timer.SECONDS, () => { destroyLoop(); });
+            }
+            else
+            {
+                Vultr.destroyServer(subID);
+            }
+        }
+
+        // Destroy server instantly
+        private static void destroy()
+        {
+            Vultr.destroyServer(subID);
         }
 
         // Set up system diagnostics
