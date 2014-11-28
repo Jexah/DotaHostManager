@@ -7,37 +7,254 @@ using System.Threading.Tasks;
 
 namespace DotaHostLibrary
 {
-    public static class KV
+    public class KV
     {
+        // The sort of element this is
+        private byte sort;
+
+        // List of keys this KV contains if it is an object
+        private Dictionary<string, KV> keys;
+
+        // List of values for this key
+        private List<string> values;
+
+        // This KV is an object
+        private static byte SORT_OBJECT = 1;
+
+        // This KV is a value
+        private static byte SORT_VALUE = 2;
+
         // Block type
         private static readonly byte TYPE_BLOCK = 0;
 
         // Array type
         private static readonly byte TYPE_ARRAY = 1;
 
-        // Reads the KV file at the given path
-        public static Dictionary<string, object> read(string path)
+        // Create a new KV that can store keys
+        public KV()
         {
-            // Load up the file
-            using (FileStream fs = File.Open(path, FileMode.Open))
-            {
-                // Read the data
-                byte[] data = new BinaryReader(fs).ReadBytes((int)fs.Length);
+            // This is an object sort
+            this.sort = SORT_OBJECT;
 
-                // Pass the data
-                return parse(data);
+            // Create store for keys
+            keys = new Dictionary<string, KV>();
+        }
+
+        // Create a new KV that can store objects
+        public KV(string value)
+        {
+            // This is a value kind
+            this.sort = SORT_VALUE;
+
+            // Create store for values
+            values = new List<string>();
+
+            // Add the value
+            values.Add(value);
+        }
+
+        // Adds a key to the KV
+        public bool addKey(string key, KV kv)
+        {
+            // Ensure this is an object sort
+            if (this.sort != SORT_OBJECT) return false;
+
+            // Check if the key already exists
+            if (this.keys.ContainsKey(key)) return false;
+
+            // Add the key
+            this.keys.Add(key, kv);
+
+            // Success
+            return true;
+        }
+
+        // Adds a value to the KV
+        public bool addValue(string key, string value)
+        {
+            // Ensure this is an object sort
+            if (this.sort != SORT_OBJECT) return false;
+
+            // Check if the key already exists
+            if (this.keys.ContainsKey(key))
+            {
+                // Grab the KV
+                KV kv = this.keys[key];
+
+                // The key exists, it needs to accept values
+                if (kv == null || kv.getSort() != SORT_VALUE) return false;
+
+                // Add the new value
+                kv.addValue(value);
+
+                // Syccess
+                return true;
+            }
+            else
+            {
+                // The key doesn't exist, make it
+                KV newKey = new KV(value);
+
+                // Store the key
+                this.addKey(key, newKey);
+
+                // Success
+                return true;
             }
         }
 
+        // Stores a value into a value KV
+        public bool addValue(string value)
+        {
+            // Ensure this is the value sort
+            if (this.sort != SORT_VALUE) return false;
+
+            // Add the value
+            this.values.Add(value);
+
+            // Success
+            return true;
+        }
+
+        // Returns the sort of this KV
+        public byte getSort()
+        {
+            return this.sort;
+        }
+
+        // Gets a KV at the given key
+        public KV getKV(string key)
+        {
+            // Ensure this is the object sort
+            if (this.sort != SORT_OBJECT) return null;
+
+            // Ensure we have the key
+            if (!this.keys.ContainsKey(key)) return null;
+
+            // Return the KV
+            return this.keys[key];
+        }
+
+        // Gets the nth value at the given key
+        public string getValue(string key, int n=0)
+        {
+            // Ensure this is the object sort
+            if (this.sort != SORT_OBJECT) return null;
+
+            // Ensure we have the key
+            if(!this.keys.ContainsKey(key)) return null;
+
+            // Grab the kv
+            KV kv = this.keys[key];
+
+            // Ensure a valid reference
+            if(kv == null) return null;
+
+            // Return the key
+            return kv.getValue(n);
+        }
+
+        // Returns the nth value of this KV
+        public string getValue(int n=0)
+        {
+            // Ensure this is the correct type
+            if (this.sort != SORT_VALUE) return null;
+
+            // Ensure we have enough values
+            if (n < 0 || n >= this.values.Count) return null;
+
+            // Return the value
+            return this.values[n];
+        }
+
+        // Compiles this KV into a string
+        public string toString(string key=null)
+        {
+            string output = "";
+
+            if(this.sort == SORT_VALUE)
+            {
+                bool first = true;
+
+                for(int i=0; i<this.values.Count; ++i)
+                {
+                    if(first)
+                    {
+                        first = false;   
+                    }
+                    else
+                    {
+                        output += " ";
+                    }
+
+                    output += '"' + key + "\" \"" + this.values[i] + '"';
+                }
+            }
+            else if(this.sort == SORT_OBJECT)
+            {
+                bool first = true;
+
+                foreach(KeyValuePair<string,KV> entry in this.keys)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        output += " ";
+                    }
+
+                    output += entry.Value.toString(entry.Key);
+                }
+
+                if(key == null)
+                {
+                    output = "{" + output + "}";
+                }
+                else
+                {
+                    output = '"' + key + "\" {" + output + "}";
+                }
+                
+            }
+
+            return output;
+        }
+
+        // Reads the KV file at the given path
+        public static KV read(string path)
+        {
+            // The file may fail to read
+            try
+            {
+                // Load up the file
+                using (FileStream fs = File.Open(path, FileMode.Open))
+                {
+                    // Read the data
+                    byte[] data = new BinaryReader(fs).ReadBytes((int)fs.Length);
+
+                    // Pass the data
+                    return parse(data);
+                }
+            }
+            catch
+            {
+                // Failed to load the file
+                return null;
+            }
+            
+        }
+
         // Parses KV Data
-        public static Dictionary<string, object> parse(byte[] kvString)
+        public static KV parse(byte[] kvString)
         {
             // Ensure nothing bad happens
             try
             {
                 // Create initial trees
-                List<Dictionary<string, object>> tree = new List<Dictionary<string, object>>();
-                tree.Add(new Dictionary<string, object>());
+                List<KV> tree = new List<KV>();
+                tree.Add(new KV());
 
                 List<byte> treeType = new List<byte>();
                 treeType.Add(TYPE_BLOCK);
@@ -158,20 +375,15 @@ namespace DotaHostLibrary
                                 // A value
 
                                 // Grab the dictonary
-                                Dictionary<string, object> e = tree[tree.Count - 1] as Dictionary<string, object>;
+                                KV e = tree[tree.Count - 1];
 
                                 // Grab the key
                                 string key = keys[keys.Count - 1];
 
-                                // Ensure a list exists for this entry
-                                if(!e.ContainsKey(key))
-                                {
-                                    e.Add(key, new List<string>());
-                                }
-
-                                List<string> vals = (List<string>)e[key];
-                            
-                                vals.Add(resultString);
+                                // Add the value
+                                e.addValue(key, resultString);
+                                
+                                // Cleanup the current key
                                 keys[keys.Count - 1] = null;
                             }
                         }
@@ -195,7 +407,7 @@ namespace DotaHostLibrary
                                 return null;
                             }
 
-                            tree.Add(new Dictionary<string, object>());
+                            tree.Add(new KV());
                             treeType.Add(TYPE_BLOCK);
                             keys.Add(null);
                         }
@@ -224,14 +436,14 @@ namespace DotaHostLibrary
                         keys.RemoveAt(keys.Count - 1);
 
                         // Grab the current tree
-                        Dictionary<string, object> obj = tree[tree.Count - 1];
+                        KV obj = tree[tree.Count - 1];
                         tree.RemoveAt(tree.Count - 1);
 
                         // Attempt to store the tree
                         if (treeType[treeType.Count - 1] == TYPE_BLOCK)
                         {
-                            Dictionary<string, object> e = tree[tree.Count - 1] as Dictionary<string, object>;
-                            e.Add(keys[keys.Count - 1], obj);
+                            KV e = tree[tree.Count - 1];
+                            e.addKey(keys[keys.Count - 1], obj);
                             keys[keys.Count - 1] = null;
                         }
                         else
