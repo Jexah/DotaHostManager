@@ -175,8 +175,8 @@ namespace DotaHostBoxManager
                 }
 
                 // Set the the options to the game server
-                gameServer.setOptions(lobbyArgs);
-
+                gameServer.Options = lobbyArgs;
+             
                 // Read teams from input arguments
                 List<List<Player>> team = new List<List<Player>>();
                 for(byte i = 0; i < 10; ++i){
@@ -215,7 +215,7 @@ namespace DotaHostBoxManager
                         addons.Add(addon);
                     }
                 }
-                gameServer.setAddons(addons);
+                gameServer.Addons = addons;
 
                 // Add game server to list
                 gameServers.Add(gameServer);
@@ -571,7 +571,7 @@ namespace DotaHostBoxManager
             string ret = "";
             for (byte i = 0; i < gameServers.Count; ++i)
             {
-                ret += gameServers[i].getName() + ";" + gameServers[i].getPlayers().Count + ";";
+                ret += gameServers[i].Name + ";" + gameServers[i].Players.Count + ";";
             }
             if (ret.Length > 0)
             {

@@ -13,76 +13,90 @@ namespace DotaHostLibrary
         public const byte DEACTIVATED = 4;
 
         private string ip;
-        private byte cpuPercent;
-        private short[] ram;
-        private int[] network;
-        private byte status;
-        private byte region;
+        public string Ip
+        {
+            get
+            {
+                return ip;
+            }
+            set
+            {
+                ip = value;
+            }
+        }
 
-        private List<GameServer> GameServers;
+        private byte cpuPercent;
+        public byte CpuPercent
+        {
+            get
+            {
+                return cpuPercent;
+            }
+            set
+            {
+                cpuPercent = value;
+            }
+        }
+
+        private short[] ram;
+        public short[] Ram
+        {
+            get
+            {
+                return ram;
+            }
+            set
+            {
+                ram = value;
+            }
+        }
+
+        private int[] network;
+        public int[] Network
+        {
+            get
+            {
+                return network;
+            }
+            set
+            {
+                network = value;
+            }
+        }
+
+        private byte status;
+        public byte Status
+        {
+            get
+            {
+                return status;
+            }
+            set
+            {
+                status = value;
+            }
+        }
+
+        private byte region;
+        public byte Region
+        {
+            get
+            {
+                return region;
+            }
+            set
+            {
+                region = value;
+            }
+        }
+
+
+        private List<GameServer> gameServers;
         
         public BoxManager()
         {
 
         }
 
-        // Get/set ip
-        public string getIP()
-        {
-            return ip;
-        }
-        public void setIP(string ip)
-        {
-            this.ip = ip;
-        }
-
-        // Get/set cpu status
-        public byte getCpuPercent()
-        {
-            return this.cpuPercent;
-        }
-        public void setCpuPercent(byte percent)
-        {
-            this.cpuPercent = percent;
-        }
-
-        // Get/set ram status
-        public short[] getRam()
-        {
-            return this.ram;
-        }
-        public void setRam(short[] ramPair)
-        {
-            this.ram = ramPair;
-        }
-
-        // Get/set network status
-        public int[] getNetwork()
-        {
-            return this.network;
-        }
-        public void setNetwork(int[] network)
-        {
-            this.network = network;
-        }
-
-        // Get/set box status
-        public byte getStatus()
-        {
-            return this.status;
-        }
-        public void setStatus(byte status)
-        {
-            this.status = status;
-        }
-        // Get/set box region
-        public byte getRegion()
-        {
-            return this.region;
-        }
-        public void setRegion(byte region)
-        {
-            this.region = region;
-        }
     }
 }

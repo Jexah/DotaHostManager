@@ -22,12 +22,7 @@ namespace DotaHostLibrary
         public const byte AUSTRALIA_PLAN_ID = 8;    // 0.6TB
 
         // Set plan IDs into 
-        public const Dictionary<byte, byte> PLAN_IDS = new Dictionary<byte, byte>()
-        {
-            { AMERICA, AMERICA_PLAN_ID },
-            { EUROPE, EUROPE_PLAN_ID },
-            { AUSTRALIA, AUSTRALIA_PLAN_ID }
-        };
+        public static readonly Dictionary<byte, byte> PLAN_IDS;
         
         // Vultr OS IDs
         public const byte CUSTOM_OS = 159;
@@ -35,6 +30,16 @@ namespace DotaHostLibrary
 
         // Vultr BoxManager snapshot ID
         public const byte SNAPSHOT_ID = 0;
+
+        static Vultr()
+        {
+            PLAN_IDS = new Dictionary<byte, byte>()
+            {
+                { AMERICA, AMERICA_PLAN_ID },
+                { EUROPE, EUROPE_PLAN_ID },
+                { AUSTRALIA, AUSTRALIA_PLAN_ID }
+            };
+        }
 
         // Vultr API functions
         public static void createServer(byte region)
@@ -60,5 +65,6 @@ namespace DotaHostLibrary
                 { "SUBID", subID.ToString() }
             });
         }
+    
     }
 }

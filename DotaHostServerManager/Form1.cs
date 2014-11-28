@@ -23,13 +23,6 @@ namespace DotaHostServerManager
         {
             InitializeComponent();
 
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/regions/list", "GET", (r) =>
-            {
-                Console.WriteLine(r["6"]["name"]);
-            });
-
-            Console.ReadLine();
-
             // Hook socket events
             hookWSocketServerEvents();
 
@@ -54,7 +47,7 @@ namespace DotaHostServerManager
 
                 // Create the BoxManager object and append it to the BoxManagers list
                 BoxManager boxManager = new BoxManager();
-                boxManager.setIP(c.ClientAddress.ToString());
+                boxManager.Ip = c.ClientAddress.ToString();
                 boxManagers.Add(c.ClientAddress.ToString(), boxManager);
 
                 // Add BoxManager to the GUI List
@@ -70,10 +63,10 @@ namespace DotaHostServerManager
             wsServer.addHook("system", (c, x) =>
             {
                 BoxManager boxManager = boxManagers[c.ClientAddress.ToString()];
-                boxManager.setStatus(Convert.ToByte(x[1]));
-                boxManager.setCpuPercent(Convert.ToByte(x[2]));
-                boxManager.setRam(new short[] { Convert.ToInt16(x[3]), Convert.ToInt16(x[4]) });
-                boxManager.setNetwork(new int[] { Convert.ToInt32(x[5]), Convert.ToInt32(x[6]), Convert.ToInt32(x[7]) });
+                boxManager.Status = Convert.ToByte(x[1]);
+                boxManager.CpuPercent = Convert.ToByte(x[2]);
+                boxManager.Ram = new short[] { Convert.ToInt16(x[3]), Convert.ToInt16(x[4]) };
+                boxManager.Network = new int[] { Convert.ToInt32(x[5]), Convert.ToInt32(x[6]), Convert.ToInt32(x[7]) };
 
                 modGUI(boxesList, () =>
                 {
@@ -111,7 +104,7 @@ namespace DotaHostServerManager
         private void removeBoxManager(BoxManager boxManager)
         {
             // TODO: Code to destroy box server
-            boxManagers.Remove(boxManager.getIP());
+            boxManagers.Remove(boxManager.Ip);
         }
 
         // Finds a server to host the gamemode selected, in the region selected
@@ -182,7 +175,7 @@ namespace DotaHostServerManager
 
         private void setCurrentBoxNameGUI(BoxManager boxManager)
         {
-            setBoxNameGUI(boxManager.getIP());
+            setBoxNameGUI(boxManager.Ip);
         }
 
         private void setBoxNameGUI(string name)
@@ -192,7 +185,7 @@ namespace DotaHostServerManager
 
         private void setCurrentBoxStatusGUI(BoxManager boxManager)
         {
-            setBoxStatusGUI(boxManager.getStatus());
+            setBoxStatusGUI(boxManager.Status);
         }
 
         private void setBoxStatusGUI(byte status)
@@ -224,7 +217,7 @@ namespace DotaHostServerManager
 
         private void setCurrentBoxRAMGUI(BoxManager boxManager)
         {
-            short[] ram = boxManager.getRam();
+            short[] ram = boxManager.Ram;
             setBoxRAMGUI(ram[0], ram[1]);
         }
 
@@ -251,7 +244,7 @@ namespace DotaHostServerManager
 
         private void setCurrentBoxCPUGUI(BoxManager boxManager)
         {
-            setBoxCPUGUI(boxManager.getCpuPercent());
+            setBoxCPUGUI(boxManager.CpuPercent);
         }
 
         private void setBoxCPUGUI(int percent)
@@ -274,7 +267,7 @@ namespace DotaHostServerManager
 
         private void setCurrentBoxNetworkGUI(BoxManager boxManager)
         {
-            int[] network = boxManager.getNetwork();
+            int[] network = boxManager.Network;
             setBoxNetworkGUI(network[0], network[1], network[2]);
         }
 

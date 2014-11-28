@@ -10,50 +10,66 @@ namespace DotaHostLibrary
     {
 
         private string name = String.Empty;
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+            set
+            {
+                name = value;
+            }
+        }
 
         // List of addons to load
         private List<Addon> addons = new List<Addon>();
+        public List<Addon> Addons
+        {
+            get
+            {
+                return addons;
+            }
+            set
+            {
+                addons = value;
+            }
+        }
+
 
         // List of players
         private List<List<Player>> players = new List<List<Player>>();
+        public List<List<Player>> Players
+        {
+            get
+            {
+                return players;
+            }
+            set
+            {
+                players = value;
+            }
+        }
+
+        // List of options
         private Dictionary<string, string> options = new Dictionary<string, string>();
+        public Dictionary<string, string> Options
+        {
+            get
+            {
+                return options;
+            }
+            set
+            {
+                options = value;
+            }
+        }
 
         public GameServer()
         {
 
         }
 
-        public string getName()
-        {
-            return this.name;
-        }
-        public void setName(string name)
-        {
-            this.name = name;
-        }
-        public List<Addon> getAddons()
-        {
-            return this.addons;
-        }
-        public void setAddons(List<Addon> addons)
-        {
-            this.addons = addons;
-        }
-        public List<List<Player>> getPlayers()
-        {
-            return this.players;
-        }
-        public void setPlayers(List<List<Player>> players)
-        {
-            this.players = players;
-        }
-        public Dictionary<string, string> getOptions()
-        {
-            return this.options;
-        }
-        public void setOptions(Dictionary<string, string> options)
-        {
-            this.options = options;
-        }
+
     }
 }

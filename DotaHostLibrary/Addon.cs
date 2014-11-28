@@ -6,31 +6,35 @@ namespace DotaHostLibrary
     {
         // ID of the addon
         private string id;
+        public string Id
+        {
+            get
+            {
+                return id;
+            }
+            set
+            {
+                id = value;
+            }
+        }
 
         // List of options for this addon
         private Dictionary<string, string> options = new Dictionary<string, string>();
+        public Dictionary<string, string> Options
+        {
+            get
+            {
+                return options;
+            }
+            set
+            {
+                options = value;
+            }
+        }
 
         public Addon(string id, Dictionary<string, string> options)
         {
             this.id = id;
-            this.options = options;
-        }
-
-        public string getID()
-        {
-            return this.id;
-        }
-        public void setID(string id)
-        {
-            this.id = id;
-        }
-
-        public Dictionary<string, string> getOptions()
-        {
-            return this.options;
-        }
-        public void setOptions(Dictionary<string, string> options)
-        {
             this.options = options;
         }
     }
