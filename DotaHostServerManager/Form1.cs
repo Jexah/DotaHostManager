@@ -119,7 +119,7 @@ namespace DotaHostServerManager
                 boxManager.Status = Convert.ToByte(x[1]);
                 boxManager.CpuPercent = Convert.ToByte(x[2]);
                 boxManager.Ram = new short[] { Convert.ToInt16(x[3]), Convert.ToInt16(x[4]) };
-                boxManager.Network = new int[] { Convert.ToInt32(x[5]), Convert.ToInt32(x[6]), Convert.ToInt32(x[7]) };
+                boxManager.Network = new int[] { Convert.ToInt32(x[5]), Convert.ToInt32(x[6])};
 
                 // Request GUI-safe thread
                 modGUI(boxesList, () =>
@@ -240,7 +240,7 @@ namespace DotaHostServerManager
             setBoxStatusGUI(BoxManager.INACTIVE);
             setBoxRAMGUI(0, 0);
             setBoxCPUGUI(0);
-            setBoxNetworkGUI(0, 0, 0);
+            setBoxNetworkGUI(0, 0);
         }
 
         // Wrapper to find thread-safe thread to change GUI elements
@@ -363,10 +363,10 @@ namespace DotaHostServerManager
         private void setCurrentBoxNetworkGUI(BoxManager boxManager)
         {
             int[] network = boxManager.Network;
-            setBoxNetworkGUI(network[0], network[1], network[2]);
+            setBoxNetworkGUI(network[0], network[1]);
         }
 
-        private void setBoxNetworkGUI(int bandwidth, int upload, int download)
+        private void setBoxNetworkGUI(int upload, int download)
         {
             modGUI(boxUploadLabel, () => { boxUploadLabel.Text = (upload * 8 / 1000) + " kb/s"; });
             modGUI(boxDownloadLabel, () => { boxDownloadLabel.Text = (download * 8 / 1000) + " kb/s"; });

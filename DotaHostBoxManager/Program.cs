@@ -44,18 +44,14 @@ namespace DotaHostBoxManager
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
         
-        // Network card name
-        // Mine
-        private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
-        // Vultr Server's
-        //private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
+        // Network card set up for network monitoring
+        private static readonly string[] NETWORK_CARDS = getNetworkCards();
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
         private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-        private static PerformanceCounter bandwidthCounter = new PerformanceCounter("Network Interface", "Current Bandwidth", NETWORK_CARD);
-        private static PerformanceCounter dataSentCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", NETWORK_CARD);
-        private static PerformanceCounter dataReceivedCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", NETWORK_CARD);
+        private static List<PerformanceCounter> dataSentCounter;
+        private static List<PerformanceCounter> dataReceivedCounter;
 
         // The command to update the servers
         private static readonly string STEAMCMD_UPDATE_SERVERS = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +runscript install.txt";
@@ -84,6 +80,7 @@ namespace DotaHostBoxManager
         // The main entry point into the program
         private static void Main(string[] args)
         {
+
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
 
@@ -101,6 +98,15 @@ namespace DotaHostBoxManager
 
             // Update the dota install
             //updateDotaSource1();
+        }
+
+        private static void setupNetworkCards()
+        {
+            for (int i = 0; i < NETWORK_CARDS.Length; ++i)
+            {
+                dataSentCounter.Add(new PerformanceCounter("Network Interface", "Bytes Sent/sec", NETWORK_CARDS[i]));
+                dataReceivedCounter.Add(new PerformanceCounter("Network Interface", "Bytes Received/sec", NETWORK_CARDS[i]));
+            }
         }
         
         // Hook websocket events
@@ -169,7 +175,7 @@ namespace DotaHostBoxManager
                     }
                 }
                 
-                // func;status;cpu;ramAvailable;ramTotal;bandwidth;upload;download
+                // func;status;cpu;ramAvailable;ramTotal;upload;download
                 c.Send("system;" + status + ";" + String.Join(";", args));
             });
             #endregion
@@ -377,6 +383,7 @@ namespace DotaHostBoxManager
         // Set up system diagnostics
         private static void setupSystemDiagnostics()
         {
+            setupNetworkCards();
             cpuCounter.CategoryName = "Processor";
             cpuCounter.CounterName = "% Processor Time";
             cpuCounter.InstanceName = "_Total";
@@ -385,7 +392,7 @@ namespace DotaHostBoxManager
         // Get system diagnostics such as CPU % usage, RAM used and RAM remaining
         private static int[] getSystemDiagnostics()
         {
-            return new int[] { getCurrentCpuUsage(), getAvailableRAM(), getTotalRAM(), getBandwidth(), getUploadSpeed(), getDownloadSpeed() };
+            return new int[] { getCurrentCpuUsage(), getAvailableRAM(), getTotalRAM(), getUploadSpeed(), getDownloadSpeed() };
         }
 
         // This function ensures steamcmd is available
@@ -645,34 +652,34 @@ namespace DotaHostBoxManager
             return  Convert.ToInt32(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
         }
 
-        // Gets the total bandwidth available in the system in bytes
-        private static int getBandwidth()
-        {
-            return  Convert.ToInt32(Math.Round(bandwidthCounter.NextValue() / 1000));
-        }
-
         // Gets the current upload speed in bytes/second
         private static int getUploadSpeed()
         {
-            return  Convert.ToInt32(Math.Round(dataSentCounter.NextValue()));
+            int upload = 0;
+            for (int i = 0; i < dataSentCounter.Count; ++i)
+            {
+                upload += Convert.ToInt32(Math.Round(dataSentCounter[i].NextValue()));
+            }
+            return upload;
         }
 
         // Gets the current download speed in bytes/second
         private static int getDownloadSpeed()
         {
-            return Convert.ToInt32(Math.Round(dataReceivedCounter.NextValue()));
+            int download = 0;
+            for (int i = 0; i < dataSentCounter.Count; ++i)
+            {
+                download += Convert.ToInt32(Math.Round(dataReceivedCounter[i].NextValue()));
+            }
+            return download;
         }
 
         // Prints all network interface card reference names
-        private static void printNetworkCards()
+        private static string[] getNetworkCards()
         {
             PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
-            String[] instancename = category.GetInstanceNames();
-
-            foreach (string name in instancename)
-            {
-                Helpers.log(name);
-            }
+            string[] instancename = category.GetInstanceNames();
+            return instancename;
         }
 
     }
