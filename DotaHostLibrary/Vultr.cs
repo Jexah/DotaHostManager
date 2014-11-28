@@ -55,6 +55,7 @@ namespace DotaHostLibrary
             {
                 { "Australia", AUSTRALIA },
                 { "Amsterdam", EUROPE },
+                { "Chicago", AMERICA },
                 { "Dallas", AMERICA }
             };
         }

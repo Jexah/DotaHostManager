@@ -50,8 +50,8 @@ namespace DotaHostBoxManager
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
         private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-        private static List<PerformanceCounter> dataSentCounter;
-        private static List<PerformanceCounter> dataReceivedCounter;
+        private static List<PerformanceCounter> dataSentCounter = new List<PerformanceCounter>();
+        private static List<PerformanceCounter> dataReceivedCounter = new List<PerformanceCounter>();
 
         // The command to update the servers
         private static readonly string STEAMCMD_UPDATE_SERVERS = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +runscript install.txt";

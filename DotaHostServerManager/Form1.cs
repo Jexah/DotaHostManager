@@ -2,6 +2,7 @@
 using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
 using System.Net;
 using System.Windows.Forms;
@@ -46,49 +47,40 @@ namespace DotaHostServerManager
             #region wsServer.addHook("box");
             wsServer.addHook("box", (c, x) =>
             {
-                Helpers.log("yolo0");
-
                 // Get a list of servers
                 Vultr.getServers((jsonObj) =>
                 {
-                    Helpers.log("yolo1");
                     // Initialize the new BoxManager
                     BoxManager boxManager = new BoxManager();
 
                     // Used to contain the info generated from the API
-                    dynamic serverInfo = 0;
+                    VultrServerProperties serverInfo = new VultrServerProperties();
 
                     // Flag to check if server was found, if not SHIT IF WROOONG
                     bool found = false;
 
                     // Finds the box manager in the list of servers by matching the IPs
-                    /*foreach (dynamic dyn in jsonObj)
+                    foreach (KeyValuePair<string, VultrServerProperties> kvp in jsonObj)
                     {
-                        foreach (dynamic dyn2 in dyn)
+                        string serverIP = kvp.Value.main_ip;
+                        string boxIP = c.ClientAddress.ToString().Split(':')[0];
+                        if (serverIP == boxIP)
                         {
-                            string serverIP = dyn2["main_ip"];
-                            string boxIP = c.ClientAddress.ToString().Split(':')[0];
-                            if (serverIP == boxIP)
-                            {
-                                serverInfo = dyn2;
-                                found = true;
-                            }
+                            serverInfo = kvp.Value;
+                            found = true;
                         }
                     }
                     if (!found)
                     {
                         Helpers.log("Server IP was not found.");
                         return;
-                    }*/
+                    }
 
                     // Sets the subID so it can be destroyed later
-                    //boxManager.SubID = Convert.ToInt32(serverInfo["SUBID"]);
-
-                    //Helpers.log(serverInfo["SUBID"]);
+                    boxManager.SubID = Convert.ToInt32(serverInfo.SUBID);
 
                     // Sets the region so we know where it is hosted
-                    //boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo["location"]];
-                    Helpers.log("yolo3");
+                    boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo.location];
 
                     // Sets the IP of the box manager
                     boxManager.Ip = c.ClientAddress.ToString();
@@ -100,7 +92,7 @@ namespace DotaHostServerManager
                     modGUI(boxesList, () => { boxesList.Items.Add(c.ClientAddress.ToString()); });
 
                     // Send SUBID to server so it knows its place
-                    //c.Send("subid|" + boxManager.SubID);
+                    c.Send("subid|" + boxManager.SubID);
 
                     // Request system stats
                     c.Send("system");

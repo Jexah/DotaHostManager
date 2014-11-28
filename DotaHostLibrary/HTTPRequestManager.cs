@@ -2,17 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Data;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
-using DotaHostClientLibrary;
 
 namespace DotaHostLibrary
 {
     public static class HTTPRequestManager
     {
-        public static void startRequest(string url, string method, Action<dynamic> responseAction, Dictionary<string, string> sendData)
+        public static void startRequest(string url, string method, Action<Dictionary<string, VultrServerProperties>> responseAction, Dictionary<string, string> sendData)
         {
             if (method == "GET")
             {
@@ -25,7 +25,6 @@ namespace DotaHostLibrary
                 {
                     url = url.Substring(0, url.Length - 1);
                 }
-                Helpers.log(url);
             }
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             if (method == "POST")
@@ -48,15 +47,10 @@ namespace DotaHostLibrary
             {
                 request.BeginGetResponse(new AsyncCallback((iar) =>
                 {
-                    try
-                    {
-                        var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
-                        var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                        Helpers.log(body);
-                        dynamic  data = JsonConvert.DeserializeObject(body);
-                        responseAction(data);
-                    }
-                    catch { throw; }
+                    var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
+                    var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    Dictionary<string, VultrServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, VultrServerProperties>>(body);
+                    responseAction(data);
                 }), request);
             };
             wrapperAction.BeginInvoke(new AsyncCallback((iar) =>
