@@ -90,6 +90,18 @@ namespace DotaHostBoxManager
             //updateServers();
             //launchGameServer(null, null);
 
+            // Create addon list
+            /*List<Addon> addons = new List<Addon>();
+
+            // Add LoD
+            Dictionary<string, string> addonProperties = new Dictionary<string, string>();
+            addons.Add(new Addon("lod", addonProperties));
+
+            // Compile
+            AddonCompiler.compileAddons(addons, Global.BASE_PATH + "addonZips\\", Global.BASE_PATH + "addons\\", true);
+
+            return;*/
+
             status = BoxManager.IDLE;
 
             setupSystemDiagnostics();
