@@ -143,6 +143,7 @@ namespace DotaHostBoxManager
             wsClient.addHook("subid", (c, x) =>
             {
                 subID = Convert.ToInt32(x[1]);
+                Helpers.log(x[1]);
             });
 
             // Get unique socket identifier from server

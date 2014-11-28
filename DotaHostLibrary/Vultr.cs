@@ -17,7 +17,7 @@ namespace DotaHostLibrary
         public static readonly Dictionary<string, byte> NAME_TO_REGION_ID;
 
         // Vultr API key
-        public const string VULTR_API_KEY = "enter key here";
+        public const string VULTR_API_KEY = "***REMOVED***";
 
         // Vultr $15 plan
         public const byte AMERICA_PLAN_ID = 3;      // 3TB
@@ -55,19 +55,19 @@ namespace DotaHostLibrary
         public static void createServer(byte region)
         {
             HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
-                { "api_key", VULTR_API_KEY },
-                { "DCID", region.ToString() },
-                { "VPSPLANID", PLAN_IDS[region].ToString() },
-                { "OSID", SNAPSHOT_OS.ToString() },
-                { "SNAPSHOTID", SNAPSHOT_ID.ToString() }
+                //{ "api_key", VULTR_API_KEY },
+                //{ "DCID", region.ToString() },
+                //{ "VPSPLANID", PLAN_IDS[region].ToString() },
+                //{ "OSID", SNAPSHOT_OS.ToString() },
+                //{ "SNAPSHOTID", SNAPSHOT_ID.ToString() }
             });
         }
         public static void destroyServer(int subID)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
-                { "api_key", VULTR_API_KEY },
-                { "SUBID", subID.ToString() }
-            });
+            //HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
+                //{ "api_key", VULTR_API_KEY },
+                //{ "SUBID", subID.ToString() }
+            //});
         }
 
         public static void getServers(Action<dynamic> func)

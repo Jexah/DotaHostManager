@@ -318,6 +318,7 @@ namespace DotaHostServerManager
             setBoxCPUGUI(boxManager.CpuPercent);
         }
 
+        // Sets the cpu 
         private void setBoxCPUGUI(int percent)
         {
             modGUI(boxCPUBar, () => { boxCPUBar.Value = percent; });
