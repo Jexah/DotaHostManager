@@ -7,16 +7,18 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
+using DotaHostClientLibrary;
 
 namespace DotaHostLibrary
 {
     public static class HTTPRequestManager
     {
-        public static void startRequest(string url, string method, Action<Dictionary<string, VultrServerProperties>> responseAction, Dictionary<string, string> sendData)
+        public static void startRequest(string url, string method, Action<string> responseAction, Dictionary<string, string> sendData)
         {
+            HttpWebRequest request = null;
+            url += "?";
             if (method == "GET")
             {
-                url += "?";
                 foreach (KeyValuePair<string, string> kvp in sendData)
                 {
                     url += kvp.Key + "=" + kvp.Value + "&";
@@ -25,23 +27,37 @@ namespace DotaHostLibrary
                 {
                     url = url.Substring(0, url.Length - 1);
                 }
+                request = (HttpWebRequest)WebRequest.Create(url);
             }
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             if (method == "POST")
             {
-                NameValueCollection outgoingQueryString = HttpUtility.ParseQueryString(String.Empty);
+                string postData = "";
                 foreach (KeyValuePair<string, string> kvp in sendData)
                 {
-                    outgoingQueryString.Add(kvp.Key, kvp.Value);
+                    if(kvp.Key == "api_key")
+                    {
+                        url += "api_key=" + kvp.Value;
+                    }
+                    else
+                    {
+                        postData += kvp.Key + "=" + kvp.Value + "&";
+                    }
+                   
                 }
-                string postData = outgoingQueryString.ToString();
-                request.ContentLength = postData.Length;
+                if (sendData.Count > 0)
+                {
+                    postData = postData.Substring(0, postData.Length - 1);
+                }
+                request = (HttpWebRequest)WebRequest.Create(url);
+                request.Method = method;
+                request.ContentType = "application/x-www-form-urlencoded"; 
                 byte[] array = Encoding.ASCII.GetBytes(postData);
+                request.ContentLength = array.Length;
                 using (var dataStream = request.GetRequestStream())
                 {
-                    dataStream.Write(array, 0, postData.Length);
+                    dataStream.Write(array, 0, array.Length);
+                    dataStream.Close();
                 }
-                request.Method = method;
             }
             Action wrapperAction = () =>
             {
@@ -49,8 +65,7 @@ namespace DotaHostLibrary
                 {
                     var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
                     var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                    Dictionary<string, VultrServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, VultrServerProperties>>(body);
-                    responseAction(data);
+                    responseAction(body);
                 }), request);
             };
             wrapperAction.BeginInvoke(new AsyncCallback((iar) =>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -40,7 +41,7 @@ namespace DotaHostLibrary
         public const byte SNAPSHOT_OS = 164;
 
         // Vultr BoxManager snapshot ID
-        public const byte SNAPSHOT_ID = 0;
+        public const string SNAPSHOT_ID = "54783ffe9a1f3";
 
         static Vultr()
         {
@@ -63,26 +64,36 @@ namespace DotaHostLibrary
         // Vultr API functions
         public static void createServer(byte region)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
-                //{ "api_key", VULTR_API_KEY },
-                //{ "DCID", region.ToString() },
-                //{ "VPSPLANID", PLAN_IDS[region].ToString() },
-                //{ "OSID", SNAPSHOT_OS.ToString() },
-                //{ "SNAPSHOTID", SNAPSHOT_ID.ToString() }
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) => 
+            {
+                
+            }, new Dictionary<string, string>(){
+                { "api_key", VULTR_API_KEY },
+                { "DCID", region.ToString() },
+                { "VPSPLANID", PLAN_IDS[region].ToString() },
+                { "OSID", SNAPSHOT_OS.ToString() },
+                { "SNAPSHOTID", SNAPSHOT_ID }
             });
         }
 
         public static void destroyServer(int subID)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
-                //{ "api_key", VULTR_API_KEY },
-                //{ "SUBID", subID.ToString() }
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => 
+            { 
+            
+            }, new Dictionary<string, string>(){
+                { "api_key", VULTR_API_KEY },
+                { "SUBID", subID.ToString() }
             });
         }
 
         public static void getServers(Action<dynamic> func)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "GET", func, new Dictionary<string, string>(){
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "GET", (body) =>
+                {
+                    Dictionary<string, VultrServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, VultrServerProperties>>(body);  
+                    func(data);
+                }, new Dictionary<string, string>(){
                 { "api_key", VULTR_API_KEY }
             });
         }

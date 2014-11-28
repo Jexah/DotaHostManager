@@ -146,10 +146,7 @@ namespace DotaHostServerManager
         // Create a new box instance using snapshot
         private void addBoxManager(byte region)
         {
-            // Vultr.createServer(region);
-
-            // Temp for testing
-            System.Diagnostics.Process.Start("DotaHostBoxManager.exe");
+            Vultr.createServer(region);
         }
 
         // Destroy box instance
@@ -395,7 +392,7 @@ namespace DotaHostServerManager
 
         private void button1_Click(object sender, EventArgs e)
         {
-            addBoxManager(0);
+            addBoxManager(Vultr.AUSTRALIA);
         }
 
 
