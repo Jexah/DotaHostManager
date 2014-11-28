@@ -45,10 +45,12 @@ namespace DotaHostBoxManager
         private const string STEAM_PASSWORD = "***REMOVED***";
         
         // Network card name
-        // Mine
-        private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
+        // Jexah
+        //private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
         // Vultr Server's
         //private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
+        // Ash47
+        private const string NETWORK_CARD = "Broadcom NetLink [TM] Gigabit Ethernet";
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
