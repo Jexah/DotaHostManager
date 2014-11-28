@@ -9,7 +9,9 @@ namespace DotaHostLibrary
     public static class Vultr
     {
         // Server Manager IP
-        public const string SERVER_MANAGER_IP = "127.0.0.1";
+        //public const string SERVER_MANAGER_IP = "110.175.72.12";
+        //public const string SERVER_MANAGER_IP = "127.0.0.1";
+        public const string SERVER_MANAGER_IP = "108.61.169.195";
 
         // Server Manager Port
         public const int SERVER_MANAGER_PORT = 3875;
@@ -68,12 +70,13 @@ namespace DotaHostLibrary
                 //{ "SNAPSHOTID", SNAPSHOT_ID.ToString() }
             });
         }
+
         public static void destroyServer(int subID)
         {
-            //HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => { }, new Dictionary<string, string>(){
                 //{ "api_key", VULTR_API_KEY },
                 //{ "SUBID", subID.ToString() }
-            //});
+            });
         }
 
         public static void getServers(Action<dynamic> func)

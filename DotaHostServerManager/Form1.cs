@@ -18,7 +18,7 @@ namespace DotaHostServerManager
         private static Dictionary<string, BoxManager> boxManagers = new Dictionary<string, BoxManager>();
 
         // Create WebSocketServer
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse(Vultr.SERVER_MANAGER_IP), Vultr.SERVER_MANAGER_PORT);
+        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Vultr.SERVER_MANAGER_PORT);
 
         public Form1()
         {
@@ -36,39 +36,59 @@ namespace DotaHostServerManager
         {
             // Print received messages to console for debugging
             #region wsServer.addHook
-            wsServer.addHook(WebSocketClient.RECEIVE, (c) =>
+            wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
             {
-                // Helpers.log(c.DataFrame.ToString());
+                //MessageBox.Show(c.DataFrame.ToString());
             });
             #endregion
 
             // When a server is started, it sends box function, so this tells the servermanager "Hey, there's a new box in town" and the server manager does it's things to accomodate
             #region wsServer.addHook("box");
-            wsServer.addHook("box", (c, x) => { 
+            wsServer.addHook("box", (c, x) =>
+            {
+                Helpers.log("yolo0");
 
                 // Get a list of servers
                 Vultr.getServers((jsonObj) =>
                 {
+                    Helpers.log("yolo1");
                     // Initialize the new BoxManager
                     BoxManager boxManager = new BoxManager();
 
                     // Used to contain the info generated from the API
-                    Dictionary<string, string> serverInfo;
+                    dynamic serverInfo = 0;
 
-                    // If the request was valid and succeeded
-                    if (jsonObj != null)
+                    // Flag to check if server was found, if not SHIT IF WROOONG
+                    bool found = false;
+
+                    // Finds the box manager in the list of servers by matching the IPs
+                    /*foreach (dynamic dyn in jsonObj)
                     {
-                        // Finds the box manager in the list of servers by matching the IPs
-                        serverInfo = ((List<Dictionary<string, string>>)jsonObj).Find(item => item["main_ip"] == c.ClientAddress.ToString().Split(':')[0]);
-
-                        // Sets the subID so it can be destroyed later
-                        boxManager.SubID = Convert.ToInt32(serverInfo["SUBID"]);
-
-                        Helpers.log(serverInfo["SUBID"]);
-
-                        // Sets the region so we know where it is hosted
-                        boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo["location"]];
+                        foreach (dynamic dyn2 in dyn)
+                        {
+                            string serverIP = dyn2["main_ip"];
+                            string boxIP = c.ClientAddress.ToString().Split(':')[0];
+                            if (serverIP == boxIP)
+                            {
+                                serverInfo = dyn2;
+                                found = true;
+                            }
+                        }
                     }
+                    if (!found)
+                    {
+                        Helpers.log("Server IP was not found.");
+                        return;
+                    }*/
+
+                    // Sets the subID so it can be destroyed later
+                    //boxManager.SubID = Convert.ToInt32(serverInfo["SUBID"]);
+
+                    //Helpers.log(serverInfo["SUBID"]);
+
+                    // Sets the region so we know where it is hosted
+                    //boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo["location"]];
+                    Helpers.log("yolo3");
 
                     // Sets the IP of the box manager
                     boxManager.Ip = c.ClientAddress.ToString();
@@ -80,7 +100,7 @@ namespace DotaHostServerManager
                     modGUI(boxesList, () => { boxesList.Items.Add(c.ClientAddress.ToString()); });
 
                     // Send SUBID to server so it knows its place
-                    c.Send("subid|" + boxManager.SubID);
+                    //c.Send("subid|" + boxManager.SubID);
 
                     // Request system stats
                     c.Send("system");
