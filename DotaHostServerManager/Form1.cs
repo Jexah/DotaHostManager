@@ -19,12 +19,16 @@ namespace DotaHostServerManager
         // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse(Global.SERVER_MANAGER_IP), Global.SERVER_MANAGER_PORT);
 
-        // Define region consts based on Vultr API
-        //private const byte DALLAS = 
-
         public Form1()
         {
             InitializeComponent();
+
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/regions/list", "GET", (r) =>
+            {
+                Console.WriteLine(r["6"]["name"]);
+            });
+
+            Console.ReadLine();
 
             // Hook socket events
             hookWSocketServerEvents();

@@ -17,9 +17,10 @@ namespace DotaHostLibrary
         private short[] ram;
         private int[] network;
         private byte status;
+        private byte region;
 
         private List<GameServer> GameServers;
-
+        
         public BoxManager()
         {
 
@@ -73,6 +74,15 @@ namespace DotaHostLibrary
         public void setStatus(byte status)
         {
             this.status = status;
+        }
+        // Get/set box region
+        public byte getRegion()
+        {
+            return this.region;
+        }
+        public void setRegion(byte region)
+        {
+            this.region = region;
         }
     }
 }
