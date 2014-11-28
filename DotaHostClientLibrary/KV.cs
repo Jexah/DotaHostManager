@@ -1,9 +1,9 @@
-﻿using DotaHostClientLibrary;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
     public class KV
     {
@@ -165,6 +165,45 @@ namespace DotaHostLibrary
             return this.values[n];
         }
 
+        // Returns all the values (WARNING: THIS EXPOSES THE INSIDES, BADNESS COULD HAPPEN)
+        public List<string> getValues(string key)
+        {
+            // Ensure this is the object sort
+            if (this.sort != SORT_OBJECT) return null;
+
+            // Ensure we have the key
+            if (!this.keys.ContainsKey(key)) return null;
+
+            // Grab the kv
+            KV kv = this.keys[key];
+
+            // Ensure a valid reference
+            if (kv == null) return null;
+
+            // Return the key
+            return kv.getValues();
+        }
+
+        // Returns all the values for this kv (WARNING: THIS EXPOSES THE INSIDES, BADNESS COULD HAPPEN)
+        public List<string> getValues()
+        {
+            // Ensure this is the correct type
+            if (this.sort != SORT_VALUE) return null;
+
+            // Return the value
+            return this.values;
+        }
+
+        // Returns all the keys for this kv (WARNING: THIS EXPOSES THE INSIDES, BADNESS COULD HAPPEN)
+        public Dictionary<string, KV> getKeys()
+        {
+            // Ensure this is the correct type
+            if (this.sort != SORT_OBJECT) return null;
+
+            // Return the value
+            return this.keys;
+        }
+
         // Compiles this KV into a string
         public string toString(string key=null)
         {
@@ -220,6 +259,55 @@ namespace DotaHostLibrary
             return output;
         }
 
+        // Merges in the given KV (WARNING: This will MODIFY the original KV)
+        // NOTE: This will some what link the two data structures, use this carefully!
+        public void merge(KV kv)
+        {
+            // Validate input
+            if (kv == null) return;
+            if (this.sort != kv.getSort()) return;
+            
+            if(this.sort == SORT_OBJECT)
+            {
+                // Grab all the keys that need merging
+                Dictionary<string, KV> mergeKeys = kv.getKeys();
+
+                foreach(KeyValuePair<String, KV> entry in mergeKeys)
+                {
+                    if(!this.keys.ContainsKey(entry.Key))
+                    {
+                        this.keys.Add(entry.Key, entry.Value);
+                    }
+                    else
+                    {
+                        if (this.keys[entry.Key] != null)
+                        {
+                            // Do a proper merge
+                            this.keys[entry.Key].merge(entry.Value);
+                        }
+                    }
+                }
+            }
+            else if(this.sort == SORT_VALUE)
+            {
+                // Decide if we are doing an override, or an addition
+                if(this.values.Count == 1)
+                {
+                    // Since there is only one key, lets just copy the new value over
+                    this.values[0] = kv.getValue();
+                }
+                else
+                {
+                    // Add each value to the end
+                    foreach(string value in kv.getValues())
+                    {
+                        this.values.Add(value);
+                    }
+                }
+            }
+
+        }
+
         // Reads the KV file at the given path
         public static KV read(string path)
         {
@@ -227,25 +315,20 @@ namespace DotaHostLibrary
             try
             {
                 // Load up the file
-                using (FileStream fs = File.Open(path, FileMode.Open))
-                {
-                    // Read the data
-                    byte[] data = new BinaryReader(fs).ReadBytes((int)fs.Length);
+                string data = File.ReadAllText(path, Encoding.UTF8);
 
-                    // Pass the data
-                    return parse(data);
-                }
+                // Pass the data
+                return parse(data);
             }
             catch
             {
                 // Failed to load the file
                 return null;
             }
-            
         }
 
         // Parses KV Data
-        public static KV parse(byte[] kvString)
+        public static KV parse(string kvString)
         {
             // Ensure nothing bad happens
             try
@@ -267,7 +350,7 @@ namespace DotaHostLibrary
                 while(i < kvString.Length)
                 {
                     // Grab the next character
-                    Byte chr = kvString[i];
+                    Char chr = kvString[i];
 
                     if(chr == ' ' || chr == '\t')
                     {
@@ -335,13 +418,13 @@ namespace DotaHostLibrary
                                 // Check for escaped characters
                                 switch(chr)
                                 {
-                                    case (byte)'\\': chr = (byte)'\\'; break;
-                                    case (byte)'"': chr = (byte)'"'; break;
-                                    case (byte)'\'': chr = (byte)'\\'; break;
-                                    case (byte)'n': chr = (byte)'\n'; break;
-                                    case (byte)'r': chr = (byte)'\r'; break;
+                                    case '\\': chr = '\\'; break;
+                                    case '"': chr = '"'; break;
+                                    case '\'': chr = '\\'; break;
+                                    case 'n': chr = '\n'; break;
+                                    case 'r': chr = '\r'; break;
                                     default:
-                                        chr = (byte)'\\';
+                                        chr = '\\';
                                         --i;
                                         break;
                                 }

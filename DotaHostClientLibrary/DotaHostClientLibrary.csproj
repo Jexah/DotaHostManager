@@ -35,6 +35,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -42,11 +43,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Addon.cs" />
+    <Compile Include="AddonCompiler.cs" />
     <Compile Include="CRC32.cs" />
     <Compile Include="DownloadInstructions.cs" />
     <Compile Include="DownloadManager.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="KV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WebSocketServer.cs" />
   </ItemGroup>

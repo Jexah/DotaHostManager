@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
     public class Addon
     {
