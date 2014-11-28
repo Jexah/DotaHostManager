@@ -44,18 +44,8 @@ namespace DotaHostBoxManager
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
         
-<<<<<<< HEAD
         // Network card set up for network monitoring
         private static readonly string[] NETWORK_CARDS = getNetworkCards();
-=======
-        // Network card name
-        // Jexah
-        //private const string NETWORK_CARD = "Intel[R] Wireless-N 7260";
-        // Vultr Server's
-        //private const string NETWORK_CARD = "Red Hat VirtIO Ethernet Adapter";
-        // Ash47
-        private const string NETWORK_CARD = "Broadcom NetLink [TM] Gigabit Ethernet";
->>>>>>> 06a00aa197f3f2664fd2185f7893f4e67847c5e8
         
         // Performance monitoring
         private static PerformanceCounter cpuCounter = new PerformanceCounter();
