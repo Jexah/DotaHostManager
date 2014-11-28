@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
+using DotaHostClientLibrary;
 
 namespace DotaHostLibrary
 {
@@ -13,8 +14,20 @@ namespace DotaHostLibrary
     {
         public static void startRequest(string url, string method, Action<dynamic> responseAction, Dictionary<string, string> sendData)
         {
+            if (method == "GET")
+            {
+                url += "?";
+                foreach (KeyValuePair<string, string> kvp in sendData)
+                {
+                    url += kvp.Key + "=" + kvp.Value + "&";
+                }
+                if (sendData.Count > 0)
+                {
+                    url = url.Substring(0, url.Length - 1);
+                }
+                Helpers.log(url);
+            }
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            request.Method = method;
             if (method == "POST")
             {
                 NameValueCollection outgoingQueryString = HttpUtility.ParseQueryString(String.Empty);
@@ -29,35 +42,21 @@ namespace DotaHostLibrary
                 {
                     dataStream.Write(array, 0, postData.Length);
                 }
-            }
-            else if (method == "GET")
-            {
-                url += "?";
-                foreach (KeyValuePair<string, string> kvp in sendData)
-                {
-                    url += kvp.Key + "=" + kvp.Value + "&";
-                }
-                if (sendData.Count > 0)
-                {
-                    url = url.Substring(0, url.Length - 1);
-                }
+                request.Method = method;
             }
             Action wrapperAction = () =>
             {
                 request.BeginGetResponse(new AsyncCallback((iar) =>
                 {
-                    dynamic data;
                     try
                     {
                         var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
                         var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                        data = JsonConvert.DeserializeObject(body);
+                        Helpers.log(body);
+                        dynamic  data = JsonConvert.DeserializeObject(body);
+                        responseAction(data);
                     }
-                    catch
-                    {
-                        data = null;
-                    }
-                    responseAction(data);
+                    catch { throw; }
                 }), request);
             };
             wrapperAction.BeginInvoke(new AsyncCallback((iar) =>
