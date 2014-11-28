@@ -152,6 +152,13 @@ namespace DotaHostClientLibrary
                                 {
                                     // Perform the merge
                                     kv1.merge(kv2);
+
+                                    // Save the new file
+                                    File.WriteAllText(outputPath + file, kv1.toString());
+                                }
+                                else
+                                {
+                                    Helpers.log("Failed to merge " + file);
                                 }
                             }
                             else

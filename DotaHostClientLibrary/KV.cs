@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace DotaHostClientLibrary
 {
@@ -314,25 +315,20 @@ namespace DotaHostClientLibrary
             try
             {
                 // Load up the file
-                using (FileStream fs = File.Open(path, FileMode.Open))
-                {
-                    // Read the data
-                    byte[] data = new BinaryReader(fs).ReadBytes((int)fs.Length);
+                string data = File.ReadAllText(path, Encoding.UTF8);
 
-                    // Pass the data
-                    return parse(data);
-                }
+                // Pass the data
+                return parse(data);
             }
             catch
             {
                 // Failed to load the file
                 return null;
             }
-            
         }
 
         // Parses KV Data
-        public static KV parse(byte[] kvString)
+        public static KV parse(string kvString)
         {
             // Ensure nothing bad happens
             try
@@ -354,7 +350,7 @@ namespace DotaHostClientLibrary
                 while(i < kvString.Length)
                 {
                     // Grab the next character
-                    Byte chr = kvString[i];
+                    Char chr = kvString[i];
 
                     if(chr == ' ' || chr == '\t')
                     {
@@ -422,13 +418,13 @@ namespace DotaHostClientLibrary
                                 // Check for escaped characters
                                 switch(chr)
                                 {
-                                    case (byte)'\\': chr = (byte)'\\'; break;
-                                    case (byte)'"': chr = (byte)'"'; break;
-                                    case (byte)'\'': chr = (byte)'\\'; break;
-                                    case (byte)'n': chr = (byte)'\n'; break;
-                                    case (byte)'r': chr = (byte)'\r'; break;
+                                    case '\\': chr = '\\'; break;
+                                    case '"': chr = '"'; break;
+                                    case '\'': chr = '\\'; break;
+                                    case 'n': chr = '\n'; break;
+                                    case 'r': chr = '\r'; break;
                                     default:
-                                        chr = (byte)'\\';
+                                        chr = '\\';
                                         --i;
                                         break;
                                 }
