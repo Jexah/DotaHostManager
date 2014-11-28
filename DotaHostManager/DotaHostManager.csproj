@@ -71,9 +71,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DotaHostLibrary\DotaHostLibrary.csproj">
-      <Project>{f61404e4-f077-4126-872d-6149647698ab}</Project>
-      <Name>DotaHostLibrary</Name>
+    <ProjectReference Include="..\DotaHostClientLibrary\DotaHostClientLibrary.csproj">
+      <Project>{da2e93ce-aedd-4ea8-a058-fce9f5e4228b}</Project>
+      <Name>DotaHostClientLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

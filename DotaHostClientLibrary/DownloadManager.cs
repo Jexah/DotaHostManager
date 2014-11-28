@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
     public class DownloadManager
     {
@@ -30,6 +30,7 @@ namespace DotaHostLibrary
             dlManager.DownloadFile(sourceFile, targetFile);
             Helpers.log("[Download] Complete: " + sourceFile + " -> " + targetFile);
         }
+
         public void download(string sourceFile, string targetFile, DownloadProgressDel downloadProgress, DownloadCompleteDel downloadComplete)
         {
             // Prepares the instruction

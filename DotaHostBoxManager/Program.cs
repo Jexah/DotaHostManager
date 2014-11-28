@@ -5,13 +5,13 @@
  * */
 
 
+using DotaHostClientLibrary;
 using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Threading.Tasks;
 
 namespace DotaHostBoxManager
 {
@@ -67,7 +67,7 @@ namespace DotaHostBoxManager
         private static DownloadManager dlManager = new DownloadManager();
         
         // Web socket client
-        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Global.SERVER_MANAGER_IP + ":" + Global.SERVER_MANAGER_PORT + "/");
+        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Vultr.SERVER_MANAGER_IP + ":" + Vultr.SERVER_MANAGER_PORT + "/");
            
         // Unique websocket client ID
         private static string websocketUserID;

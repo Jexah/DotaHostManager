@@ -8,6 +8,12 @@ namespace DotaHostLibrary
 {
     public static class Vultr
     {
+        // Server Manager IP
+        public const string SERVER_MANAGER_IP = "127.0.0.1";
+
+        // Server Manager Port
+        public const int SERVER_MANAGER_PORT = 3875;
+
         // Define region consts based on Vultr API
         public const byte AMERICA = 3; // Dallas, USA
         public const byte EUROPE = 7; // Amsterdam, Nederlands

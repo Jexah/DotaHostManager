@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Net;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
     // Define the delegates in a public scope so everything can use them
     public delegate void DownloadProgressDel(DownloadProgressChangedEventArgs e);

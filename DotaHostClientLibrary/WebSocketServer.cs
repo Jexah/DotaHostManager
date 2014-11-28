@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
 
     // Delegates for asynchronous socket and download events

@@ -1,4 +1,5 @@
-﻿using DotaHostLibrary;
+﻿using DotaHostClientLibrary;
+using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -17,7 +18,7 @@ namespace DotaHostServerManager
         private static Dictionary<string, BoxManager> boxManagers = new Dictionary<string, BoxManager>();
 
         // Create WebSocketServer
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse(Global.SERVER_MANAGER_IP), Global.SERVER_MANAGER_PORT);
+        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse(Vultr.SERVER_MANAGER_IP), Vultr.SERVER_MANAGER_PORT);
 
         public Form1()
         {
@@ -62,6 +63,8 @@ namespace DotaHostServerManager
 
                         // Sets the subID so it can be destroyed later
                         boxManager.SubID = Convert.ToInt32(serverInfo["SUBID"]);
+
+                        Helpers.log(serverInfo["SUBID"]);
 
                         // Sets the region so we know where it is hosted
                         boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo["location"]];

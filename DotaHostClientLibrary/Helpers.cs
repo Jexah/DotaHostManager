@@ -3,10 +3,8 @@
 using System;
 using System.IO;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
-
-
     public static class Helpers
     {
         public static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";

@@ -1,4 +1,5 @@
 ﻿using Alchemy.Classes;
+using DotaHostClientLibrary;
 using System.Collections.Generic;
 
 namespace DotaHostLibrary

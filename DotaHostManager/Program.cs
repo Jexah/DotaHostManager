@@ -1,4 +1,4 @@
-﻿using DotaHostLibrary;
+﻿using DotaHostClientLibrary;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;

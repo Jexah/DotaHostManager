@@ -1,5 +1,5 @@
 ﻿
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
     public static class Global
     {
@@ -11,18 +11,5 @@ namespace DotaHostLibrary
 
         // GitHub download root
         public const string GITHUB = "https://codeload.github.com/ash47/";
-
-        // Server Manager IP
-        public const string SERVER_MANAGER_IP = "127.0.0.1";
-
-        // Server Manager Port
-        public const int SERVER_MANAGER_PORT = 3875;
-
-        // Regions
-        public const byte USA = 0;
-        public const byte GERMANY = 1;
-        public const byte AUSTRALIA = 2;
-
-
     }
 }
