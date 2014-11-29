@@ -242,56 +242,21 @@ namespace DotaHostBoxManager
                 string gameServerArgsStr = String.Join(";", gameServerArgs);
 
                 // Set up the properties for the lobby in case we want to retrieve them later
-                Dictionary<string, string> lobbyArgs = new Dictionary<string, string>();
-                for (byte i = 1; i < x.Length; ++i)
-                {
-                    string[] keyValue = x[i].Split('=');
-                    string key = keyValue[0];
-                    string value = keyValue[1];
-                    lobbyArgs[key] = value;
-                }
+                Dictionary<string, string> lobbyArgs = Lobby.getLobbyArgsObj(gameServerArgs);
 
                 // Set the the options to the game server
                 gameServer.Options = lobbyArgs;
              
                 // Read teams from input arguments
-                List<List<Player>> team = new List<List<Player>>();
-                for(byte i = 0; i < 10; ++i){
-                    if (lobbyArgs.ContainsKey("team" + i))
-                    {
-                        team[i] = new List<Player>();
-                        string[] teamPlayers = lobbyArgs["team" + i].Split('|');
-                        for (int j = 0; j < teamPlayers.Length; ++j)
-                        {
-                            string[] properties = teamPlayers[j].Split('-');
-                            string playerID = properties[0];
-                            string alias = properties[1];
-                            string steamID = properties[2];
-                            Player player = new Player(steamID, playerID, alias);
-                            team[i].Add(player);
-                        }
-                    }
-                }
+                List<List<Player>> teams = Lobby.getPlayersObj(lobbyArgs);
+
+                // Set the teams on the game server
+                gameServer.Players = teams;
 
                 // Read addons from input arguments
-                List<Addon> addons = new List<Addon>();
-                for (byte i = 0; i < 10; ++i)
-                {
-                    if (lobbyArgs.ContainsKey("addon" + i))
-                    {
-                        Dictionary<string, string> addonProperties = new Dictionary<string, string>();
-                        string[] addonOptions = lobbyArgs["addon" + i + "options"].Split('|');
-                        for (int j = 0; j < addonOptions.Length; ++j)
-                        {
-                            string[] properties = addonOptions[j].Split('-');
-                            string key = properties[0];
-                            string value = properties[1];
-                            addonProperties.Add(key, value);
-                        }
-                        Addon addon = new Addon(lobbyArgs["addon" + i], addonProperties);
-                        addons.Add(addon);
-                    }
-                }
+                List<Addon> addons = Lobby.getAddonsObj(lobbyArgs);
+
+                // Set the addons on the game server
                 gameServer.Addons = addons;
 
                 // Add game server to list

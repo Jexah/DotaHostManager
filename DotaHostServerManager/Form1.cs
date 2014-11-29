@@ -19,6 +19,8 @@ namespace DotaHostServerManager
         // Initialize boxManagers dictionary
         private static Dictionary<string, BoxManager> boxManagers = new Dictionary<string, BoxManager>();
 
+        private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string,AddonRequirements>();
+
         // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Vultr.SERVER_MANAGER_PORT);
 
@@ -31,6 +33,8 @@ namespace DotaHostServerManager
 
         public Form1()
         {
+            setAddonRequirements();
+
             serverSoftCap = 1;
 
             InitializeComponent();
@@ -40,6 +44,13 @@ namespace DotaHostServerManager
 
             // Start the websocket server, wait for incomming connections
             wsServer.start();
+        }
+
+        // Set hardcoded benchmarks here
+        private void setAddonRequirements()
+        {
+            AddonRequirements lod = new AddonRequirements(350, 15);
+            addonRequirements.Add("lod", lod);
         }
 
          // Socket hooks go here
@@ -66,9 +77,6 @@ namespace DotaHostServerManager
                     // Used to contain the info generated from the API
                     VultrServerProperties serverInfo = new VultrServerProperties();
 
-                    // Flag to check if server was found, if not SHIT IF WROOONG
-                    bool found = false;
-
                     // Finds the box manager in the list of servers by matching the IPs
                     foreach (KeyValuePair<string, VultrServerProperties> kvp in jsonObj)
                     {
@@ -77,20 +85,20 @@ namespace DotaHostServerManager
                         if (serverIP == boxIP)
                         {
                             serverInfo = kvp.Value;
-                            found = true;
+                            boxManager.ThirdParty = false;
                         }
                     }
-                    if (!found)
+                    if (!boxManager.ThirdParty)
                     {
-                        Helpers.log("Server IP was not found.");
-                        return;
+                        // Sets the subID so it can be destroyed later
+                        boxManager.SubID = Convert.ToInt32(serverInfo.SUBID);
+
+                        // Sets the region so we know where it is hosted
+                        boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo.location];
+
+                        // Send SUBID to server so it knows its place
+                        c.Send("subid;" + boxManager.SubID);
                     }
-
-                    // Sets the subID so it can be destroyed later
-                    boxManager.SubID = Convert.ToInt32(serverInfo.SUBID);
-
-                    // Sets the region so we know where it is hosted
-                    boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo.location];
 
                     // Sets the IP of the box manager
                     boxManager.Ip = c.ClientAddress.ToString();
@@ -100,9 +108,6 @@ namespace DotaHostServerManager
 
                     // Add BoxManager to the GUI List
                     modGUI(boxesList, () => { boxesList.Items.Add(c.ClientAddress.ToString()); });
-
-                    // Send SUBID to server so it knows its place
-                    c.Send("subid;" + boxManager.SubID);
 
                     // Request system stats
                     c.Send("system");
@@ -156,6 +161,35 @@ namespace DotaHostServerManager
             });
             #endregion
 
+            // Receive game server request from webserver
+            #region wsServer.addHook("create");
+            wsServer.addHook("create", (c, x) =>
+            {
+                // Socket msg: "create;19;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
+                //                     ^region code (byte)
+                byte region = Convert.ToByte(x[1]);
+
+                // Remove the first element of the array (function name ("create"))
+                string[] gameServerArgs = Helpers.RemoveIndex(x, 0);
+
+                // Re-add the seperators
+                string gameServerArgsStr = String.Join(";", gameServerArgs);
+
+                // Set up the properties for the lobby in case we want to retrieve them later
+                Dictionary<string, string> lobbyArgs = Lobby.getLobbyArgsObj(gameServerArgs);
+
+                // Read addons from input arguments
+                List<Addon> addons = Lobby.getAddonsObj(lobbyArgs);
+
+                BoxManager boxManager = findBoxManager(region, addons);
+
+                if(boxManager != null)
+                {
+                    wsServer.send(String.Join(";", x), boxManager.Ip);
+                }
+            });
+            #endregion
+       
         }
 
         // All BoxManager/Gameserver related events here
@@ -184,15 +218,18 @@ namespace DotaHostServerManager
         // Destroy box instance
         private void removeBoxManager(BoxManager boxManager, bool now = false)
         {
-            if (now)
+            if (!boxManager.ThirdParty)
             {
-                // Sends instant destroy message
-                wsServer.send("destroy|hard", boxManager.Ip);
-            }
-            else
-            {
-                // Waits for current games to finish, polls every minute
-                wsServer.send("destroy", boxManager.Ip);
+                if (now)
+                {
+                    // Sends instant destroy message
+                    wsServer.send("destroy|hard", boxManager.Ip);
+                }
+                else
+                {
+                    // Waits for current games to finish, polls every minute
+                    wsServer.send("destroy", boxManager.Ip);
+                }
             }
 
             // Remove boxmanager from list
@@ -203,9 +240,26 @@ namespace DotaHostServerManager
         }
 
         // Finds a server to host the gamemode selected, in the region selected
-        private void findServer(byte region, string addonID)
+        private BoxManager findBoxManager(byte region, List<Addon> addons)
         {
-            // TODO: Add server finding algorithm
+            int totalRam = 0;
+            int totalCpu = 0;
+            for (int i = 0; i < addons.Count; ++i)
+            {
+                totalRam += addonRequirements[addons[i].Id].Ram;
+                totalCpu += addonRequirements[addons[i].Id].Cpu;
+            }
+            foreach (KeyValuePair<string, BoxManager> kvp in boxManagers)
+            {
+                if (kvp.Value.Region == region)
+                {
+                    if (kvp.Value.Ram[0] > totalRam && kvp.Value.CpuPercent > totalCpu)
+                    {
+                        return kvp.Value;
+                    }
+                }
+            }
+            return null;
         }
 
         // Reboots the selected box

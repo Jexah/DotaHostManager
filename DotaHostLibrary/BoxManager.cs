@@ -103,12 +103,25 @@ namespace DotaHostLibrary
             }
         }
 
+        private bool thirdParty;
+        public bool ThirdParty
+        {
+            get
+            {
+                return thirdParty;
+            }
+            set
+            {
+                thirdParty = value;
+            }
+        }
 
-        private List<GameServer> gameServers;
+
+        private List<GameServer> gameServers = new List<GameServer>();
         
         public BoxManager()
         {
-
+            thirdParty = true;
         }
 
     }
