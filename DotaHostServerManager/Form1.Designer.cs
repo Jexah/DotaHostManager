@@ -40,7 +40,7 @@
             this.boxCPULabel = new System.Windows.Forms.Label();
             this.boxCPUBar = new System.Windows.Forms.ProgressBar();
             this.label6 = new System.Windows.Forms.Label();
-            this.listBox1 = new System.Windows.Forms.ListBox();
+            this.boxGameServerList = new System.Windows.Forms.ListBox();
             this.label5 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
@@ -48,6 +48,8 @@
             this.boxDownloadLabel = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.boxVerifiedLabel = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // boxesList
@@ -77,9 +79,9 @@
             this.boxNameLabel.Location = new System.Drawing.Point(231, 36);
             this.boxNameLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxNameLabel.Name = "boxNameLabel";
-            this.boxNameLabel.Size = new System.Drawing.Size(126, 26);
+            this.boxNameLabel.Size = new System.Drawing.Size(136, 26);
             this.boxNameLabel.TabIndex = 2;
-            this.boxNameLabel.Text = "box1";
+            this.boxNameLabel.Text = "333.333.333:33333";
             this.boxNameLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label3
@@ -107,10 +109,10 @@
             // boxStatusLabel
             // 
             this.boxStatusLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.boxStatusLabel.Location = new System.Drawing.Point(234, 62);
+            this.boxStatusLabel.Location = new System.Drawing.Point(231, 62);
             this.boxStatusLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxStatusLabel.Name = "boxStatusLabel";
-            this.boxStatusLabel.Size = new System.Drawing.Size(123, 26);
+            this.boxStatusLabel.Size = new System.Drawing.Size(136, 26);
             this.boxStatusLabel.TabIndex = 6;
             this.boxStatusLabel.Text = "Active!";
             this.boxStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -118,7 +120,7 @@
             // label2
             // 
             this.label2.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(316, 113);
+            this.label2.Location = new System.Drawing.Point(533, 49);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(90, 26);
@@ -129,7 +131,7 @@
             // boxRAMBar
             // 
             this.boxRAMBar.Enabled = false;
-            this.boxRAMBar.Location = new System.Drawing.Point(411, 113);
+            this.boxRAMBar.Location = new System.Drawing.Point(628, 49);
             this.boxRAMBar.Name = "boxRAMBar";
             this.boxRAMBar.Size = new System.Drawing.Size(108, 26);
             this.boxRAMBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
@@ -138,7 +140,7 @@
             // boxRAMLabel
             // 
             this.boxRAMLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.boxRAMLabel.Location = new System.Drawing.Point(411, 142);
+            this.boxRAMLabel.Location = new System.Drawing.Point(628, 78);
             this.boxRAMLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxRAMLabel.Name = "boxRAMLabel";
             this.boxRAMLabel.Size = new System.Drawing.Size(108, 26);
@@ -149,7 +151,7 @@
             // boxCPULabel
             // 
             this.boxCPULabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.boxCPULabel.Location = new System.Drawing.Point(411, 200);
+            this.boxCPULabel.Location = new System.Drawing.Point(628, 136);
             this.boxCPULabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxCPULabel.Name = "boxCPULabel";
             this.boxCPULabel.Size = new System.Drawing.Size(108, 26);
@@ -159,7 +161,7 @@
             // 
             // boxCPUBar
             // 
-            this.boxCPUBar.Location = new System.Drawing.Point(411, 171);
+            this.boxCPUBar.Location = new System.Drawing.Point(628, 107);
             this.boxCPUBar.Name = "boxCPUBar";
             this.boxCPUBar.Size = new System.Drawing.Size(108, 26);
             this.boxCPUBar.TabIndex = 12;
@@ -167,7 +169,7 @@
             // label6
             // 
             this.label6.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(316, 171);
+            this.label6.Location = new System.Drawing.Point(533, 107);
             this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(90, 26);
@@ -175,18 +177,19 @@
             this.label6.Text = "CPU:";
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // listBox1
+            // boxGameServerList
             // 
-            this.listBox1.FormattingEnabled = true;
-            this.listBox1.Location = new System.Drawing.Point(572, 75);
-            this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(108, 277);
-            this.listBox1.TabIndex = 14;
+            this.boxGameServerList.BackColor = System.Drawing.SystemColors.Window;
+            this.boxGameServerList.FormattingEnabled = true;
+            this.boxGameServerList.Location = new System.Drawing.Point(842, 75);
+            this.boxGameServerList.Name = "boxGameServerList";
+            this.boxGameServerList.Size = new System.Drawing.Size(108, 277);
+            this.boxGameServerList.TabIndex = 14;
             // 
             // label5
             // 
             this.label5.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(569, 36);
+            this.label5.Location = new System.Drawing.Point(839, 36);
             this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(108, 26);
@@ -197,7 +200,7 @@
             // label7
             // 
             this.label7.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(316, 256);
+            this.label7.Location = new System.Drawing.Point(533, 192);
             this.label7.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(90, 26);
@@ -208,7 +211,7 @@
             // label8
             // 
             this.label8.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.Location = new System.Drawing.Point(316, 282);
+            this.label8.Location = new System.Drawing.Point(533, 218);
             this.label8.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(90, 26);
@@ -219,7 +222,7 @@
             // boxUploadLabel
             // 
             this.boxUploadLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.boxUploadLabel.Location = new System.Drawing.Point(411, 256);
+            this.boxUploadLabel.Location = new System.Drawing.Point(628, 192);
             this.boxUploadLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxUploadLabel.Name = "boxUploadLabel";
             this.boxUploadLabel.Size = new System.Drawing.Size(108, 26);
@@ -230,7 +233,7 @@
             // boxDownloadLabel
             // 
             this.boxDownloadLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.boxDownloadLabel.Location = new System.Drawing.Point(411, 282);
+            this.boxDownloadLabel.Location = new System.Drawing.Point(628, 218);
             this.boxDownloadLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxDownloadLabel.Name = "boxDownloadLabel";
             this.boxDownloadLabel.Size = new System.Drawing.Size(108, 26);
@@ -250,7 +253,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(142, 142);
+            this.button2.Location = new System.Drawing.Point(157, 177);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(112, 75);
             this.button2.TabIndex = 21;
@@ -258,11 +261,35 @@
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
+            // boxVerifiedLabel
+            // 
+            this.boxVerifiedLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.boxVerifiedLabel.Location = new System.Drawing.Point(231, 88);
+            this.boxVerifiedLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.boxVerifiedLabel.Name = "boxVerifiedLabel";
+            this.boxVerifiedLabel.Size = new System.Drawing.Size(136, 26);
+            this.boxVerifiedLabel.TabIndex = 23;
+            this.boxVerifiedLabel.Text = "False";
+            this.boxVerifiedLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // label10
+            // 
+            this.label10.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.Location = new System.Drawing.Point(121, 88);
+            this.label10.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(106, 26);
+            this.label10.TabIndex = 22;
+            this.label10.Text = "Verified:";
+            this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(841, 369);
+            this.ClientSize = new System.Drawing.Size(1016, 565);
+            this.Controls.Add(this.boxVerifiedLabel);
+            this.Controls.Add(this.label10);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.boxDownloadLabel);
@@ -270,7 +297,7 @@
             this.Controls.Add(this.label8);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.listBox1);
+            this.Controls.Add(this.boxGameServerList);
             this.Controls.Add(this.boxCPULabel);
             this.Controls.Add(this.boxCPUBar);
             this.Controls.Add(this.label6);
@@ -307,7 +334,7 @@
         private System.Windows.Forms.Label boxCPULabel;
         private System.Windows.Forms.ProgressBar boxCPUBar;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.ListBox boxGameServerList;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
@@ -315,6 +342,8 @@
         private System.Windows.Forms.Label boxDownloadLabel;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Label boxVerifiedLabel;
+        private System.Windows.Forms.Label label10;
     }
 }
 

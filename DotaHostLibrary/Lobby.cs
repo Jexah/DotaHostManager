@@ -16,7 +16,15 @@ namespace DotaHostLibrary
             {
                 string[] keyValue = gameServerArgs[i].Split('=');
                 string key = keyValue[0];
-                string value = keyValue[1];
+                string value;
+                if (keyValue.Length == 2)
+                {
+                    value = keyValue[1];
+                }
+                else
+                {
+                    value = "";
+                }
                 lobbyArgs[key] = value;
             }
             return lobbyArgs;
@@ -27,13 +35,17 @@ namespace DotaHostLibrary
             List<List<Player>> teams = new List<List<Player>>();
             for (byte i = 0; i < 10; ++i)
             {
-                if (lobbyArgs.ContainsKey("team" + i))
+                teams.Add(new List<Player>());
+            }
+            for (byte i = 0; i < 10; ++i)
+            {
+                if (lobbyArgs.ContainsKey("team" + i) && lobbyArgs["team" + i] != "")
                 {
-                    teams[i] = new List<Player>();
                     string[] teamPlayers = lobbyArgs["team" + i].Split('|');
                     for (int j = 0; j < teamPlayers.Length; ++j)
                     {
                         string[] properties = teamPlayers[j].Split('-');
+                        Helpers.log(properties[0]);
                         string playerID = properties[0];
                         string alias = properties[1];
                         string steamID = properties[2];
@@ -69,27 +81,5 @@ namespace DotaHostLibrary
         }
 
 
-        public static List<Addon> stringToAddons(string args)
-        {
-            List<Addon> addons = new List<Addon>();
-            for (byte i = 0; i < 10; ++i)
-            {
-                if (lobbyArgs.ContainsKey("addon" + i))
-                {
-                    Dictionary<string, string> addonProperties = new Dictionary<string, string>();
-                    string[] addonOptions = lobbyArgs["addon" + i + "options"].Split('|');
-                    for (int j = 0; j < addonOptions.Length; ++j)
-                    {
-                        string[] properties = addonOptions[j].Split('-');
-                        string key = properties[0];
-                        string value = properties[1];
-                        addonProperties.Add(key, value);
-                    }
-                    Addon addon = new Addon(lobbyArgs["addon" + i], addonProperties);
-                    addons.Add(addon);
-                }
-            }
-            return addons;
-        }
     }
 }

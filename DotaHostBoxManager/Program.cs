@@ -263,8 +263,22 @@ namespace DotaHostBoxManager
                 gameServers.Add(gameServer);
 
                 // Launch the server using the string options
-                launchGameServer(gameServer, gameServerArgsStr);
+                //launchGameServer(gameServer, gameServerArgsStr);
+                Helpers.log(gameServerArgsStr);
 
+            });
+            #endregion
+
+            // Return game server status to the ServerManager [WIP]
+            #region wsClient.addHook("gameServers");
+            wsClient.addHook("gameServers", (c, x) =>
+            {
+                string gameServersString = "";
+                for (int i = 0; i < gameServers.Count; ++i)
+                {
+                    gameServersString += gameServers[i].Addons[0].Id;
+                }
+                c.Send("gameServers;" + gameServersString);
             });
             #endregion
 

@@ -104,7 +104,7 @@ namespace DotaHostLibrary
         }
 
         private bool thirdParty;
-        public bool ThirdParty
+       public bool ThirdParty
         {
             get
             {
@@ -118,6 +118,17 @@ namespace DotaHostLibrary
 
 
         private List<GameServer> gameServers = new List<GameServer>();
+        public List<GameServer> GameServers
+        {
+            get
+            {
+                return gameServers;
+            }
+            set
+            {
+                gameServers = value;
+            }
+        }
         
         public BoxManager()
         {
