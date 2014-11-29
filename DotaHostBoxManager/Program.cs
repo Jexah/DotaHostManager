@@ -107,9 +107,9 @@ namespace DotaHostBoxManager
             Dictionary<string, string> addonProperties = new Dictionary<string, string>();
             addons.Add(new Addon("lod", addonProperties));
 
-            // Add PW
-            addonProperties = new Dictionary<string, string>();
-            addons.Add(new Addon("warchasers", addonProperties));
+            // Add warchasers
+            //addonProperties = new Dictionary<string, string>();
+            //addons.Add(new Addon("warchasers", addonProperties));
 
             // Compile
             AddonCompiler.compileAddons(addons, Global.BASE_PATH + "addonZips\\", Global.BASE_PATH + "addons\\", true);
