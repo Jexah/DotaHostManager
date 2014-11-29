@@ -27,6 +27,7 @@ namespace DotaHostClientLibrary
         // Message queue
         private List<string> wsQueue = new List<string>();
 
+        // Message type IDs
         public const byte RECEIVE = 0;
         public const byte SEND = 1;
         public const byte CONNECT = 2;
@@ -67,10 +68,16 @@ namespace DotaHostClientLibrary
         // Adds a default hook to onConnected
         private void hookDefaultFunctions()
         {
+            // Log on connect begin
+            #region addHook(CONNECT);
             addHook(CONNECT, (c) =>
             {
                 Helpers.log("[Socket] Connecting...");
             });
+            #endregion
+
+            // Log on connected, send all waiting messages, and store client ID
+            #region addHook(CONNECTED);
             addHook(CONNECTED, (c) =>
             {
                 Helpers.log("[Socket] Connected!");
@@ -78,12 +85,11 @@ namespace DotaHostClientLibrary
                 // Loop through queue and send all waiting packets
                 for (byte i = 0; i < wsQueue.Count; ++i)
                 {
-                    c.Send(wsQueue[i], false, false);
+                    c.Send(wsQueue[i]);
                 }
                 wsQueue.Clear();
 
                 // Assign userid
-                
                 string ip = c.ClientAddress.ToString();
                 if (!userIdToContext.ContainsKey(ip))
                 {
@@ -98,6 +104,10 @@ namespace DotaHostClientLibrary
                         
                 }
             });
+            #endregion
+
+            // Remove log disconnected, delete userID
+            #region addHook(DISCONNECETED);
             addHook(DISCONNECTED, (c) =>
             {
                 // Remove userid
@@ -105,6 +115,8 @@ namespace DotaHostClientLibrary
                 userIdToContext.Remove(userContextToId[c]);
                 userContextToId.Remove(c);
             });
+            #endregion
+
         }
 
         // Loops through generic function calls for the given event type

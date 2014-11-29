@@ -23,7 +23,7 @@ namespace DotaHostClientLibrary
             dlManager.DownloadFileCompleted += dlManager_DownloadFileCompleted;
         }
 
-        // Request download with given parameters
+        // Request sync download with given parameters
         public void downloadSync(string sourceFile, string targetFile)
         {
             Helpers.log("[Download] Begin: " + sourceFile + " -> " + targetFile);
@@ -31,6 +31,7 @@ namespace DotaHostClientLibrary
             Helpers.log("[Download] Complete: " + sourceFile + " -> " + targetFile);
         }
 
+        // Begin or queue download instruction
         public void download(string sourceFile, string targetFile, DownloadProgressDel downloadProgress, DownloadCompleteDel downloadComplete)
         {
             // Prepares the instruction
@@ -55,14 +56,14 @@ namespace DotaHostClientLibrary
         // Begins download of selected "currentDownload"
         private void beginDownload()
         {
-            Helpers.log("[Download] Begin: " + currentDownload.getSourceFile() + " -> " + currentDownload.getTargetFile());
-            dlManager.DownloadFileAsync(new Uri(currentDownload.getSourceFile()), currentDownload.getTargetFile());
+            Helpers.log("[Download] Begin: " + currentDownload.SourceFile + " -> " + currentDownload.TargetFile);
+            dlManager.DownloadFileAsync(new Uri(currentDownload.SourceFile), currentDownload.TargetFile);
         }
 
         // Download progress hook
         private void dlManager_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
-            currentDownload.getDownloadProgress()(e);
+            currentDownload.DownloadProgress(e);
         }
 
         // Download complete hook
@@ -70,7 +71,7 @@ namespace DotaHostClientLibrary
         {
             Helpers.log("[Download] Complete");
 
-            currentDownload.getDownloadComplete()(e);
+            currentDownload.DownloadComplete(e);
 
             // Starts the next download in the queue
             beginNext();

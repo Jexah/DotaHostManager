@@ -55,6 +55,12 @@
     <None Include="app.manifest" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DotaHostClientLibrary\DotaHostClientLibrary.csproj">
+      <Project>{da2e93ce-aedd-4ea8-a058-fce9f5e4228b}</Project>
+      <Name>DotaHostClientLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

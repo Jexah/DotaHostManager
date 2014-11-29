@@ -9,7 +9,7 @@ namespace DotaHostLibrary
 {
     public class GameServer
     {
-
+        // Name of game server, perhaps same as lobby name?
         private string name = String.Empty;
         public string Name
         {
@@ -36,7 +36,6 @@ namespace DotaHostLibrary
                 addons = value;
             }
         }
-
 
         // List of players
         private List<List<Player>> players = new List<List<Player>>();
@@ -70,7 +69,6 @@ namespace DotaHostLibrary
         {
 
         }
-
 
     }
 }

@@ -18,9 +18,9 @@ namespace DotaHostLibrary
         public const int SERVER_MANAGER_PORT = 3875;
 
         // Define region consts based on Vultr API
-        public const byte AMERICA = 3; // Dallas, USA
-        public const byte EUROPE = 7; // Amsterdam, Nederlands
-        public const byte AUSTRALIA = 19; // Sydney, Australia
+        public const byte AMERICA = 3;      // Dallas, USA
+        public const byte EUROPE = 7;       // Amsterdam, Nederlands
+        public const byte AUSTRALIA = 19;   // Sydney, Australia
 
         // Define string -> byte region map
         public static readonly Dictionary<string, byte> NAME_TO_REGION_ID;
@@ -43,6 +43,7 @@ namespace DotaHostLibrary
         // Vultr BoxManager snapshot ID
         public const string SNAPSHOT_ID = "54783ffe9a1f3";
 
+        // Initialize the static readonlys
         static Vultr()
         {
             PLAN_IDS = new Dictionary<byte, byte>()
@@ -61,7 +62,7 @@ namespace DotaHostLibrary
             };
         }
 
-        // Vultr API functions
+        // Vultr create server with snapshot in given region
         public static void createServer(byte region)
         {
             HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) => 
@@ -76,6 +77,7 @@ namespace DotaHostLibrary
             });
         }
 
+        // Destroy the server with the given subid
         public static void destroyServer(int subID)
         {
             HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => 
@@ -87,10 +89,12 @@ namespace DotaHostLibrary
             });
         }
 
+        // Return an object of the server list
         public static void getServers(Action<dynamic> func)
         {
             HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "GET", (body) =>
                 {
+                    // Take the raw JSON body and convert it into a dictionary of server properties
                     Dictionary<string, VultrServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, VultrServerProperties>>(body);  
                     func(data);
                 }, new Dictionary<string, string>(){

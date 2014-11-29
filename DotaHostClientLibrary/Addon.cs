@@ -37,5 +37,6 @@ namespace DotaHostClientLibrary
             this.id = id;
             this.options = options;
         }
+
     }
 }

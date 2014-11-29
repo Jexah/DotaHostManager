@@ -17,6 +17,9 @@ namespace DotaHostBoxManager
 {
     class Program
     {
+
+        #region Constants
+
         // The path to steamcmd
         private const string STEAMCMD_PATH = @"steamcmd\";
 
@@ -43,15 +46,13 @@ namespace DotaHostBoxManager
 
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
-        
+
+        #endregion
+
+        #region Static Readonlys
+
         // Network card set up for network monitoring
         private static readonly string[] NETWORK_CARDS = getNetworkCards();
-        
-        // Performance monitoring
-        private static PerformanceCounter cpuCounter = new PerformanceCounter();
-        private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-        private static List<PerformanceCounter> dataSentCounter = new List<PerformanceCounter>();
-        private static List<PerformanceCounter> dataReceivedCounter = new List<PerformanceCounter>();
 
         // The command to update the servers
         private static readonly string STEAMCMD_UPDATE_SERVERS = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +runscript install.txt";
@@ -59,6 +60,16 @@ namespace DotaHostBoxManager
         // The update file for source1
         private static readonly string STEAMCMD_UPDATEFILE = "@ShutdownOnFailedCommand 0" + Environment.NewLine + "force_install_dir " + Global.BASE_PATH + SOURCE_PATH + Environment.NewLine + "app_update 316570" + Environment.NewLine + "app_update 570" + Environment.NewLine + "quit";
         
+        #endregion
+
+        #region Private variables
+
+        // Performance monitoring
+        private static PerformanceCounter cpuCounter = new PerformanceCounter();
+        private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+        private static List<PerformanceCounter> dataSentCounter = new List<PerformanceCounter>();
+        private static List<PerformanceCounter> dataReceivedCounter = new List<PerformanceCounter>();
+
         // Used for downloading files
         private static DownloadManager dlManager = new DownloadManager();
         
@@ -76,6 +87,8 @@ namespace DotaHostBoxManager
 
         // Box Server subID
         private static int subID;
+
+        #endregion
 
         // The main entry point into the program
         private static void Main(string[] args)
@@ -116,6 +129,7 @@ namespace DotaHostBoxManager
             //updateDotaSource1();
         }
 
+        // Iterates through the network cards, adding them to the static readonlys dataSendCounter, and dataReceivedCounter
         private static void setupNetworkCards()
         {
             for (int i = 0; i < NETWORK_CARDS.Length; ++i)
@@ -128,24 +142,33 @@ namespace DotaHostBoxManager
         // Hook websocket events
         private static void hookWSocketEvents()
         {
+            // Log everything that is received, for debugging
+            #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
             {
                 Helpers.log(c.DataFrame.ToString());
             });
+            #endregion
 
+            // When connected to the ServerManager, send alert and request information and instructions
+            #region wsClient.addHook(WebSocketClient.CONNECTED);
             wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
             {
                 c.Send("box");
             });
+            #endregion
 
             // Begin server reboot
+            #region wsClient.addHook("reboot");
             wsClient.addHook("reboot", (c, x) =>
             {
                 status = BoxManager.DEACTIVATED;
                 rebootLoop();
             });
+            #endregion
 
             // Server destroy (soft/hard)
+            #region wsClient.addHook("destroy");
             wsClient.addHook("destroy", (c, x) =>
             {
                 if (x.Length > 1 && x[1] == "hard")
@@ -160,19 +183,24 @@ namespace DotaHostBoxManager
                     destroyLoop();
                 }
             });
+            #endregion
 
             // Receive subid from server manager
+            #region wsClient.addHook("subid");
             wsClient.addHook("subid", (c, x) =>
             {
                 subID = Convert.ToInt32(x[1]);
                 Helpers.log(x[1]);
             });
+            #endregion
 
             // Get unique socket identifier from server
+            #region wsClient.addHook("id");
             wsClient.addHook("id", (c, x) =>
             {
                 websocketUserID = x[1];
             });
+            #endregion
 
             // Get status overview
             #region wsClient.addHook("system");
@@ -189,10 +217,11 @@ namespace DotaHostBoxManager
                     {
                         status = BoxManager.ACTIVE;
                     }
+
+                    // func;status;cpu;ramAvailable;ramTotal;upload;download
+                    c.Send("system;" + status + ";" + String.Join(";", args));
                 }
                 
-                // func;status;cpu;ramAvailable;ramTotal;upload;download
-                c.Send("system;" + status + ";" + String.Join(";", args));
             });
             #endregion
 
@@ -369,10 +398,12 @@ namespace DotaHostBoxManager
         {
             if (gameServers.Count > 0)
             {
-                Timer.newTimer(60, Timer.SECONDS, () => { rebootLoop(); });
+                // Game server still running, check again in 60 seconds
+                Timers.setTimeout(60, Timers.SECONDS, () => { rebootLoop(); });
             }
             else
             {
+                // Reboot server
                 System.Diagnostics.Process.Start("shutdown.exe", "-r -t 0");
             }
         }
@@ -382,10 +413,12 @@ namespace DotaHostBoxManager
         {
             if (gameServers.Count > 0)
             {
-                Timer.newTimer(60, Timer.SECONDS, () => { destroyLoop(); });
+                // Game servers still running, check again in 60 seconds
+                Timers.setTimeout(60, Timers.SECONDS, () => { destroyLoop(); });
             }
             else
             {
+                // Destroy server
                 Vultr.destroyServer(subID);
             }
         }
@@ -651,7 +684,9 @@ namespace DotaHostBoxManager
         // Gets the current CPU usage in percent
         private static int getCurrentCpuUsage()
         {
+            // Call is required twice because Windows
             cpuCounter.NextValue();
+            // Sleep is required to delay next call because Windows
             System.Threading.Thread.Sleep(1000);
             return (int)Math.Round(cpuCounter.NextValue());
         }
@@ -674,6 +709,7 @@ namespace DotaHostBoxManager
             int upload = 0;
             for (int i = 0; i < dataSentCounter.Count; ++i)
             {
+                // Iterates through all adapters and sums them
                 upload += Convert.ToInt32(Math.Round(dataSentCounter[i].NextValue()));
             }
             return upload;
@@ -685,12 +721,13 @@ namespace DotaHostBoxManager
             int download = 0;
             for (int i = 0; i < dataSentCounter.Count; ++i)
             {
+                // Iterates through all adapters and sums them
                 download += Convert.ToInt32(Math.Round(dataReceivedCounter[i].NextValue()));
             }
             return download;
         }
 
-        // Prints all network interface card reference names
+        // Returns a list of all network interface card reference names
         private static string[] getNetworkCards()
         {
             PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");

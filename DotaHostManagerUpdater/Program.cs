@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net;
+using DotaHostClientLibrary;
 
 namespace DotaHostManagerUpdater
 {
@@ -10,7 +11,7 @@ namespace DotaHostManagerUpdater
         static WebClient dlManager = new WebClient();
 
         // Website root
-        const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
+        const string ROOT = Global.ROOT;
 
         static void Main(string[] args)
         {

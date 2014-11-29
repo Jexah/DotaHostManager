@@ -9,8 +9,10 @@ namespace DotaHostLibrary
         // Web socket client we gonna use
         private Alchemy.WebSocketClient wsClient;
 
-        // Dictionaries containing the socket and download functions
+        // Dictionarie containing the socket and download functions
         private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
+
+
         private List<socketDel>[] wsHooks = new List<socketDel>[5];
         public delegate void FailedConnection();
         private FailedConnection failedFunc;

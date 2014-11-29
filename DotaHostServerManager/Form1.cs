@@ -11,6 +11,7 @@ namespace DotaHostServerManager
 {
     public partial class Form1 : Form
     {
+        // Colours for UI
         private static Color success = Color.Green;
         private static Color warning = Color.Orange;
         private static Color danger = Color.Red;
@@ -21,8 +22,17 @@ namespace DotaHostServerManager
         // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Vultr.SERVER_MANAGER_PORT);
 
+        // Soft BoxManager limit
+        private static byte serverSoftCap;
+
+        // Hard BoxManager limit
+        private const byte SERVER_HARD_CAP = 5;
+
+
         public Form1()
         {
+            serverSoftCap = 1;
+
             InitializeComponent();
 
             // Hook socket events
@@ -36,7 +46,7 @@ namespace DotaHostServerManager
         private void hookWSocketServerEvents()
         {
             // Print received messages to console for debugging
-            #region wsServer.addHook
+            #region wsServer.addHook(WebSocketServer.RECEIVE);
             wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
             {
                 //MessageBox.Show(c.DataFrame.ToString());
@@ -92,7 +102,7 @@ namespace DotaHostServerManager
                     modGUI(boxesList, () => { boxesList.Items.Add(c.ClientAddress.ToString()); });
 
                     // Send SUBID to server so it knows its place
-                    c.Send("subid|" + boxManager.SubID);
+                    c.Send("subid;" + boxManager.SubID);
 
                     // Request system stats
                     c.Send("system");
@@ -104,6 +114,11 @@ namespace DotaHostServerManager
             #region wsServer.addhook("system");
             wsServer.addHook("system", (c, x) =>
             {
+                if(!boxManagers.ContainsKey(c.ClientAddress.ToString()))
+                {
+                    return;
+                }
+
                 // Create pointer to box manager
                 BoxManager boxManager = boxManagers[c.ClientAddress.ToString()];
 
@@ -119,12 +134,12 @@ namespace DotaHostServerManager
                     // If the box manager is in the list and is selected, update the stats
                     if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == c.ClientAddress.ToString())
                     {
-                        setCurrentBoxStatsGUI(boxManager);
+                        setBoxStatsGUI(boxManager);
                     }
                 });
 
                 // Set timeout to request the system info again
-                DotaHostLibrary.Timer.newTimer(1, DotaHostLibrary.Timer.SECONDS, () => { c.Send("system"); });
+                Timers.setTimeout(1, Timers.SECONDS, () => { c.Send("system"); });
             });
             #endregion
 
@@ -143,10 +158,27 @@ namespace DotaHostServerManager
 
         }
 
+        // All BoxManager/Gameserver related events here
+        #region BoxManager/GameServer related events
+
         // Create a new box instance using snapshot
-        private void addBoxManager(byte region)
+        private static void addBoxManager(byte region)
         {
-            Vultr.createServer(region);
+            Vultr.getServers((jsonObj) =>
+            {
+                if (jsonObj.Count >= SERVER_HARD_CAP)
+                {
+                    Helpers.log("SERVER HARD CAP REACHED: SERVER NOT CREATED");
+                }
+                else if (jsonObj.Count >= serverSoftCap)
+                {
+                    Helpers.log("SERVER SOFT CAP REACHED: SERVER NOT CREATED");
+                }
+                else
+                {
+                    Vultr.createServer(region);
+                }
+            });
         }
 
         // Destroy box instance
@@ -182,6 +214,11 @@ namespace DotaHostServerManager
             // TODO: Add box restart code here
         }
 
+        #endregion
+
+        // All form-related events go here
+        #region FORM EVENTS
+
         // When the box managers list box selection changes
         private void boxesList_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -193,7 +230,7 @@ namespace DotaHostServerManager
             {
                 // Set the current visible stats to those of the box manager
                 string boxIP = boxesList.SelectedItem.ToString();
-                setCurrentBoxStatsGUI(boxManagers[boxIP]);
+                setBoxStatsGUI(boxManagers[boxIP]);
             }
             else
             {
@@ -222,6 +259,29 @@ namespace DotaHostServerManager
 
         }
 
+        // Ensure the application exits when the form is closed
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Environment.Exit(0);
+        }
+
+        // Temporary button, creates a new server in Australia
+        private void button1_Click(object sender, EventArgs e)
+        {
+            addBoxManager(Vultr.AUSTRALIA);
+        }
+
+        // Temporary button, destroys the selected server
+        private void button2_Click(object sender, EventArgs e)
+        {
+            removeBoxManager(boxManagers[boxesList.SelectedItem.ToString()]);
+        }
+
+        #endregion
+
+        // All pure GUI updating code goes here
+        #region UPDATE GUI
+
         // Set the default values for the elements of the GUI
         private void setBoxDefaultGUI()
         {
@@ -240,34 +300,30 @@ namespace DotaHostServerManager
         }
 
         // Sets all the stats of the GUI to that of the given boxmanager
-        private void setCurrentBoxStatsGUI(BoxManager boxManager)
+        private void setBoxStatsGUI(BoxManager boxManager)
         {
-            setCurrentBoxNameGUI(boxManager);
-            setCurrentBoxStatusGUI(boxManager);
-            setCurrentBoxCPUGUI(boxManager);
-            setCurrentBoxRAMGUI(boxManager);
-            setCurrentBoxNetworkGUI(boxManager);
+            setBoxNameGUI(boxManager);
+            setBoxStatusGUI(boxManager);
+            setBoxCPUGUI(boxManager);
+            setBoxRAMGUI(boxManager);
+            setBoxNetworkGUI(boxManager);
         }
 
-        // Sets the name label to that of the name of the given boxmanager
-        private void setCurrentBoxNameGUI(BoxManager boxManager)
+        // Sets the name label to that of the name of the given name
+        private void setBoxNameGUI(BoxManager boxManager)
         {
             setBoxNameGUI(boxManager.Ip);
         }
-
-        // Sets the value of the name label to that of the given string
         private void setBoxNameGUI(string name)
         {
             modGUI(boxNameLabel, () => { boxNameLabel.Text = name; });
         }
 
-        // Sets the value and color of the status label to that of the status of the given box manager
-        private void setCurrentBoxStatusGUI(BoxManager boxManager)
+        // Sets the value and color of the status label to that of the status of the given status
+        private void setBoxStatusGUI(BoxManager boxManager)
         {
             setBoxStatusGUI(boxManager.Status);
         }
-
-        // Sets status label and color based on gives status
         private void setBoxStatusGUI(byte status)
         {
             switch (status)
@@ -295,14 +351,12 @@ namespace DotaHostServerManager
             }
         }
 
-        // Sets ram labels color and value to that of the given box manager
-        private void setCurrentBoxRAMGUI(BoxManager boxManager)
+        // Sets ram labels color and value to that of the given ram levels
+        private void setBoxRAMGUI(BoxManager boxManager)
         {
             short[] ram = boxManager.Ram;
             setBoxRAMGUI(ram[0], ram[1]);
         }
-        
-        // Sets ram labels color and value, and bar, respective of given ram values
         private void setBoxRAMGUI(short remaining, short total)
         {
             short current = (short)(total - remaining);
@@ -324,13 +378,11 @@ namespace DotaHostServerManager
             }
         }
 
-        // Sets cpu label and bar to that of the % cpu usage of the given box 
-        private void setCurrentBoxCPUGUI(BoxManager boxManager)
+        // Sets cpu label and bar to that of the % cpu usage given
+        private void setBoxCPUGUI(BoxManager boxManager)
         {
             setBoxCPUGUI(boxManager.CpuPercent);
         }
-
-        // Sets the cpu 
         private void setBoxCPUGUI(int percent)
         {
             modGUI(boxCPUBar, () => { boxCPUBar.Value = percent; });
@@ -349,12 +401,12 @@ namespace DotaHostServerManager
             }
         }
 
-        private void setCurrentBoxNetworkGUI(BoxManager boxManager)
+        // Sets the network labels
+        private void setBoxNetworkGUI(BoxManager boxManager)
         {
             int[] network = boxManager.Network;
             setBoxNetworkGUI(network[0], network[1]);
         }
-
         private void setBoxNetworkGUI(int upload, int download)
         {
             modGUI(boxUploadLabel, () => { boxUploadLabel.Text = (upload * 8 / 1000) + " kb/s"; });
@@ -385,17 +437,7 @@ namespace DotaHostServerManager
             }
         }
 
-        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            Environment.Exit(0);
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            addBoxManager(Vultr.AUSTRALIA);
-        }
-
-
+        #endregion
 
 
     }

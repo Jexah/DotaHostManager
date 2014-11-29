@@ -10,38 +10,49 @@ namespace DotaHostClientLibrary
     public class DownloadInstruction
     {
         private string sourceFile;
+        public string SourceFile
+        {
+            get
+            {
+                return sourceFile;
+            }
+        }
+
         private string targetFile;
+        public string TargetFile
+        {
+            get
+            {
+                return targetFile;
+            }
+        }
 
-        private DownloadProgressDel downloadProgressDel;
-        private DownloadCompleteDel downloadCompleteDel;
+        private DownloadProgressDel downloadProgress;
+        public DownloadProgressDel DownloadProgress
+        {
+            get
+            {
+                return downloadProgress;
+            }
+        }
 
-        public DownloadInstruction(string sourceFile, string targetFile, DownloadProgressDel downloadProgressDel, DownloadCompleteDel downloadCompleteDel)
+        private DownloadCompleteDel downloadComplete;
+        public DownloadCompleteDel DownloadComplete
+        {
+            get
+            {
+                return downloadComplete;
+            }
+        }
+
+        public DownloadInstruction(string sourceFile, string targetFile, DownloadProgressDel downloadProgress, DownloadCompleteDel downloadComplete)
         {
             this.sourceFile = sourceFile;
             this.targetFile = targetFile;
 
-            this.downloadProgressDel = downloadProgressDel;
-            this.downloadCompleteDel = downloadCompleteDel;
+            this.downloadProgress = downloadProgress;
+            this.downloadComplete = downloadComplete;
         }
 
-        public string getSourceFile()
-        {
-            return this.sourceFile;
-        }
-
-        public string getTargetFile()
-        {
-            return this.targetFile;
-        }
-
-        public DownloadProgressDel getDownloadProgress()
-        {
-            return this.downloadProgressDel;
-        }
-
-        public DownloadCompleteDel getDownloadComplete()
-        {
-            return this.downloadCompleteDel;
-        }
     }
 }

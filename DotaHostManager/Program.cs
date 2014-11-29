@@ -18,7 +18,7 @@ namespace DotaHostManager
         private const short VERSION = 2;
 
         // GitHub download root
-        private const string GITHUB = "https://codeload.github.com/ash47/";
+        private const string GITHUB = Global.GITHUB;
 
         // AppData temporary folder
         private static string TEMP = System.IO.Path.GetTempPath() + @"dotahost\";
