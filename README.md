@@ -36,6 +36,15 @@ The Server Installer needs further testing. D2fixups (among other things) NEED t
  - The following scripts will automatically be installed onto all dedicated servers
   - serverinit from [github.com/ash47/DotaHostAddons](https://github.com/ash47/DotaHostAddons)
   - These scripts aren't currently installed / tested
+  - serverinit.zip NEEDS to be installed as an addon
+  - The addon compiler will compile it in, which will deal with vscripts
+  - DO NOT add serverinit to the list of addons to load -- it is built into the addonCompiler class, and will auto compile
+
+###Passing settings to Lua###
+ - Originally we were going to use +hostname <settings>
+ - It has now changed to being compiled directly into the Lua
+ - AddonCompiler.compileAddons() now has an optional serverSettings string, if set, that string will be stored into the Lua loading scripts
+ - That string currently ISN'T processed, but it will be :)
 
 ###Todo###
  - Everything XD
