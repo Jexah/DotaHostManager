@@ -26,17 +26,20 @@ namespace DotaHostBoxManager
         // The steam cmd file to run steam commands with
         private const string STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
 
+        // The base path to our files
+        private const string DOWNLOAD_PATH_BASE = "http://dotahost.net/files/";
+
         // The path to download steamcmd from
-        private const string DOWNLOAD_PATH_STEAMCMD = "http://media.steampowered.com/installer/steamcmd.zip";
+        private const string DOWNLOAD_PATH_STEAMCMD = DOWNLOAD_PATH_BASE + "steamcmd.zip";
 
-        // URL to download SRCDS from (Move this onto our own domain at some stage)
-        private const string DOWNLOAD_PATH_SRCDS = "https://forums.alliedmods.net/attachment.php?attachmentid=131318&d=1394307441";
+        // URL to download SRCDS from
+        private const string DOWNLOAD_PATH_SRCDS = DOWNLOAD_PATH_BASE + "srcds.zip";
 
-        // URL to download metamod from (Move this onto our own domain at some stage)
-        private const string DOWNLOAD_PATH_METAMOD = "http://sourcemod.gameconnect.net/files/mmsource-1.10.3-windows.zip";
+        // URL to download metamod from
+        private const string DOWNLOAD_PATH_METAMOD = DOWNLOAD_PATH_BASE + "mmsource.zip";
 
-        // URL to download d2fixups from (Move this onto our own domain at some stage) [ASAP]
-        private const string DOWNLOAD_PATH_D2FIXUPS = "https://forums.alliedmods.net/attachment.php?attachmentid=140210&d=1416971180";
+        // URL to download d2fixups from
+        private const string DOWNLOAD_PATH_D2FIXUPS = DOWNLOAD_PATH_BASE + "d2fixups.zip";
 
         // The path to the source servers
         private const string SOURCE_PATH = @"dota\";
