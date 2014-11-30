@@ -48,8 +48,7 @@ The Server Installer needs further testing. D2fixups (among other things) NEED t
 
 ###Webserver Layout###
  - wwwroot/
-  - addons/
-   - addonID.txt (there is one for each addon)
+  - addons/addonID.txt (there is one for each addon)
   - DotaHostManager.exe (this is the actual program)
   - DotaHostManagerUpdater.exe (this is the updater)
   - version.txt (this contains version info for the client program)
