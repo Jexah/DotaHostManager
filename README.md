@@ -61,4 +61,11 @@ NOTE: If you want to change this layout, you NEED to change the layout in the Do
  - Line 2 is the CRC - This needs to match the CRC on the addon itself
 
 ###Todo###
- - Everything XD
+ - Make the server update addons, that is, AddonDownloader.updateAddon() needs to be called automatically
+ - Translate the options + lobby data into a string so it can be passed to the addonCompiler
+ - Translate the string in Lua into something useable
+ - Implement method to find the next free port
+
+###Needs testing###
+ - Test the AddonDownloader on the client
+ - Test the addon compiler on the client
