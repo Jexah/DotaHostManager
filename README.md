@@ -56,5 +56,9 @@ The Server Installer needs further testing. D2fixups (among other things) NEED t
 
 NOTE: If you want to change this layout, you NEED to change the layout in the DotaHostClientLibrary/Globals.cs
 
+###Addon Info Layout###
+ - Line 1 is the version, eg, 0.1 -- this needs to match up with the release number in the repo
+ - Line 2 is the CRC - This needs to match the CRC on the addon itself
+
 ###Todo###
  - Everything XD
