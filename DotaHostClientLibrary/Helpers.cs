@@ -67,63 +67,54 @@ namespace DotaHostClientLibrary
 
         // Delete the folder (and it's contents!) at the given path
         // Use this with care!!!
-        public static void deleteFolder(string path)
+        public static void deleteFolder(string path, bool recursive)
         {
-            // Ensure the directory exists
-            if (Directory.Exists(path))
+            try
             {
-                DirectoryInfo dir = new DirectoryInfo(path);
-
-                foreach (FileInfo fi in dir.GetFiles())
-                {
-                    fi.IsReadOnly = false;
-                    fi.Delete();
-                }
-
-                foreach (DirectoryInfo di in dir.GetDirectories())
-                {
-                    deleteFolder(di.FullName);
-                    di.Delete();
-                }
+                Directory.Delete(path, recursive);
             }
+            catch { }
         }
 
         // Copies a directory from one place to another
         public static void directoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
         {
-            // Get the subdirectories for the specified directory.
-            DirectoryInfo dir = new DirectoryInfo(sourceDirName);
-            DirectoryInfo[] dirs = dir.GetDirectories();
-
-            if (!dir.Exists)
+            try
             {
-                return;
-            }
+                // Get the subdirectories for the specified directory.
+                DirectoryInfo dir = new DirectoryInfo(sourceDirName);
+                DirectoryInfo[] dirs = dir.GetDirectories();
 
-            // If the destination directory doesn't exist, create it. 
-            if (!Directory.Exists(destDirName))
-            {
-                Directory.CreateDirectory(destDirName);
-            }
-
-            // Get the files in the directory and copy them to the new location.
-            FileInfo[] files = dir.GetFiles();
-            foreach (FileInfo file in files)
-            {
-                string temppath = Path.Combine(destDirName, file.Name);
-                file.CopyTo(temppath, true);
-            }
-
-            // If copying subdirectories, copy them and their contents to new location. 
-            if (copySubDirs)
-            {
-                foreach (DirectoryInfo subdir in dirs)
+                if (!dir.Exists)
                 {
-                    string temppath = Path.Combine(destDirName, subdir.Name);
-                    directoryCopy(subdir.FullName, temppath, copySubDirs);
+                    return;
+                }
+
+                // If the destination directory doesn't exist, create it. 
+                if (!Directory.Exists(destDirName))
+                {
+                    Directory.CreateDirectory(destDirName);
+                }
+
+                // Get the files in the directory and copy them to the new location.
+                FileInfo[] files = dir.GetFiles();
+                foreach (FileInfo file in files)
+                {
+                    string temppath = Path.Combine(destDirName, file.Name);
+                    file.CopyTo(temppath, true);
+                }
+
+                // If copying subdirectories, copy them and their contents to new location. 
+                if (copySubDirs)
+                {
+                    foreach (DirectoryInfo subdir in dirs)
+                    {
+                        string temppath = Path.Combine(destDirName, subdir.Name);
+                        directoryCopy(subdir.FullName, temppath, copySubDirs);
+                    }
                 }
             }
+            catch {}
         }
-
     }
 }

@@ -100,6 +100,9 @@ namespace DotaHostBoxManager
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
 
+            // Cleanup addons folder
+            Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
+
             //updateServers();
             //launchGameServer(null, null);
 
@@ -111,8 +114,8 @@ namespace DotaHostBoxManager
             addons.Add(new Addon("lod", addonProperties));
 
             // Add warchasers
-            //addonProperties = new Dictionary<string, string>();
-            //addons.Add(new Addon("warchasers", addonProperties));
+            addonProperties = new Dictionary<string, string>();
+            addons.Add(new Addon("warchasers", addonProperties));
 
             // Compile
             AddonCompiler.compileAddons(addons, Global.BASE_PATH + "addonZips\\", Global.BASE_PATH + "addons\\", true);
