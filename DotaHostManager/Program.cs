@@ -17,12 +17,6 @@ namespace DotaHostManager
         // Program version
         private const short VERSION = 2;
 
-        // GitHub download root
-        private const string GITHUB = Global.GITHUB;
-
-        // AppData temporary folder
-        private static string TEMP = System.IO.Path.GetTempPath() + @"dotahost\";
-
         // Keep-alive timer
         private static System.Timers.Timer keepAlive;
 
@@ -90,15 +84,15 @@ namespace DotaHostManager
         // Download the most up-to-date version file of the app
         private static void downloadAppVersion()
         {
-            dlManager.download(Global.ROOT + "static/software/dotahostmanager/version", TEMP + "version", (e) => { }, (e) =>
+            dlManager.download(Global.DOWNLOAD_PATH_VERSION, Global.TEMP + "version", (e) => { }, (e) =>
             {
                 Helpers.log("[Update] Checking for updates...");
                 short version;
                 try
                 {
                     // Reads the version file from temp
-                    version = Convert.ToInt16(File.ReadAllText(TEMP + "version"));
-                    File.Delete(TEMP + "version");
+                    version = Convert.ToInt16(File.ReadAllText(Global.TEMP + "version"));
+                    File.Delete(Global.TEMP + "version");
 
                     // Checks if the read version matches the const version
                     if (version != VERSION)
@@ -107,11 +101,12 @@ namespace DotaHostManager
                         Helpers.log("[Update] New version detected!");
 
                         // If the downloader does not exist, download it
-                        if (!File.Exists(TEMP + "DotaHostManagerUpdater.exe"))
+                        if (!File.Exists(Global.TEMP + "DotaHostManagerUpdater.exe"))
                         {
                             Helpers.log("[Update] Downloading updater...");
 
-                            dlManager.download(Global.ROOT + "static/software/dotahostmanager/DotaHostManagerUpdater.exe", TEMP + "DotaHostManagerUpdater.exe", (e2) => {
+                            dlManager.download(Global.DOWNLOAD_PATH_UPDATER, Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
+                            {
                                 appUpdaterDownloadProgress(e2.ProgressPercentage);
                             }, (e2) => {
                                 // Begin the updater
@@ -154,7 +149,7 @@ namespace DotaHostManager
             Helpers.log("[Update] Starting...");
             ProcessStartInfo proc = new ProcessStartInfo();
             proc.UseShellExecute = true;
-            proc.WorkingDirectory = TEMP;
+            proc.WorkingDirectory = Global.TEMP;
             proc.FileName = "DotaHostManagerUpdater.exe";
             //proc2.Verb = "runas";
             proc.Arguments = "\"" + Global.BASE_PATH;
@@ -167,121 +162,6 @@ namespace DotaHostManager
             {
 
             }
-        }
-
-        // Function run when an addon finishes getting downloaded
-        private static void downloadAddonComplete(string[] args)
-        {
-            // Sets up properties from arguments and addonInfo file
-            string id = args[0];
-            string name = args[1];
-            string version = args[2];
-
-            // Deletes current addon folder if it exists
-            if (Directory.Exists(dotaPath + @"dota\addons\" + id + @"\")) { Directory.Delete(dotaPath + @"dota\addons\" + id + @"\", true); }
-
-            // Downloads CRC from website, and stores it
-            Helpers.log("[CRC] Checking CRC...");
-            dlManager.downloadSync(Global.ROOT + "static/addons/" + id + "/CRC", TEMP + id + "CRC");
-            string correctCRC = File.ReadAllText(TEMP + id + "CRC");
-
-            // Deletes CRC file
-            File.Delete(TEMP + id + "CRC");
-
-            // Generates new CRC of the zip just downloaded
-            string actualCRC = Helpers.calculateCRC(TEMP + id + ".zip");
-            Helpers.log("CRC: " + correctCRC + " == " + actualCRC);
-
-            // Matches the generated CRC with the downloaded CRC
-            if (correctCRC != actualCRC)
-            {
-                // Installation has failed, send formatted string to most recent connection
-                Helpers.log("[CRC] Mismatch!");
-                Helpers.log(" == Installation failed! == ");
-                wsServer.send("installationFailed;addon;" + id);
-            }
-            else
-            {
-                // CRC check has passed, extract file to addons folder, and move the zip to dota\addons_dotahost\
-                Helpers.log("[Extract] Extracting...");
-                ZipFile.ExtractToDirectory(TEMP + id + ".zip", dotaPath + @"dota\addons\");
-                if (!Directory.Exists(dotaPath + @"dota\addons_dotahost"))
-                {
-                    Directory.CreateDirectory(dotaPath + @"dota\addons_dotahost");
-                }
-                File.Delete(TEMP + id + ".zip");
-                File.Move(TEMP + id + ".zip", dotaPath + @"dota\addons_dotahost\" + id + ".zip");
-
-                // Rename folder from default to addon ID
-                Directory.Move(dotaPath + @"dota\addons\" + name + "-" + version + @"\", dotaPath + @"dota\addons\" + id + @"\");
-                Helpers.log("[Extract] Done!");
-                Helpers.log(" == Installation successful! == ");
-
-                // Installation was successful, send formatted string to most recent connection
-                wsServer.send("installationComplete;addon;" + id);
-            }
-
-            // Deletes the downloaded zip file
-            Helpers.log("[Cleaning] Cleaning up...");
-            File.Delete(TEMP + id + ".zip");
-            Helpers.log("[Cleaning] Done!");
-            Helpers.log("[Socket] Sending confirmation update!");
-        }
-
-        // Function run when the addon info download is complete
-        private static void downloadAddonInfoComplete(string addonID)
-        {
-            // Sets up properties from arguments and addonInfo file
-            string id = addonID;
-            string[] info = File.ReadAllLines(TEMP + id);
-            File.Delete(TEMP + id);
-            string name = info[0];
-            string version = info[1];
-
-            // Checks if the addon directory exists
-            if (Directory.Exists(dotaPath + @"dota\addons\" + id))
-            {
-                // Checks if the version file exists in the addon directory
-                if (File.Exists(dotaPath + @"dota\addons\" + id + @"\version"))
-                {
-                    // Sets the current version to the value in the version file
-                    string currentVersion = File.ReadAllText(dotaPath + @"dota\addons\" + id + @"\version");
-                    // Checks current version against the version found in the addonInfo file
-                    if (version == currentVersion)
-                    {
-                        Helpers.log("[Addon] " + id + " is up to date.");
-                        return;
-                    }
-                }
-            }
-
-            // Directory or file does not exist, or version does not match most recent
-            Helpers.log("[Addon] " + id + " out of date. New version: " + version);
-            Helpers.log("[Downloading] " + "https://codeload.github.com/ash47/" + name + "/zip/" + version + ".zip");
-
-            // Begins downloading addon from GitHub
-            dlManager.download("https://codeload.github.com/ash47/" + name + "/zip/" + version, TEMP + id + ".zip", (e) => 
-            {
-                wsServer.send("addon;" + id + ";percent;" + e.ProgressPercentage.ToString());
-            }, (e) => 
-            {
-                string[] args = { id, name, version };
-                downloadAddonComplete(args);
-            });
-        }
-
-        // Begins download of addonInfo for given addon
-        private static void updateAddon(string addonID)
-        {
-            Helpers.log("[Downloading] " + Global.ROOT + "static/addons/" + addonID + "/" + "info");
-            dlManager.download(Global.ROOT + "static/addons/" + addonID + "/info", TEMP + addonID, (e) =>
-            {
-                // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                wsServer.send("addon;" + addonID + ";percent;" + e.ProgressPercentage.ToString());
-            }, (e) =>
-            {
-                downloadAddonInfoComplete(addonID);
-            });
         }
         
         // Generates a json structure of installed addon information, sends it to client
@@ -335,6 +215,9 @@ namespace DotaHostManager
             {
                 // Path has already been found, set it to the stored setting
                 dotaPath = Properties.Settings.Default.dotaPath;
+
+                // Update addon downloader
+                AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
             }
             if (failed)
             {
@@ -365,6 +248,9 @@ namespace DotaHostManager
                     Properties.Settings.Default.dotaPath = dotaPath;
                     Properties.Settings.Default.Save();
                     Helpers.log("Updated dota path: " + dotaPath);
+
+                    // Update the addon downloads
+                    AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
                 }
                 catch
                 {
@@ -381,7 +267,26 @@ namespace DotaHostManager
             wsServer.addHook("exit", (c, x) => { requestClose = true; });
             wsServer.addHook(WebSocketServer.CONNECTED, (c) => { wsServer.send("dotaPath;" + dotaPath); });
             wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
-            wsServer.addHook("update", (c, x) => { updateAddon(x[1]); });
+            wsServer.addHook("update", (c, x) =>
+            {
+                AddonDownloader.updateAddon(x[1], (addonID, success) =>
+                {
+                    // Tell the server what happened
+                    if(success)
+                    {
+                        // Installation was successful, send formatted string to most recent connection
+                        wsServer.send("installationComplete;addon;" + addonID);
+                    }
+                    else
+                    {
+                        wsServer.send("installationFailed;addon;" + addonID);
+                    }
+                }, (addonID, e) =>
+                {
+                    // If a socket connection has previously been opened, send the progress percentage in a formatted string
+                    wsServer.send("addon;" + addonID + ";percent;" + e.ProgressPercentage.ToString());
+                });
+            });
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
         }
             

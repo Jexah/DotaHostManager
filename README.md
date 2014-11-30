@@ -13,7 +13,7 @@ DotaHostManager
  - This could change in the future
  - Addons will be housed on a central repo controlled by us [This one](https://github.com/ash47/DotaHostAddons)
  - We will create and update releases for plugins as needed
- - We should update the release instead of created new ones (so our repo doesn't overflow with releases)
+ - We should delete old releases once the new release has successfully rolled out
 
 ###Server Installer###
  - This will download dota 2 (source1 & source2)
@@ -45,6 +45,16 @@ The Server Installer needs further testing. D2fixups (among other things) NEED t
  - It has now changed to being compiled directly into the Lua
  - AddonCompiler.compileAddons() now has an optional serverSettings string, if set, that string will be stored into the Lua loading scripts
  - That string currently ISN'T processed, but it will be :)
+
+###Webserver Layout###
+ - wwwroot/
+  - addons/
+   - addonID.txt (there is one for each addon)
+  - DotaHostManager.exe (this is the actual program)
+  - DotaHostManagerUpdater.exe (this is the updater)
+  - version.txt (this contains version info for the client program)
+
+NOTE: If you want to change this layout, you NEED to change the layout in the DotaHostClientLibrary/Globals.cs
 
 ###Todo###
  - Everything XD

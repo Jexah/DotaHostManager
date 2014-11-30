@@ -18,12 +18,14 @@ namespace DotaHostClientLibrary
         // if generateRandomPath is true, it will append a random folder to the end
         // NOTE: Path NEEDS to lead in a slash
         // ASSUMPTION: This function CAN NOT be run in parrellel! Wait for it to finish before running again!
-        public static string compileAddons(List<Addon> addons, string searchPath, string outputPath, bool generateRandomPath=false, string serverSettings=null)
+        public static string compileAddons(List<Addon> addons, string outputPath, bool generateRandomPath=false, string serverSettings=null)
         {
             // Validate input
             if (addons == null) return null;
-            if (searchPath == null) return null;
             if (outputPath == null) return null;
+
+            // Grab the install location for addons
+            string searchPath = AddonDownloader.getAddonInstallLocation();
 
             // Add the random path if needed
             if (generateRandomPath)

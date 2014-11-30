@@ -10,17 +10,14 @@ namespace DotaHostManagerUpdater
         // Download manager
         static WebClient dlManager = new WebClient();
 
-        // Website root
-        const string ROOT = Global.ROOT;
-
         static void Main(string[] args)
         {
             try
             {
                 string basePath = args[0];
                 Console.WriteLine(basePath + "DotaHostManager.exe");
-                Console.WriteLine(ROOT + "/static/software/dotahostmanager/DotaHostManager.exe");
-                dlManager.DownloadFile(new Uri(ROOT + "/static/software/dotahostmanager/DotaHostManager.exe"), basePath + @"\DotaHostManager.exe");
+                Console.WriteLine(Global.DOWNLOAD_PATH_APP);
+                dlManager.DownloadFile(new Uri(Global.DOWNLOAD_PATH_APP), basePath + @"\DotaHostManager.exe");
                 ProcessStartInfo proc = new ProcessStartInfo();
                 proc.UseShellExecute = true;
                 proc.WorkingDirectory = basePath;

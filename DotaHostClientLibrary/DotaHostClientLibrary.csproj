@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Addon.cs" />
     <Compile Include="AddonCompiler.cs" />
+    <Compile Include="AddonDownloader.cs" />
     <Compile Include="CRC32.cs" />
     <Compile Include="DownloadInstructions.cs" />
     <Compile Include="DownloadManager.cs" />

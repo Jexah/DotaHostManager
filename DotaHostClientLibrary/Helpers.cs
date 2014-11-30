@@ -76,6 +76,16 @@ namespace DotaHostClientLibrary
             catch { }
         }
 
+        // Deletes a file with no chance of exceptions
+        public static void deleteSafe(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch { }
+        }
+
         // Copies a directory from one place to another
         public static void directoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
         {
