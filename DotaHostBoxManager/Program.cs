@@ -344,7 +344,7 @@ namespace DotaHostBoxManager
             {
                 // Source2 Settings
                 app = @"dota_ugc\game\bin\win64\dota2.exe";
-                args = "-dedicated -console +maxplayers " + maxPlayers + " -port " + port + " -addon_path \"" + mountPath + "\" -dota \"+map " + map + " gamemode=15 customgamemode=lod nomapvalidation=1\"";
+                args = "-dedicated +maxplayers " + maxPlayers + " -port " + port + " -addon_path \"" + mountPath + "\" -dota \"+map " + map + " gamemode=15 customgamemode=lod nomapvalidation=1\"";
 
                 // NOTE: -console IS FOR DEBUG, PLEASE REMOVE THIS ONCE SERVERS ARE GOOD!
                 // NOTE: Closing the console wont kill the server, you NEED to type `quit` into the console to close the dedicated server!
