@@ -1,4 +1,5 @@
 ﻿using DotaHostClientLibrary;
+using DotaHostLibrary;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
@@ -40,6 +41,9 @@ namespace DotaHostManager
 
         // Our websocket server
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse("127.0.0.1"), 2074);
+
+        // Our websocket client
+        private static WebSocketClient wsClient = new WebSocketClient("ws://localhost:8080");
 
         private static void Main(string[] i)
         {
@@ -96,6 +100,9 @@ namespace DotaHostManager
             }
             // Start websocket server
             Timers.setTimeout(500, Timers.MILLISECONDS, wsServer.start);
+
+            // Start websocket client
+            Timers.setTimeout(500, Timers.MILLISECONDS, wsClient.start);
 
             // Begin exit timer
             appKeepAlive();
@@ -318,6 +325,7 @@ namespace DotaHostManager
             wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
             wsServer.addHook("update", (c, x) =>
             {
+                c.Send("startInstall");
                 AddonDownloader.updateAddon(x[1], (addonID, success) =>
                 {
                     // Tell the server what happened

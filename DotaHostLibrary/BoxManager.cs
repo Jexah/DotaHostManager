@@ -12,127 +12,28 @@ namespace DotaHostLibrary
         public const byte INACTIVE = 3;
         public const byte DEACTIVATED = 4;
 
-        private string ip;
-        public string Ip
-        {
-            get
-            {
-                return ip;
-            }
-            set
-            {
-                ip = value;
-            }
-        }
+        public string Ip { get; set; }
 
-        private byte cpuPercent;
-        public byte CpuPercent
-        {
-            get
-            {
-                return cpuPercent;
-            }
-            set
-            {
-                cpuPercent = value;
-            }
-        }
+        public byte CpuPercent { get; set; }
 
-        private short[] ram;
-        public short[] Ram
-        {
-            get
-            {
-                return ram;
-            }
-            set
-            {
-                ram = value;
-            }
-        }
+        public short[] Ram { get; set; }
 
-        private int[] network;
-        public int[] Network
-        {
-            get
-            {
-                return network;
-            }
-            set
-            {
-                network = value;
-            }
-        }
+        public int[] Network { get; set; }
 
-        private byte status;
-        public byte Status
-        {
-            get
-            {
-                return status;
-            }
-            set
-            {
-                status = value;
-            }
-        }
+        public byte Status { get; set; }
 
-        private byte region;
-        public byte Region
-        {
-            get
-            {
-                return region;
-            }
-            set
-            {
-                region = value;
-            }
-        }
+        public byte Region { get; set; }
 
-        private int subID;
-        public int SubID
-        {
-            get
-            {
-                return subID;
-            }
-            set
-            {
-                subID = value;
-            }
-        }
+        public int SubID { get; set; }
 
-        private bool thirdParty;
-       public bool ThirdParty
-        {
-            get
-            {
-                return thirdParty;
-            }
-            set
-            {
-                thirdParty = value;
-            }
-        }
+        public bool ThirdParty { get; set; }
 
-
-        private List<GameServer> gameServers = new List<GameServer>();
-        public List<GameServer> GameServers
-        {
-            get
-            {
-                return gameServers;
-            }
-            set
-            {
-                gameServers = value;
-            }
-        }
+        public List<GameServer> GameServers { get; set; }
         
         public BoxManager()
         {
-            thirdParty = true;
+            ThirdParty = true;
+            GameServers = new List<GameServer>();
         }
 
     }

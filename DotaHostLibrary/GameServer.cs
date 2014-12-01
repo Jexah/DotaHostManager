@@ -10,64 +10,23 @@ namespace DotaHostLibrary
     public class GameServer
     {
         // Name of game server, perhaps same as lobby name?
-        private string name = String.Empty;
-        public string Name
-        {
-            get
-            {
-                return name;
-            }
-            set
-            {
-                name = value;
-            }
-        }
+        public string Name { get; set; }
 
         // List of addons to load
-        private List<Addon> addons = new List<Addon>();
-        public List<Addon> Addons
-        {
-            get
-            {
-                return addons;
-            }
-            set
-            {
-                addons = value;
-            }
-        }
+        public List<Addon> Addons { get; set; }
 
         // List of players
-        private List<List<Player>> players = new List<List<Player>>();
-        public List<List<Player>> Players
-        {
-            get
-            {
-                return players;
-            }
-            set
-            {
-                players = value;
-            }
-        }
+        public List<List<Player>> Players { get; set; }
 
         // List of options
-        private Dictionary<string, string> options = new Dictionary<string, string>();
-        public Dictionary<string, string> Options
-        {
-            get
-            {
-                return options;
-            }
-            set
-            {
-                options = value;
-            }
-        }
+        public Dictionary<string, string> Options { get; set; }
 
         public GameServer()
         {
-
+            Name = String.Empty;
+            Addons = new List<Addon>();
+            Players = new List<List<Player>>();
+            Options = new Dictionary<string, string>();
         }
 
     }

@@ -52,8 +52,12 @@
     <Compile Include="Global.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="KV.cs" />
+    <Compile Include="Lobby.cs" />
+    <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Team.cs" />
     <Compile Include="Timers.cs" />
+    <Compile Include="WebSocketClient.cs" />
     <Compile Include="WebSocketServer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
