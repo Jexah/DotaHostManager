@@ -1,6 +1,6 @@
 ﻿using System.Timers;
 
-namespace DotaHostLibrary
+namespace DotaHostClientLibrary
 {
     public delegate void TimerCallback(); 
 

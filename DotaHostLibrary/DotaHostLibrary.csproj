@@ -55,7 +55,6 @@
     <Compile Include="Lobby.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Timers.cs" />
     <Compile Include="Vultr.cs" />
     <Compile Include="VultrServerProperties.cs" />
     <Compile Include="WebSocketClient.cs" />

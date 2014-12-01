@@ -65,7 +65,7 @@ namespace DotaHostClientLibrary
             // Verify the size of the info packet
             if(info.Length != 2)
             {
-                Helpers.log("ERROR: Infopacket for " + addonID + " is currupted! Got " + info.Length + " lines instead of 2.");
+                Helpers.log("ERROR: Infopacket for " + addonID + " is corrupted! Got " + info.Length + " lines instead of 2.");
                 onComplete(addonID, false);
                 return;
             }

@@ -35,6 +35,9 @@ namespace DotaHostManager
         // Path to dota, eg: C:\Program Files (x86)\Steam\steamapps\dota 2 beta\
         private static string dotaPath;
 
+        // Prevent running exit code more than once
+        private static bool exiting = false;
+
         // Our websocket server
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse("127.0.0.1"), 2074);
 
@@ -44,6 +47,7 @@ namespace DotaHostManager
             File.Delete(Global.BASE_PATH + "log.txt");
             Helpers.log("[DotaHost] Version " + VERSION);
 
+            Directory.CreateDirectory(Global.TEMP);
 
             // Sets up uri protocol args if launched from browser
             if (i.Length > 0) { Helpers.log("Requested: " + i[0]); }
@@ -72,10 +76,13 @@ namespace DotaHostManager
             if (!checkDotaPath())
             {
                 Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
-                Environment.Exit(0);
+                exit();
             }
             // Start websocket server
             wsServer.start();
+
+            // Begin exit timer
+            appKeepAlive();
 
             // Event loop to prevent program from exiting
             doEvents();
@@ -92,7 +99,7 @@ namespace DotaHostManager
                 {
                     // Reads the version file from temp
                     version = Convert.ToInt16(File.ReadAllText(Global.TEMP + "version"));
-                    File.Delete(Global.TEMP + "version");
+                    //File.Delete(Global.TEMP + "version");
 
                     // Checks if the read version matches the const version
                     if (version != VERSION)
@@ -141,6 +148,7 @@ namespace DotaHostManager
         private static void exit(object sender, ElapsedEventArgs e)
         {
             requestClose = true;
+            Helpers.log("[Time Out] Exiting...");
         }
 
         // Starts the updater and closes this program
@@ -156,7 +164,7 @@ namespace DotaHostManager
             try
             {
                 Process.Start(proc);
-                Environment.Exit(0);
+                exit();
             }
             catch
             {
@@ -310,7 +318,7 @@ namespace DotaHostManager
                 System.Windows.Forms.Application.DoEvents();
                 if (requestClose && zeroCanClose == 0)
                 {
-                    Environment.Exit(0);
+                    exit();
                 }
             }
         }
@@ -402,6 +410,23 @@ namespace DotaHostManager
             zeroCanClose--;
         }
 
+        // Deletes the exe if autorun is false
+        private static void exit()
+        {
+            if (!exiting)
+            {
+                exiting = true;
+                if (!Properties.Settings.Default.autorun)
+                {
+                    var exepath = Assembly.GetEntryAssembly().Location;
+                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + exepath + "\"");
+                    info.WindowStyle = ProcessWindowStyle.Hidden;
+                    Process.Start(info).Dispose();
+                }
+                Timers.setTimeout(1, Timers.SECONDS, () => { Environment.Exit(0); });
+            }
+        }
+    
     }
 
 }
