@@ -83,6 +83,7 @@ namespace DotaHostClientLibrary
                 if (actualCRC == correctCRC)
                 {
                     Helpers.log("[Addon] " + addonID + " is up to date.");
+                    onComplete(addonID, true);
                     return;
                 }
             }

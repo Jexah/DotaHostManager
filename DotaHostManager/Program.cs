@@ -60,7 +60,9 @@ namespace DotaHostManager
                     File.Delete(Global.TEMP + "DotaHostManager.exe");
                     copyAndDeleteSelf();
                 }
+                return;
             }
+
             Helpers.log("[DotaHost] Version " + VERSION);
 
             // Sets up uri protocol args if launched from browser
@@ -93,7 +95,7 @@ namespace DotaHostManager
                 exit();
             }
             // Start websocket server
-            wsServer.start();
+            Timers.setTimeout(500, Timers.MILLISECONDS, wsServer.start);
 
             // Begin exit timer
             appKeepAlive();
