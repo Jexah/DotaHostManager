@@ -17,7 +17,7 @@ namespace DotaHostManagerUpdater
                 string basePath = args[0];
                 Console.WriteLine(basePath + "DotaHostManager.exe");
                 Console.WriteLine(Global.DOWNLOAD_PATH_APP);
-                dlManager.DownloadFile(new Uri(Global.DOWNLOAD_PATH_APP), basePath + @"\DotaHostManager.exe");
+                dlManager.DownloadFile(new Uri(Global.DOWNLOAD_PATH_APP.Replace("{0}", args[1])), basePath + @"\DotaHostManager.exe");
                 ProcessStartInfo proc = new ProcessStartInfo();
                 proc.UseShellExecute = true;
                 proc.WorkingDirectory = basePath;

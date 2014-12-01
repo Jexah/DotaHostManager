@@ -4,7 +4,6 @@ namespace DotaHostClientLibrary
     public static class Global
     {
         // Web root
-        //public const string ROOT = "https://dl.dropboxusercontent.com/u/25095474/dotahost/";
         public const string ROOT = "http://dotahost.net/";
 
         // Where this executable is run from
@@ -14,7 +13,7 @@ namespace DotaHostClientLibrary
         public static readonly string TEMP = System.IO.Path.GetTempPath() + @"dotahost\";
 
         // URL to download the app from
-        public const string DOWNLOAD_PATH_APP = ROOT + "DotaHostManager.exe";
+        public const string DOWNLOAD_PATH_APP = "https://github.com/ash47/DotaHostAddons/releases/download/{0}/DotaHostManager.exe";
 
         // URL to download the updater from
         public const string DOWNLOAD_PATH_UPDATER = ROOT + "DotaHostManagerUpdater.exe";

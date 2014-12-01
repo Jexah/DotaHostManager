@@ -15,7 +15,7 @@ namespace DotaHostManager
     class Program
     {
         // Program version
-        private const short VERSION = 2;
+        private const string VERSION = "0.1.1";
 
         // Keep-alive timer
         private static System.Timers.Timer keepAlive;
@@ -135,11 +135,11 @@ namespace DotaHostManager
             dlManager.download(Global.DOWNLOAD_PATH_VERSION, Global.TEMP + "version", (e) => { }, (e) =>
             {
                 Helpers.log("[Update] Checking for updates...");
-                short version;
+                string version;
                 try
                 {
                     // Reads the version file from temp
-                    version = Convert.ToInt16(File.ReadAllText(Global.TEMP + "version"));
+                    version = File.ReadAllText(Global.TEMP + "version");
                     File.Delete(Global.TEMP + "version");
 
                     // Checks if the read version matches the const version
@@ -158,13 +158,13 @@ namespace DotaHostManager
                                 appUpdaterDownloadProgress(e2.ProgressPercentage);
                             }, (e2) => {
                                 // Begin the updater
-                                startUpdater();
+                                startUpdater(version);
                             });
                         }
                         else
                         {
                             // Begin the updater
-                            startUpdater();
+                            startUpdater(version);
                         }
                     }
                     else
@@ -193,7 +193,7 @@ namespace DotaHostManager
         }
 
         // Starts the updater and closes this program
-        private static void startUpdater()
+        private static void startUpdater(string version)
         {
             Helpers.log("[Update] Starting...");
             ProcessStartInfo proc = new ProcessStartInfo();
@@ -201,7 +201,7 @@ namespace DotaHostManager
             proc.WorkingDirectory = Global.TEMP;
             proc.FileName = "DotaHostManagerUpdater.exe";
             //proc2.Verb = "runas";
-            proc.Arguments = "\"" + Global.BASE_PATH;
+            proc.Arguments = "\"" + Global.BASE_PATH + "\" " + version;
             try
             {
                 Process.Start(proc);
