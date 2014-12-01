@@ -352,14 +352,12 @@ namespace DotaHostManager
         // Application.DoEvents() + check closeRequest and zeroCanClose
         private static void doEvents()
         {
-            while (true)
-            {
                 System.Windows.Forms.Application.DoEvents();
                 if (requestClose && zeroCanClose == 0)
                 {
                     exit();
                 }
-            }
+                Timers.setTimeout(1, Timers.SECONDS, doEvents);
         }
 
         // Function to request registration of the dotahost uri protocol
