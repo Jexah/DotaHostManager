@@ -47,6 +47,7 @@ namespace DotaHostManager
             File.Delete(Global.BASE_PATH + "log.txt");
             Helpers.log("[DotaHost] Version " + VERSION);
 
+            // Create temp directory if it doesn't exist
             Directory.CreateDirectory(Global.TEMP);
 
             // Sets up uri protocol args if launched from browser

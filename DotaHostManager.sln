@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostManager", "DotaHostManager\DotaHostManager.csproj", "{54085FE0-EA27-401B-A07A-50B6EB48B499}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostServerManager", "DotaHostServerManager\DotaHostServerManager.csproj", "{6EA891E4-2F57-4521-BF83-418B3026B755}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostClientLibrary", "DotaHostClientLibrary\DotaHostClientLibrary.csproj", "{DA2E93CE-AEDD-4EA8-A058-FCE9F5E4228B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostLobbyManager", "DotaHostLobbyManager\DotaHostLobbyManager.csproj", "{0115D92D-DC35-475A-B25E-6E01E922A6ED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{DA2E93CE-AEDD-4EA8-A058-FCE9F5E4228B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA2E93CE-AEDD-4EA8-A058-FCE9F5E4228B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA2E93CE-AEDD-4EA8-A058-FCE9F5E4228B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
