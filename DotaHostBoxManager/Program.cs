@@ -83,7 +83,7 @@ namespace DotaHostBoxManager
         private static string websocketUserID;
 
         // List of game server running on the box
-        private static List<GameServer> gameServers = new List<GameServer>();
+        private static KV gameServers;
 
         // Box Server status
         private static byte status;
@@ -136,7 +136,7 @@ namespace DotaHostBoxManager
 
             return;*/
 
-            status = BoxManager.IDLE;
+            status = Vultr.BOX_IDLE;
 
             setupSystemDiagnostics();
 
@@ -182,7 +182,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("reboot");
             wsClient.addHook("reboot", (c, x) =>
             {
-                status = BoxManager.DEACTIVATED;
+                status = Vultr.BOX_DEACTIVATED;
                 rebootLoop();
             });
             #endregion
@@ -199,7 +199,7 @@ namespace DotaHostBoxManager
                 else
                 {
                     // Soft destroy, waits for games to finish, polls every minute
-                    status = BoxManager.DEACTIVATED;
+                    status = Vultr.BOX_DEACTIVATED;
                     destroyLoop();
                 }
             });
@@ -227,15 +227,15 @@ namespace DotaHostBoxManager
             wsClient.addHook("system", (c, x) =>
             {
                 int[] args = getSystemDiagnostics();
-                if (status != BoxManager.DEACTIVATED)
+                if (status != Vultr.BOX_DEACTIVATED)
                 {
-                    if (gameServers.Count == 0)
+                    if (gameServers.getKeys().Count == 0)
                     {
-                        status = BoxManager.IDLE;
+                        status = Vultr.BOX_IDLE;
                     }
                     else
                     {
-                        status = BoxManager.ACTIVE;
+                        status = Vultr.BOX_ACTIVE;
                     }
 
                     // func;status;cpu;ramAvailable;ramTotal;upload;download
@@ -249,42 +249,13 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("create");
             wsClient.addHook("create", (c, x) =>
             {
-                // Socket msg: "create;addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
-                // Lobby args: "addon0=lod;addon0options=maxBans-20|mode-ap;addon1=csp;addon1options=multiplier-2;team0=0-Jexah-STEAM1:0_38397532|1-Ash-STEAM_0:1:343492;team1="
-
                 // Create server object to handle game server info
-                GameServer gameServer = new GameServer();
+                KV gameServer = KV.parse(x[1]);
 
-                // Remove the first element of the array (function name ("create"))
-                string[] gameServerArgs = Helpers.RemoveIndex(x, 0);
-
-                // Re-add the seperators
-                string gameServerArgsStr = String.Join(";", gameServerArgs);
-
-                // Set up the properties for the lobby in case we want to retrieve them later
-                Dictionary<string, string> lobbyArgs = Lobby.getLobbyArgsObj(gameServerArgs);
-
-                // Set the the options to the game server
-                gameServer.Options = lobbyArgs;
-             
-                // Read teams from input arguments
-                List<List<Player>> teams = Lobby.getPlayersObj(lobbyArgs);
-
-                // Set the teams on the game server
-                gameServer.Players = teams;
-
-                // Read addons from input arguments
-                List<Addon> addons = Lobby.getAddonsObj(lobbyArgs);
-
-                // Set the addons on the game server
-                gameServer.Addons = addons;
-
-                // Add game server to list
-                gameServers.Add(gameServer);
+                gameServers.addKey(gameServer.getValue("name"), gameServer);
 
                 // Launch the server using the string options
                 //launchGameServer(gameServer, gameServerArgsStr);
-                Helpers.log(gameServerArgsStr);
 
             });
             #endregion
@@ -293,19 +264,14 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("gameServers");
             wsClient.addHook("gameServers", (c, x) =>
             {
-                string gameServersString = "";
-                for (int i = 0; i < gameServers.Count; ++i)
-                {
-                    gameServersString += gameServers[i].Addons[0].Id;
-                }
-                c.Send("gameServers;" + gameServersString);
+                c.Send("gameServers;" + gameServers.toString());
             });
             #endregion
 
         }
 
         // Starts a specific game server with a specific set of arguments
-        private static void launchGameServer(GameServer gameServer, string gameServerArgs)
+        private static void launchGameServer(KV gameServer, string gameServerArgs)
         {
             // NOTE: WE NEED TO ENSURE ONLY ONE SERVER IS BOOTING AT A TIME, OR WE WILL HAVE A SHIT STORM!
 
@@ -331,7 +297,7 @@ namespace DotaHostBoxManager
             // The path to the addons we need to mount (this will be generated by addon compiler)
             // Once the server has closed, the mount path will need to be deleted as well!
             // NOTE: This function takes another argument which will be the gameServerArgs -- this still needs to be built
-            string mountPath = AddonCompiler.compileAddons(gameServer.Addons, Global.BASE_PATH + "addons", true);
+            string mountPath = AddonCompiler.compileAddons(gameServer.getKV("addons"), Global.BASE_PATH + "addons", true);
 
             // END OPTIONS
 
@@ -396,7 +362,7 @@ namespace DotaHostBoxManager
         // Reboot check loop
         private static void rebootLoop()
         {
-            if (gameServers.Count > 0)
+            if (gameServers.getKeys().Count > 0)
             {
                 // Game server still running, check again in 60 seconds
                 Timers.setTimeout(60, Timers.SECONDS, () => { rebootLoop(); });
@@ -411,7 +377,7 @@ namespace DotaHostBoxManager
         // Destroy check loop
         private static void destroyLoop()
         {
-            if (gameServers.Count > 0)
+            if (gameServers.getKeys().Count > 0)
             {
                 // Game servers still running, check again in 60 seconds
                 Timers.setTimeout(60, Timers.SECONDS, () => { destroyLoop(); });
@@ -669,16 +635,7 @@ namespace DotaHostBoxManager
 
         private static string getGameServersAsString()
         {
-            string ret = "";
-            for (byte i = 0; i < gameServers.Count; ++i)
-            {
-                ret += gameServers[i].Name + ";" + gameServers[i].Players.Count + ";";
-            }
-            if (ret.Length > 0)
-            {
-                ret.Remove(ret.Length - 1, 1);
-            }
-            return ret;
+            return gameServers.toString();
         }
 
         // Gets the current CPU usage in percent

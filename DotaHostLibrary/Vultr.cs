@@ -43,6 +43,14 @@ namespace DotaHostLibrary
         // Vultr BoxManager snapshot ID
         public const string SNAPSHOT_ID = "54783ffe9a1f3";
 
+
+        public const byte BOX_ACTIVE = 0;
+        public const byte BOX_IDLE = 1;
+        public const byte BOX_MIA = 2;
+        public const byte BOX_INACTIVE = 3;
+        public const byte BOX_DEACTIVATED = 4;
+
+
         // Initialize the static readonlys
         static Vultr()
         {

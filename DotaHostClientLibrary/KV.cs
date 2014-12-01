@@ -67,6 +67,19 @@ namespace DotaHostClientLibrary
             return true;
         }
 
+        // Adds a key to the KV
+        public bool removeKey(string key)
+        {
+            // Ensure this is an object sort
+            if (this.sort != SORT_OBJECT) return false;
+
+            // Add the key
+            this.keys.Remove(key);
+
+            // Success
+            return true;
+        }
+
         // Adds a value to the KV
         public bool addValue(string key, string value)
         {
@@ -131,6 +144,12 @@ namespace DotaHostClientLibrary
 
             // Return the KV
             return this.keys[key];
+        }
+
+        // Checks if the KV has the given key
+        public bool containsKey(string key)
+        {
+            return keys.ContainsKey(key);
         }
 
         // Gets the nth value at the given key

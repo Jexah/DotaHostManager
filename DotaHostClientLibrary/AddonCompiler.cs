@@ -18,7 +18,7 @@ namespace DotaHostClientLibrary
         // if generateRandomPath is true, it will append a random folder to the end
         // NOTE: Path NEEDS to lead in a slash
         // ASSUMPTION: This function CAN NOT be run in parrellel! Wait for it to finish before running again!
-        public static string compileAddons(List<Addon> addons, string outputPath, bool generateRandomPath=false, string serverSettings=null)
+        public static string compileAddons(KV addons, string outputPath, bool generateRandomPath=false, string serverSettings=null)
         {
             // Validate input
             if (addons == null) return null;
@@ -46,10 +46,13 @@ namespace DotaHostClientLibrary
             List<string> addonScriptList = new List<string>();
 
             // Compile each addon in
-            foreach(Addon addon in addons)
+            foreach(KeyValuePair<string, KV> addon in addons.getKeys())
             {
+                // Get ID of addon
+                string addonID = addon.Value.getValue("id");
+
                 // The name of the archive
-                zipName = searchPath + addon.Id + ".zip";
+                zipName = searchPath + addonID + ".zip";
 
                 // Ensure the addon exists
                 if (!File.Exists(zipName))
@@ -70,15 +73,15 @@ namespace DotaHostClientLibrary
                 // Ensure a valid manifest file
                 if (manifest == null)
                 {
-                    Helpers.log("Manifest file for " + addon.Id + " is missing or invalid!");
+                    Helpers.log("Manifest file for " + addonID + " is missing or invalid!");
                     continue;
                 }
 
                 // Grab the compile information for the given mod
-                manifest = manifest.getKV(addon.Id);
+                manifest = manifest.getKV(addonID);
                 if (manifest == null)
                 {
-                    Helpers.log("Manifest file for " + addon.Id + " doesn't contain any compile information!");
+                    Helpers.log("Manifest file for " + addonID + " doesn't contain any compile information!");
                     continue;
                 }
 
@@ -102,7 +105,7 @@ namespace DotaHostClientLibrary
                         }
                         catch
                         {
-                            Helpers.log("No addon_game_mode found for " + addon.Id);
+                            Helpers.log("No addon_game_mode found for " + addonID);
                         }
 
                         // Rename the directory
@@ -112,15 +115,15 @@ namespace DotaHostClientLibrary
                         Directory.CreateDirectory(addonDir + @"scripts\vscripts");
 
                         // Move the directory
-                        Directory.Move(addonDir + @"scripts\vscripts_moving", addonDir + @"scripts\vscripts\" + addon.Id);
+                        Directory.Move(addonDir + @"scripts\vscripts_moving", addonDir + @"scripts\vscripts\" + addonID);
 
                         // Add this to our list of script addons
-                        addonScriptList.Add('"' + addon.Id + '"');
+                        addonScriptList.Add('"' + addonID + '"');
                     }
                     catch (Exception e)
                     {
                         Helpers.log(e.Message);
-                        Helpers.log("Failed to patch vscripts for " + addon.Id);
+                        Helpers.log("Failed to patch vscripts for " + addonID);
                     }
                 }
 

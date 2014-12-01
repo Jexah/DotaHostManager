@@ -43,7 +43,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Addon.cs" />
     <Compile Include="AddonCompiler.cs" />
     <Compile Include="AddonDownloader.cs" />
     <Compile Include="CRC32.cs" />
@@ -52,11 +51,9 @@
     <Compile Include="Global.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="KV.cs" />
-    <Compile Include="Lobby.cs" />
-    <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Team.cs" />
     <Compile Include="Timers.cs" />
+    <Compile Include="Types.cs" />
     <Compile Include="WebSocketClient.cs" />
     <Compile Include="WebSocketServer.cs" />
   </ItemGroup>

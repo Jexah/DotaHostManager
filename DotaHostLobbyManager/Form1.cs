@@ -10,7 +10,7 @@ namespace DotaHostLobbyManager
     public partial class Form1 : Form
     {
 
-        private static List<Lobby> lobbies = new List<Lobby>();
+        private static KV lobbies = new KV();
 
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, 8080);
 
@@ -21,7 +21,7 @@ namespace DotaHostLobbyManager
 
             hookWSocketEvents();
 
-            lobbies.Add(new Lobby("name", new List<Team>() { new Team("yolo", 5) }, new List<Addon>() { new Addon("yolo", new Dictionary<string, string>()) }));
+            //lobbies.Add(new Lobby("name", new List<Team>() { new Team("yolo", 5) }, new List<Addon>() { new Addon("yolo", new Dictionary<string, string>()) }));
 
             wsServer.start();
         }
@@ -33,25 +33,27 @@ namespace DotaHostLobbyManager
                 // getLobbies;lobby1;lobby2
                 // getLobbies;name|players|addons;name|players|addons
                 // getLobbies;name|currentPlayers-maxPlayers|addon1id-addon2id-addon3id;name2|currentPlayers2-maxPlayers2|addon1id2-addon2id2
-                string send = "getLobbies";
-                for (int i = 0; i < lobbies.Count; ++i)
-                {
-                    send += ";" + lobbies[i].Name + "|" + lobbies[i].CurrentPlayers + "-" + lobbies[i].MaxPlayers + "|";
-                    for (int j = 0; j < lobbies[i].Addons.Count; ++j)
-                    {
-                        send += lobbies[i].Addons[j].Id + "-";
-                    }
-                    if (lobbies[i].Addons.Count > 0)
-                    {
-                        send = send.Substring(0, send.Length - 1);
-                    }
-                }
+                string send = "getLobbies;";
+                lobbies.toString();
                 c.Send(send);
             });
 
             wsServer.addHook("createLobby", (c, x) =>
             {
                 // need auth here
+            });
+
+            wsServer.addHook("joinLobby", (c, x) =>
+            {
+                // need auth here
+            });
+
+            wsServer.addHook("getLobby", (c, x) =>
+            {
+                string send = "getLobby;";
+                KV lobby = lobbies.getKV(x[1]);
+                send += lobby.toString();
+                c.Send(send);
             });
         }
 
