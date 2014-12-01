@@ -45,10 +45,23 @@ namespace DotaHostManager
         {
             // Reset log file
             File.Delete(Global.BASE_PATH + "log.txt");
-            Helpers.log("[DotaHost] Version " + VERSION);
 
             // Create temp directory if it doesn't exist
             Directory.CreateDirectory(Global.TEMP);
+
+            if (Global.TEMP != Global.BASE_PATH)
+            {
+                if (!File.Exists(Global.TEMP + "DotaHostManager.exe"))
+                {
+                    copyAndDeleteSelf();
+                }
+                else
+                {
+                    File.Delete(Global.TEMP + "DotaHostManager.exe");
+                    copyAndDeleteSelf();
+                }
+            }
+            Helpers.log("[DotaHost] Version " + VERSION);
 
             // Sets up uri protocol args if launched from browser
             if (i.Length > 0) { Helpers.log("Requested: " + i[0]); }
@@ -89,6 +102,31 @@ namespace DotaHostManager
             doEvents();
         }
 
+        // Copies this application to temp, then deletes itself
+        private static void copyAndDeleteSelf()
+        {
+            using (var inputFile = new FileStream(
+                        Global.BASE_PATH + "DotaHostManager.exe",
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.ReadWrite
+                    ))
+            {
+                using (var outputFile = new FileStream(Global.TEMP + "DotaHostManager.exe", FileMode.Create))
+                {
+                    var buffer = new byte[0x10000];
+                    int bytes;
+
+                    while ((bytes = inputFile.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        outputFile.Write(buffer, 0, bytes);
+                    }
+                }
+            };
+            Process.Start(Global.TEMP + "DotaHostManager.exe");
+            exit();
+        }
+
         // Download the most up-to-date version file of the app
         private static void downloadAppVersion()
         {
@@ -100,7 +138,7 @@ namespace DotaHostManager
                 {
                     // Reads the version file from temp
                     version = Convert.ToInt16(File.ReadAllText(Global.TEMP + "version"));
-                    //File.Delete(Global.TEMP + "version");
+                    File.Delete(Global.TEMP + "version");
 
                     // Checks if the read version matches the const version
                     if (version != VERSION)
@@ -419,8 +457,11 @@ namespace DotaHostManager
                 exiting = true;
                 if (!Properties.Settings.Default.autorun)
                 {
-                    var exepath = Assembly.GetEntryAssembly().Location;
-                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + exepath + "\"");
+                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + Global.BASE_PATH + "DotaHostManager.exe" + "\"");
+                    info.WindowStyle = ProcessWindowStyle.Hidden;
+                    Process.Start(info).Dispose();
+
+                    info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + Global.BASE_PATH + "log.txt" + "\"");
                     info.WindowStyle = ProcessWindowStyle.Hidden;
                     Process.Start(info).Dispose();
                 }
