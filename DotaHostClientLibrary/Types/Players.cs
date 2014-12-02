@@ -11,6 +11,7 @@ namespace DotaHostClientLibrary
                 if (!containsKey(i.ToString()))
                 {
                     setKey(i.ToString(), player);
+                    return;
                 }
             }
         }
@@ -27,7 +28,7 @@ namespace DotaHostClientLibrary
 
         public Player getPlayer(string id)
         {
-            return (Player)getKV(id);
+            return new Player(getKV(id));
         }
 
         public Players()
@@ -35,5 +36,20 @@ namespace DotaHostClientLibrary
             initObject();
         }
 
+
+
+        public Players(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
+        }
     }
 }

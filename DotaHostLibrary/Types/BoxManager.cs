@@ -36,7 +36,7 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("2"));
+                return Convert.ToUInt16(getValue("2"));
             }
             set
             {
@@ -132,19 +132,35 @@ namespace DotaHostLibrary
         {
             get
             {
-                return (GameServers)getKV("a");
+                return new GameServers(getKV("a"));
             }
             set
             {
-                setKey("b", value);
+                setKey("a", value);
             }
         }
-
 
 
         public BoxManager()
         {
             initObject();
+            setValue("6", true.ToString());
+        }
+
+
+
+        public BoxManager(KV source)
+        {
+            if(source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
         }
     }
 }

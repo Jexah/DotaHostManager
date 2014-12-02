@@ -6,13 +6,7 @@ namespace DotaHostLibrary
     {
         public void addBoxManager(BoxManager boxManager)
         {
-            for (byte i = 0; true; ++i)
-            {
-                if (!containsKey(i.ToString()))
-                {
-                    setKey(i.ToString(), boxManager);
-                }
-            }
+            setKey(boxManager.Ip, boxManager);
         }
 
         public void removeBoxManager(BoxManager boxManager)
@@ -27,13 +21,28 @@ namespace DotaHostLibrary
 
         public BoxManager getBoxManager(string key)
         {
-            return (BoxManager)getKV(key);
+            return new BoxManager(getKV(key));
         }
 
 
         public BoxManagers()
         {
             initObject();
+        }
+
+
+        public BoxManagers(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
         }
     }
 }

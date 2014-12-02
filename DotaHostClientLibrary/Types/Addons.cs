@@ -10,6 +10,7 @@ namespace DotaHostClientLibrary
                 if (!containsKey(i.ToString()))
                 {
                     setKey(i.ToString(), addon);
+                    return;
                 }
             }
         }
@@ -26,11 +27,26 @@ namespace DotaHostClientLibrary
 
         public Addon getAddon(string key)
         {
-            return (Addon)getKV(key);
+            return new Addon(getKV(key));
         }
+
         public Addons()
         {
             initObject();
+        }
+
+        public Addons(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
         }
 
     }

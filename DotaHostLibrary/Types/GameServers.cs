@@ -11,6 +11,7 @@ namespace DotaHostLibrary
                 if (!containsKey(i.ToString()))
                 {
                     setKey(i.ToString(), gameServer);
+                    return;
                 }
             }
         }
@@ -27,7 +28,7 @@ namespace DotaHostLibrary
 
         public GameServer getGameServer(byte id)
         {
-            return (GameServer)getKV(id.ToString());
+            return new GameServer(getKV(id.ToString()));
         }
 
 
@@ -35,5 +36,20 @@ namespace DotaHostLibrary
         {
             initObject();
         }
+
+        public GameServers(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
+        }
+
     }
 }

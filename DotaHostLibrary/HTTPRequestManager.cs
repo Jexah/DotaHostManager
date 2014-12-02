@@ -1,13 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using DotaHostClientLibrary;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Data;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Web;
-using DotaHostClientLibrary;
 
 namespace DotaHostLibrary
 {
@@ -49,7 +45,7 @@ namespace DotaHostLibrary
                 // Loop through the key value pairs in the data, append them to postData, except in the case of api_key, append to URL
                 foreach (KeyValuePair<string, string> kvp in sendData)
                 {
-                    if(kvp.Key == "api_key")
+                    if (kvp.Key == "api_key")
                     {
                         url += "api_key=" + kvp.Value;
                     }
@@ -73,7 +69,7 @@ namespace DotaHostLibrary
                 request.Method = method;
 
                 // Set content type to application/x-www-form-urlencoded
-                request.ContentType = "application/x-www-form-urlencoded"; 
+                request.ContentType = "application/x-www-form-urlencoded";
 
                 // Encode the post data into a byte array
                 byte[] array = Encoding.ASCII.GetBytes(postData);
@@ -117,6 +113,6 @@ namespace DotaHostLibrary
                 action.EndInvoke(iar);
             }), wrapperAction);
         }
-    
+
     }
 }

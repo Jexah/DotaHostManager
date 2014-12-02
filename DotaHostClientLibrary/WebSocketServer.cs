@@ -38,7 +38,7 @@ namespace DotaHostClientLibrary
         public WebSocketServer(IPAddress ip, int port)
         {
             // Initialize wsHooks
-            for(byte i = 0; i < wsHooks.Length; ++i)
+            for (byte i = 0; i < wsHooks.Length; ++i)
             {
                 wsHooks[i] = new List<socketDel>();
             }
@@ -81,7 +81,7 @@ namespace DotaHostClientLibrary
             addHook(CONNECTED, (c) =>
             {
                 Helpers.log("[Socket] Connected!");
-                
+
                 // Loop through queue and send all waiting packets
                 for (byte i = 0; i < wsQueue.Count; ++i)
                 {
@@ -101,7 +101,7 @@ namespace DotaHostClientLibrary
                     catch { }
                     try { userContextToId.Add(c, ip); }
                     catch { }
-                        
+
                 }
             });
             #endregion
@@ -116,6 +116,13 @@ namespace DotaHostClientLibrary
                 userContextToId.Remove(c);
             });
             #endregion
+
+
+            addHook("yolo", (c, x) =>
+            {
+                // Remove userid
+                Helpers.log("[Socket] yolo!");
+            });
 
         }
 
@@ -149,7 +156,7 @@ namespace DotaHostClientLibrary
             // Add the hook to the given list
             wsHooks[type].Add(func);
         }
-        
+
         // Adds a hook to onReceive with a given name
         public void addHook(string funcName, receiveDel func)
         {

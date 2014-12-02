@@ -22,7 +22,7 @@ namespace DotaHostServerManager
         private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string, AddonRequirements>();
 
         // Create WebSocketServer
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Vultr.SERVER_MANAGER_PORT);
+        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Loopback, Vultr.SERVER_MANAGER_PORT);
 
         // Soft BoxManager limit
         private static byte serverSoftCap;
@@ -87,6 +87,12 @@ namespace DotaHostServerManager
             #region wsServer.addHook("box");
             wsServer.addHook("box", (c, x) =>
             {
+
+                if (boxManagers.containsKey(c.ClientAddress.ToString()))
+                {
+                    return;
+                }
+
                 // Initialize the new BoxManager
                 BoxManager boxManager = new BoxManager();
 
@@ -107,7 +113,7 @@ namespace DotaHostServerManager
                             boxManager.ThirdParty = false;
                         }
                     }
-                    if (!Convert.ToBoolean(boxManager.ThirdParty))
+                    if (!boxManager.ThirdParty)
                     {
                         // Sets the subID so it can be destroyed later
                         boxManager.SubID = serverInfo.SUBID;
@@ -115,9 +121,13 @@ namespace DotaHostServerManager
                         // Sets the region so we know where it is hosted
                         boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo.location];
 
-                        // Send SUBID to server so it knows its place
-                        c.Send("box;" + boxManager.toString());
                     }
+
+
+                    // Send SUBID to server so it knows its place
+                    Helpers.log(boxManager.toString("box"));
+                    c.Send("box;" + boxManager.toString("box"));
+
                 });
 
                 // Sets the IP of the box manager
@@ -134,11 +144,8 @@ namespace DotaHostServerManager
                     }
                 });
 
-                Helpers.log(boxManager.toString());
+                Helpers.log(boxManager.toString("box"));
 
-
-                // Request system stats
-                c.Send("system");
 
             });
             #endregion
@@ -157,13 +164,7 @@ namespace DotaHostServerManager
                 // Create pointer to box manager
                 BoxManager boxManager = boxManagers.getBoxManager(c.ClientAddress.ToString());
 
-                // Refresh all stats of server
-                boxManager.Status = Convert.ToByte(x[1]);
-                boxManager.Cpu = Convert.ToByte(x[2]);
-                boxManager.RamAvailable = Convert.ToUInt16(x[3]);
-                boxManager.RamTotal = Convert.ToUInt16(x[4]);
-                boxManager.Upload = Convert.ToUInt32(x[5]);
-                boxManager.Download = Convert.ToUInt32(x[6]);
+                boxManager = new BoxManager(KV.parse(x[1]).getKV("box"));
 
                 // Request GUI-safe thread
                 modGUI(boxesList, () =>
@@ -190,6 +191,7 @@ namespace DotaHostServerManager
             #region wsServer.addHook(WebSocketServer.DISCONNECTED);
             wsServer.addHook(WebSocketServer.DISCONNECTED, (c) =>
             {
+
                 // Remove boxmanager from the list
                 boxManagers.removeBoxManager(c.ClientAddress.ToString());
 
@@ -409,6 +411,7 @@ namespace DotaHostServerManager
             setBoxRAMGUI(boxManager);
             setBoxNetworkGUI(boxManager);
             setBoxVerifiedGUI(boxManager);
+            updateGameServerListGUI(boxManager);
         }
 
         // Sets the name label to that of the name of the given name
@@ -582,6 +585,29 @@ namespace DotaHostServerManager
                     boxVerifiedLabel.ForeColor = danger;
                 }
             });
+        }
+
+        // Refreshes the GameServer list
+        private void updateGameServerListGUI(BoxManager boxManager)
+        {
+            if (boxManager.GameServers != null && boxManager.GameServers.getKeys() != null)
+            {
+                modGUI(boxGameServerList, () =>
+                {
+                    boxGameServerList.Items.Clear();
+                    foreach (KeyValuePair<string, KV> kvp in boxManager.GameServers.getKeys())
+                    {
+                        GameServer gameServer = new GameServer(kvp.Value);
+                        Lobby lobby = gameServer.Lobby;
+                        Teams teams = lobby.Teams;
+                        Team team = teams.getTeam("0");
+                        Players players = team.Players;
+                        Player player = players.getPlayer("0");
+                        string name = player.PersonaName;
+                        boxGameServerList.Items.Add(name);
+                    }
+                });
+            }
         }
 
         #endregion

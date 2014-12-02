@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace DotaHostClientLibrary
 {
     public class Options : KV
@@ -17,5 +12,21 @@ namespace DotaHostClientLibrary
         {
             initObject();
         }
+
+
+        public Options(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
+        }
+
     }
 }

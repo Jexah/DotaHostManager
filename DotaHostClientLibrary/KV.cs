@@ -8,13 +8,13 @@ namespace DotaHostClientLibrary
     public class KV
     {
         // The sort of element this is
-        private byte sort;
+        protected byte sort;
 
         // List of keys this KV contains if it is an object
-        private Dictionary<string, KV> keys;
+        protected Dictionary<string, KV> keys;
 
         // List of values for this key
-        private List<string> values;
+        protected List<string> values;
 
         // This KV is an object
         private static byte SORT_OBJECT = 1;
@@ -179,7 +179,7 @@ namespace DotaHostClientLibrary
             if (this.sort != SORT_OBJECT) return null;
 
             // Ensure we have the key
-            if (!this.keys.ContainsKey(key)) return null;
+            if (this.keys == null || !this.keys.ContainsKey(key)) return null;
 
             // Return the KV
             return this.keys[key];
@@ -198,7 +198,7 @@ namespace DotaHostClientLibrary
             if (this.sort != SORT_OBJECT) return null;
 
             // Ensure we have the key
-            if (!this.keys.ContainsKey(key)) return null;
+            if (this.keys == null || !this.keys.ContainsKey(key)) return null;
 
             // Grab the kv
             KV kv = this.keys[key];
@@ -627,9 +627,262 @@ namespace DotaHostClientLibrary
             }
             catch
             {
-                // Bad KV file
+                // Bad kv file
+                Helpers.log("Bad KV file");
                 return null;
             }
         }
+
+
+
+        // Parses KV Data
+        public static void parse<T>(string kvString, string atKey, dynamic output)
+        {
+            // Ensure nothing bad happens
+            try
+            {
+                // Create initial trees
+                List<T> tree = new List<T>();
+                tree.Add((T)Activator.CreateInstance(typeof(T)));
+
+                List<byte> treeType = new List<byte>();
+                treeType.Add(TYPE_BLOCK);
+
+                List<string> keys = new List<string>();
+                keys.Add(null);
+
+                // Index into kvString and the line
+                int i = 0;
+                int line = 1;
+
+                while (i < kvString.Length)
+                {
+                    // Grab the next character
+                    Char chr = kvString[i];
+
+                    if (chr == ' ' || chr == '\t')
+                    {
+                        // Ignore white space
+                    }
+                    else if (chr == '\n')
+                    {
+                        // We moved onto the next line
+                        ++line;
+                        if (kvString[i + 1] == '\r') i++;
+                    }
+                    else if (chr == '\r')
+                    {
+                        // We moved onto the next line
+                        ++line;
+                        if (kvString[i + 1] == '\n') i++;
+                    }
+                    else if (chr == '/')
+                    {
+                        if (kvString[i + 1] == '/')
+                        {
+                            // We found a comment, ignore rest of the line
+                            while (++i < kvString.Length)
+                            {
+                                chr = kvString[i];
+                                if (chr == '\n' || chr == '\r') break;
+                            }
+
+                            // We are on a new line
+                            ++line;
+
+                            // Move onto the next char
+                            ++i;
+                        }
+                    }
+                    else if (chr == '"')
+                    {
+                        // Create string to read into
+                        string resultString = "";
+                        ++i;
+
+                        while (i < kvString.Length)
+                        {
+                            chr = kvString[i];
+                            if (chr == '"') break;
+
+                            if (chr == '\n')
+                            {
+                                // We moved onto the next line
+                                ++line;
+                                if (kvString[i + 1] == '\r') ++i;
+                            }
+                            else if (chr == '\r')
+                            {
+                                // We moved onto the next line
+                                ++line;
+                                if (kvString[i + 1] == '\n') ++i;
+                            }
+                            else if (chr == '\\')
+                            {
+                                ++i;
+                                // Grab the next character
+                                chr = kvString[i + 1];
+
+                                // Check for escaped characters
+                                switch (chr)
+                                {
+                                    case '\\': chr = '\\'; break;
+                                    case '"': chr = '"'; break;
+                                    case '\'': chr = '\\'; break;
+                                    case 'n': chr = '\n'; break;
+                                    case 'r': chr = '\r'; break;
+                                    default:
+                                        chr = '\\';
+                                        --i;
+                                        break;
+                                }
+                            }
+
+                            // Add to the result string
+                            resultString += (char)chr;
+                            ++i;
+                        }
+
+                        // Error checking
+                        if (i == kvString.Length || chr == '\n' || chr == '\r')
+                        {
+                            Helpers.log("UNTERMINATED STRING AT LINE " + line + " IGNORING");
+                            return;
+                        }
+
+                        // Check if object or array
+                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
+                        {
+                            // Check if this is a key or a value
+                            if (keys[keys.Count - 1] == null)
+                            {
+                                // A Key
+                                keys[keys.Count - 1] = resultString;
+                            }
+                            else
+                            {
+                                // A value
+
+                                // Grab the dictonary
+                                dynamic e = tree[tree.Count - 1];
+
+                                // Grab the key
+                                string key = keys[keys.Count - 1];
+
+                                // Add the value
+                                e.addValue(key, resultString);
+
+                                // Cleanup the current key
+                                keys[keys.Count - 1] = null;
+                            }
+                        }
+                        else
+                        {
+                            Helpers.log("ARRAYS NOT IMPLEMENTED line " + line);
+                            return;
+                        }
+
+                        // Check if we need to reparse the character that ended this string
+                        if (chr != '"') --i;
+                    }
+                    else if (chr == '{')
+                    {
+                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
+                        {
+                            // Error checking
+                            if (keys[keys.Count - 1] == null)
+                            {
+                                Helpers.log("A block needs a key at line " + line + " (offset " + i + ")");
+                                return;
+                            }
+
+                            tree.Add((T)Activator.CreateInstance(typeof(T)));
+                            treeType.Add(TYPE_BLOCK);
+                            keys.Add(null);
+                        }
+                    }
+                    else if (chr == '}')
+                    {
+                        // Error Checking
+                        if (tree.Count == 1)
+                        {
+                            Helpers.log("Mismatching bracket at line " + line + " (offset " + i + ")");
+                            return;
+                        }
+
+                        // Grab the tree type
+                        byte tt = treeType[treeType.Count - 1];
+                        treeType.RemoveAt(treeType.Count - 1);
+
+                        // Ensure correct tree type
+                        if (tt != TYPE_BLOCK)
+                        {
+                            Helpers.log("Mismatching brackets at line " + line + " (offset " + i + ")");
+                            return;
+                        }
+
+                        // Drop the current key
+                        keys.RemoveAt(keys.Count - 1);
+
+                        // Grab the current tree
+                        T obj = tree[tree.Count - 1];
+                        tree.RemoveAt(tree.Count - 1);
+
+                        // Attempt to store the tree
+                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
+                        {
+                            dynamic e = tree[tree.Count - 1];
+                            e.addKey(keys[keys.Count - 1], obj);
+                            keys[keys.Count - 1] = null;
+                        }
+                        else
+                        {
+                            Helpers.log("ARRAYS NOT IMPLEMENTED line " + line);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // Unknwon character
+                        Helpers.log("Unexpected character \"" + chr + "\" at line " + line + " (offset " + i + ")");
+
+                        // Skip to next line
+                        while (++i < kvString.Length)
+                        {
+                            chr = kvString[i];
+
+                            // Check for new line
+                            if (chr == '\n' || chr == '\r') break;
+                        }
+
+                        // We are on a new line
+                        line++;
+
+                        // Move onto the next char
+                        i++;
+                    }
+
+                    // Move onto the next character
+                    ++i;
+                }
+
+                // Ensure everything is good
+                if (tree.Count != 1)
+                {
+                    Helpers.log("Missing brackets");
+                    return;
+                }
+
+                output = (T)((tree[0] as dynamic).getKV(atKey));
+                return;
+            }
+            catch
+            {
+                // Bad kv file
+                Helpers.log("Bad KV file");
+                return;
+            }
+        }
+
     }
 }

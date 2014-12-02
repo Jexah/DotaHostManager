@@ -85,6 +85,9 @@ namespace DotaHostBoxManager
         // List of game server running on the box
         private static GameServers gameServers = new GameServers();
 
+        // This box manager
+        private static BoxManager boxManager = new BoxManager();
+
         // Box Server status
         private static byte status;
 
@@ -96,6 +99,35 @@ namespace DotaHostBoxManager
         // The main entry point into the program
         private static void Main(string[] args)
         {
+            GameServer gs = new GameServer();
+            gs.Ip = "yolo";
+            gs.Port = 1234;
+            Lobby l = new Lobby();
+            Addons ads = new Addons();
+            Addon ad = new Addon();
+            ad.Id = "lod";
+            ad.Options = new Options();
+            ads.addAddon(ad);
+            l.Addons = ads;
+            l.CurrentPlayers = 3;
+            l.MaxPlayers = 5;
+            l.Name = "trolol";
+            Teams ts = new Teams();
+            Team t = new Team();
+            t.MaxPlayers = 5;
+            Players ps = new Players();
+            Player p = new Player();
+            p.Avatar = "avatar URL here";
+            p.PersonaName = "some personan name";
+            p.ProfileURL = "http://steamcommunity.com/jexah";
+            p.SteamID = "32-bit steam id";
+            ps.addPlayer(p);
+            t.Players = ps;
+            t.TeamName = "teamMeowingtons";
+            ts.addTeam(t);
+            l.Teams = ts;
+            gs.Lobby = l;
+            gameServers.addGameServer(gs);
 
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
@@ -162,11 +194,19 @@ namespace DotaHostBoxManager
         // Hook websocket events
         private static void hookWSocketEvents()
         {
+            // Log everything that is sent, for debugging
+            #region wsClient.addHook(WebSocketClient.RECEIVE);
+            wsClient.addHook(WebSocketClient.SEND, (c) =>
+            {
+                Helpers.log("SENT SOMETHING");
+            });
+            #endregion
+
             // Log everything that is received, for debugging
             #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
             {
-                Helpers.log(c.DataFrame.ToString());
+                Helpers.log("RECEIVE: " + c.DataFrame.ToString());
             });
             #endregion
 
@@ -218,7 +258,16 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("id");
             wsClient.addHook("id", (c, x) =>
             {
-                websocketUserID = x[1];
+                boxManager.Ip = x[1];
+            });
+            #endregion
+
+            // Get unique socket identifier from server
+            #region wsClient.addHook("box");
+            wsClient.addHook("box", (c, x) =>
+            {
+                boxManager = new BoxManager(KV.parse(x[1]).getKV("box"));
+                c.Send("system;" + boxManager.toString("box"));
             });
             #endregion
 
@@ -226,7 +275,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("system");
             wsClient.addHook("system", (c, x) =>
             {
-                int[] args = getSystemDiagnostics();
+                refreshSystemDiagnostics();
                 if (status != Vultr.BOX_DEACTIVATED)
                 {
                     if (gameServers.getKeys() != null && gameServers.getKeys().Count == 0)
@@ -237,9 +286,7 @@ namespace DotaHostBoxManager
                     {
                         status = Vultr.BOX_ACTIVE;
                     }
-
-                    // func;status;cpu;ramAvailable;ramTotal;upload;download
-                    c.Send("system;" + status + ";" + String.Join(";", args));
+                    c.Send("system;" + boxManager.toString("box"));
                 }
 
             });
@@ -260,13 +307,6 @@ namespace DotaHostBoxManager
             });
             #endregion
 
-            // Return game server status to the ServerManager [WIP]
-            #region wsClient.addHook("gameServers");
-            wsClient.addHook("gameServers", (c, x) =>
-            {
-                c.Send("gameServers;" + gameServers.toString());
-            });
-            #endregion
 
         }
 
@@ -405,9 +445,14 @@ namespace DotaHostBoxManager
         }
 
         // Get system diagnostics such as CPU % usage, RAM used and RAM remaining
-        private static int[] getSystemDiagnostics()
+        private static void refreshSystemDiagnostics()
         {
-            return new int[] { getCurrentCpuUsage(), getAvailableRAM(), getTotalRAM(), getUploadSpeed(), getDownloadSpeed() };
+            boxManager.GameServers = gameServers;
+            boxManager.Cpu = getCurrentCpuUsage();
+            boxManager.RamAvailable = getAvailableRAM();
+            boxManager.RamTotal = getTotalRAM();
+            boxManager.Upload = getUploadSpeed();
+            boxManager.Download = getDownloadSpeed();
         }
 
         // This function ensures steamcmd is available
@@ -633,54 +678,49 @@ namespace DotaHostBoxManager
             }
         }
 
-        private static string getGameServersAsString()
-        {
-            return gameServers.toString();
-        }
-
         // Gets the current CPU usage in percent
-        private static int getCurrentCpuUsage()
+        private static byte getCurrentCpuUsage()
         {
             // Call is required twice because Windows
             cpuCounter.NextValue();
 
             // Sleep is required to delay next call because Windows
             System.Threading.Thread.Sleep(1000);
-            return (int)Math.Round(cpuCounter.NextValue());
+            return (byte)Math.Round(cpuCounter.NextValue());
         }
 
         // Gets the available RAM in the system in megabytes
-        private static int getAvailableRAM()
+        private static ushort getAvailableRAM()
         {
-            return Convert.ToInt32(Math.Round(ramCounter.NextValue()));
+            return (ushort)Math.Round(ramCounter.NextValue());
         }
 
         // Gets the total RAM available in the system in megabytes
-        private static int getTotalRAM()
+        private static ushort getTotalRAM()
         {
-            return Convert.ToInt32(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
+            return (ushort)(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
         }
 
         // Gets the current upload speed in bytes/second
-        private static int getUploadSpeed()
+        private static uint getUploadSpeed()
         {
-            int upload = 0;
+            uint upload = 0;
             for (int i = 0; i < dataSentCounter.Count; ++i)
             {
                 // Iterates through all adapters and sums them
-                upload += Convert.ToInt32(Math.Round(dataSentCounter[i].NextValue()));
+                upload += (uint)(Math.Round(dataSentCounter[i].NextValue()));
             }
             return upload;
         }
 
         // Gets the current download speed in bytes/second
-        private static int getDownloadSpeed()
+        private static uint getDownloadSpeed()
         {
-            int download = 0;
+            uint download = 0;
             for (int i = 0; i < dataSentCounter.Count; ++i)
             {
                 // Iterates through all adapters and sums them
-                download += Convert.ToInt32(Math.Round(dataReceivedCounter[i].NextValue()));
+                download += (uint)(Math.Round(dataReceivedCounter[i].NextValue()));
             }
             return download;
         }

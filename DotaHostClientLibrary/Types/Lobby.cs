@@ -20,7 +20,7 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return (Teams)getKV("1");
+                return new Teams(getKV("1"));
             }
             set
             {
@@ -32,7 +32,7 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return (Addons)getKV("2");
+                return new Addons(getKV("2"));
             }
             set
             {
@@ -67,6 +67,21 @@ namespace DotaHostClientLibrary
         public Lobby()
         {
             initObject();
+        }
+
+
+        public Lobby(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = null;
+                this.values = null;
+                return;
+            }
+            this.sort = source.getSort();
+            this.keys = source.getKeys();
+            this.values = source.getValues();
         }
 
     }
