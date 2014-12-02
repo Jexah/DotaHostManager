@@ -57,7 +57,7 @@ namespace DotaHostClientLibrary
         }
 
         // Adds a key to the KV
-        public bool addKey(string key, KV kv)
+        protected bool addKey(string key, KV kv)
         {
             // Ensure this is an object sort
             if (this.sort != SORT_OBJECT) return false;
@@ -73,7 +73,7 @@ namespace DotaHostClientLibrary
         }
 
         // Removes a key from the KV
-        public bool removeKey(string key)
+        protected bool removeKey(string key)
         {
             // Ensure this is an object sort
             if (this.sort != SORT_OBJECT) return false;
@@ -86,7 +86,7 @@ namespace DotaHostClientLibrary
         }
 
         // Removes a key with given value from the KV
-        public bool removeKey(KV kv)
+        protected bool removeKey(KV kv)
         {
             // Ensure this is an object sort
             if (this.sort != SORT_OBJECT) return false;
@@ -108,19 +108,19 @@ namespace DotaHostClientLibrary
         }
 
         // Clears the a given key, then recreates it with the given KV
-        public bool setKey(string key, KV kv)
+        protected bool setKey(string key, KV kv)
         {
             return (removeKey(key) && addKey(key, kv));
         }
 
         // Clears the a given value at key, then recreates that key with the given value
-        public bool setValue(string key, string value)
+        protected bool setValue(string key, string value)
         {
             return (removeKey(key) && addValue(key, value));
         }
 
         // Adds a value to the KV
-        public bool addValue(string key, string value)
+        protected bool addValue(string key, string value)
         {
             // Ensure this is an object sort
             if (this.sort != SORT_OBJECT) return false;
@@ -154,7 +154,7 @@ namespace DotaHostClientLibrary
         }
 
         // Stores a value into a value KV
-        public bool addValue(string value)
+        protected bool addValue(string value)
         {
             // Ensure this is the value sort
             if (this.sort != SORT_VALUE) return false;
@@ -192,26 +192,26 @@ namespace DotaHostClientLibrary
         }
 
         // Gets the nth value at the given key
-        public string getValue(string key, int n=0)
+        public string getValue(string key, int n = 0)
         {
             // Ensure this is the object sort
             if (this.sort != SORT_OBJECT) return null;
 
             // Ensure we have the key
-            if(!this.keys.ContainsKey(key)) return null;
+            if (!this.keys.ContainsKey(key)) return null;
 
             // Grab the kv
             KV kv = this.keys[key];
 
             // Ensure a valid reference
-            if(kv == null) return null;
+            if (kv == null) return null;
 
             // Return the key
             return kv.getValue(n);
         }
 
         // Returns the nth value of this KV
-        public string getValue(int n=0)
+        public string getValue(int n = 0)
         {
             // Ensure this is the correct type
             if (this.sort != SORT_VALUE) return null;
@@ -263,19 +263,19 @@ namespace DotaHostClientLibrary
         }
 
         // Compiles this KV into a string
-        public string toString(string key=null)
+        public string toString(string key = null)
         {
             string output = "";
 
-            if(this.sort == SORT_VALUE)
+            if (this.sort == SORT_VALUE)
             {
                 bool first = true;
 
-                for(int i=0; i<this.values.Count; ++i)
+                for (int i = 0; i < this.values.Count; ++i)
                 {
-                    if(first)
+                    if (first)
                     {
-                        first = false;   
+                        first = false;
                     }
                     else
                     {
@@ -285,11 +285,11 @@ namespace DotaHostClientLibrary
                     output += '"' + key + "\" \"" + this.values[i] + '"';
                 }
             }
-            else if(this.sort == SORT_OBJECT)
+            else if (this.sort == SORT_OBJECT)
             {
                 bool first = true;
 
-                foreach(KeyValuePair<string,KV> entry in this.keys)
+                foreach (KeyValuePair<string, KV> entry in this.keys)
                 {
                     if (first)
                     {
@@ -303,7 +303,7 @@ namespace DotaHostClientLibrary
                     output += entry.Value.toString(entry.Key);
                 }
 
-                if(key == null)
+                if (key == null)
                 {
                     output = "{" + output + "}";
                 }
@@ -311,7 +311,7 @@ namespace DotaHostClientLibrary
                 {
                     output = '"' + key + "\" {" + output + "}";
                 }
-                
+
             }
 
             return output;
@@ -324,15 +324,15 @@ namespace DotaHostClientLibrary
             // Validate input
             if (kv == null) return;
             if (this.sort != kv.getSort()) return;
-            
-            if(this.sort == SORT_OBJECT)
+
+            if (this.sort == SORT_OBJECT)
             {
                 // Grab all the keys that need merging
                 Dictionary<string, KV> mergeKeys = kv.getKeys();
 
-                foreach(KeyValuePair<String, KV> entry in mergeKeys)
+                foreach (KeyValuePair<String, KV> entry in mergeKeys)
                 {
-                    if(!this.keys.ContainsKey(entry.Key))
+                    if (!this.keys.ContainsKey(entry.Key))
                     {
                         this.keys.Add(entry.Key, entry.Value);
                     }
@@ -346,10 +346,10 @@ namespace DotaHostClientLibrary
                     }
                 }
             }
-            else if(this.sort == SORT_VALUE)
+            else if (this.sort == SORT_VALUE)
             {
                 // Decide if we are doing an override, or an addition
-                if(this.values.Count == 1)
+                if (this.values.Count == 1)
                 {
                     // Since there is only one key, lets just copy the new value over
                     this.values[0] = kv.getValue();
@@ -357,7 +357,7 @@ namespace DotaHostClientLibrary
                 else
                 {
                     // Add each value to the end
-                    foreach(string value in kv.getValues())
+                    foreach (string value in kv.getValues())
                     {
                         this.values.Add(value);
                     }
@@ -405,12 +405,12 @@ namespace DotaHostClientLibrary
                 int i = 0;
                 int line = 1;
 
-                while(i < kvString.Length)
+                while (i < kvString.Length)
                 {
                     // Grab the next character
                     Char chr = kvString[i];
 
-                    if(chr == ' ' || chr == '\t')
+                    if (chr == ' ' || chr == '\t')
                     {
                         // Ignore white space
                     }
@@ -426,12 +426,12 @@ namespace DotaHostClientLibrary
                         ++line;
                         if (kvString[i + 1] == '\n') i++;
                     }
-                    else if(chr == '/')
+                    else if (chr == '/')
                     {
-                        if(kvString[i + 1] == '/')
+                        if (kvString[i + 1] == '/')
                         {
                             // We found a comment, ignore rest of the line
-                            while(++i < kvString.Length)
+                            while (++i < kvString.Length)
                             {
                                 chr = kvString[i];
                                 if (chr == '\n' || chr == '\r') break;
@@ -444,13 +444,13 @@ namespace DotaHostClientLibrary
                             ++i;
                         }
                     }
-                    else if(chr == '"')
+                    else if (chr == '"')
                     {
                         // Create string to read into
                         string resultString = "";
                         ++i;
 
-                        while(i < kvString.Length)
+                        while (i < kvString.Length)
                         {
                             chr = kvString[i];
                             if (chr == '"') break;
@@ -467,14 +467,14 @@ namespace DotaHostClientLibrary
                                 ++line;
                                 if (kvString[i + 1] == '\n') ++i;
                             }
-                            else if(chr == '\\')
+                            else if (chr == '\\')
                             {
                                 ++i;
                                 // Grab the next character
                                 chr = kvString[i + 1];
 
                                 // Check for escaped characters
-                                switch(chr)
+                                switch (chr)
                                 {
                                     case '\\': chr = '\\'; break;
                                     case '"': chr = '"'; break;
@@ -521,7 +521,7 @@ namespace DotaHostClientLibrary
 
                                 // Add the value
                                 e.addValue(key, resultString);
-                                
+
                                 // Cleanup the current key
                                 keys[keys.Count - 1] = null;
                             }
@@ -535,7 +535,7 @@ namespace DotaHostClientLibrary
                         // Check if we need to reparse the character that ended this string
                         if (chr != '"') --i;
                     }
-                    else if(chr == '{')
+                    else if (chr == '{')
                     {
                         if (treeType[treeType.Count - 1] == TYPE_BLOCK)
                         {
@@ -551,7 +551,7 @@ namespace DotaHostClientLibrary
                             keys.Add(null);
                         }
                     }
-                    else if(chr == '}')
+                    else if (chr == '}')
                     {
                         // Error Checking
                         if (tree.Count == 1)
@@ -561,7 +561,7 @@ namespace DotaHostClientLibrary
                         }
 
                         // Grab the tree type
-                        byte tt = treeType[treeType.Count-1];
+                        byte tt = treeType[treeType.Count - 1];
                         treeType.RemoveAt(treeType.Count - 1);
 
                         // Ensure correct tree type
@@ -617,7 +617,7 @@ namespace DotaHostClientLibrary
                 }
 
                 // Ensure everything is good
-                if(tree.Count != 1)
+                if (tree.Count != 1)
                 {
                     Helpers.log("Missing brackets");
                     return null;

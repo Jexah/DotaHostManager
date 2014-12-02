@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace DotaHostClientLibrary
 {
     public class Teams : KV
@@ -13,16 +8,16 @@ namespace DotaHostClientLibrary
         {
             for (byte i = 0; true; ++i)
             {
-                if(!containsKey(i.ToString()))
+                if (!containsKey(i.ToString()))
                 {
                     setKey(i.ToString(), team);
                 }
             }
         }
 
-        public void removeTeam(byte id)
+        public void removeTeam(string teamName)
         {
-            removeKey(id.ToString());
+            removeKey(teamName);
         }
 
         public void removeTeam(Team team)

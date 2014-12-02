@@ -16,7 +16,7 @@ namespace DotaHostServerManager
         private static Color danger = Color.Red;
 
         // Initialize boxManagers dictionary
-        private static BoxManager boxManagers = new BoxManager();
+        private static BoxManagers boxManagers = new BoxManagers();
 
         // Initialize addonRequirements dictionary
         private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string, AddonRequirements>();
@@ -107,28 +107,28 @@ namespace DotaHostServerManager
                             boxManager.ThirdParty = false;
                         }
                     }
-                    if (!Convert.ToBoolean(boxManager.getValue("thirdParty")))
+                    if (!Convert.ToBoolean(boxManager.ThirdParty))
                     {
                         // Sets the subID so it can be destroyed later
-                        boxManager.subID = serverInfo.SUBID;
+                        boxManager.SubID = serverInfo.SUBID;
 
                         // Sets the region so we know where it is hosted
-                        boxManager.addValue("region", Vultr.NAME_TO_REGION_ID[serverInfo.location].ToString());
+                        boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo.location];
 
                         // Send SUBID to server so it knows its place
-                        c.Send("subid;" + boxManager.getValue("subID"));
+                        c.Send("box;" + boxManager.toString());
                     }
                 });
 
                 // Sets the IP of the box manager
-                boxManager.addValue("ip", c.ClientAddress.ToString());
+                boxManager.Ip = c.ClientAddress.ToString();
 
                 // Add the box manager to the list
-                boxManagers.addKey(boxManager.getValue("ip"), boxManager);
+                boxManagers.addBoxManager(boxManager);
 
                 modGUI(boxesList, () =>
                 {
-                    if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == boxManager.getValue("ip"))
+                    if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == boxManager.Ip)
                     {
                         setBoxStatsGUI(boxManager);
                     }
@@ -155,13 +155,15 @@ namespace DotaHostServerManager
                 }
 
                 // Create pointer to box manager
-                KV boxManager = boxManagers.getKV(c.ClientAddress.ToString());
+                BoxManager boxManager = boxManagers.getBoxManager(c.ClientAddress.ToString());
 
                 // Refresh all stats of server
-                boxManager.setValue("status", x[1]);
-                boxManager.setValue("cpu", x[2]);
-                boxManager.setValue("ram", x[3] + " " + x[4]);
-                boxManager.setValue("network", x[5] + " " + x[6]);
+                boxManager.Status = Convert.ToByte(x[1]);
+                boxManager.Cpu = Convert.ToByte(x[2]);
+                boxManager.RamAvailable = Convert.ToUInt16(x[3]);
+                boxManager.RamTotal = Convert.ToUInt16(x[4]);
+                boxManager.Upload = Convert.ToUInt32(x[5]);
+                boxManager.Download = Convert.ToUInt32(x[6]);
 
                 // Request GUI-safe thread
                 modGUI(boxesList, () =>
@@ -189,7 +191,7 @@ namespace DotaHostServerManager
             wsServer.addHook(WebSocketServer.DISCONNECTED, (c) =>
             {
                 // Remove boxmanager from the list
-                boxManagers.removeKey(c.ClientAddress.ToString());
+                boxManagers.removeBoxManager(c.ClientAddress.ToString());
 
                 // Update listbox
                 modGUI(boxesList, () => { boxesList.Items.Remove(c.ClientAddress.ToString()); });
@@ -204,50 +206,18 @@ namespace DotaHostServerManager
 
                 byte region = Convert.ToByte(x[1]);
 
-                KV lobby = KV.parse(x[2]);
+                Lobby lobby = (Lobby)KV.parse(x[2]);
 
-                KV boxManager = findBoxManager(region, lobby.getKV("addons"));
+                BoxManager boxManager = findBoxManager(region, lobby.Addons);
 
                 if (boxManager != null)
                 {
-                    wsServer.send(String.Join(";", x), boxManager.getValue("ip"));
+                    wsServer.send(String.Join(";", x), boxManager.Ip);
                 }
                 else
                 {
                     Helpers.log("Could not find server");
                 }
-            });
-            #endregion
-
-            // Receive game server list  ======================= [WIP]
-            #region wsServer.addHook("gameServers");
-            wsServer.addHook("gameServers", (c, x) =>
-            {
-                string boxesListSelectedItem = "";
-                modGUI(boxesList, () =>
-                {
-                    if (boxesList.SelectedItem != null)
-                    {
-                        boxesListSelectedItem = boxesList.SelectedItem.ToString();
-                    }
-                    if (boxesListSelectedItem == c.ClientAddress.ToString())
-                    {
-                        KV servers = new KV();
-                        string[] serverStrings = Helpers.RemoveIndex(x, 0);
-                        for (int i = 0; i < serverStrings.Length; ++i)
-                        {
-                            KV server = new KV();
-                            server.addValue("name", serverStrings[i]);
-                            modGUI(boxGameServerList, () =>
-                            {
-                                boxGameServerList.Enabled = true;
-                                boxGameServerList.Items.Clear();
-                                boxGameServerList.Items.Add(server.getValue("name"));
-                            });
-                        }
-                    }
-                });
-
             });
             #endregion
 
@@ -277,10 +247,10 @@ namespace DotaHostServerManager
         }
 
         // Destroy box instance
-        private void removeBoxManager(KV boxManager, bool now = false)
+        private void removeBoxManager(BoxManager boxManager, bool now = false)
         {
-            string ip = boxManager.getValue("ip");
-            if (!Convert.ToBoolean(boxManager.getValue("thirdParty")))
+            string ip = boxManager.Ip;
+            if (!Convert.ToBoolean(boxManager.ThirdParty))
             {
                 if (now)
                 {
@@ -295,39 +265,42 @@ namespace DotaHostServerManager
             }
 
             // Remove boxmanager from list
-            boxManagers.removeKey(ip);
+            boxManagers.removeBoxManager(ip);
 
             // Update the listbox
             modGUI(boxesList, () => { boxesList.Items.Remove(ip); });
         }
 
         // Finds a server to host the gamemode selected, in the region selected
-        private KV findBoxManager(byte region, KV addons)
+        private BoxManager findBoxManager(byte region, Addons addons)
         {
             int totalRam = 0;
             int totalCpu = 0;
-            foreach (KeyValuePair<string, KV> addon in addons.getKeys())
+            foreach (KeyValuePair<string, KV> kvp in addons.getKeys())
             {
-                totalRam += addonRequirements[addon.Value.getValue("id")].Ram;
-                totalCpu += addonRequirements[addon.Value.getValue("id")].Cpu;
+                Addon addon = (Addon)kvp.Value;
+                totalRam += addonRequirements[addon.Id].Ram;
+                totalCpu += addonRequirements[addon.Id].Cpu;
             }
             foreach (KeyValuePair<string, KV> kvp in boxManagers.getKeys())
             {
-                if (kvp.Value.getValue("region") == region.ToString())
+                BoxManager boxManager = (BoxManager)kvp.Value;
+                if (boxManager.Region == region)
                 {
                     Helpers.log("region OK");
-                    if (Convert.ToInt16(kvp.Value.getValue("ram").Split(' ')[0]) > totalRam && 100 - Convert.ToByte(kvp.Value.getValue("cpuPercent")) > totalCpu)
+                    if (boxManager.RamAvailable > totalRam && 100 - boxManager.Cpu > totalCpu)
                     {
                         Helpers.log("stats OK");
-                        return kvp.Value;
+                        return boxManager;
                     }
                 }
             }
             return null;
         }
 
+
         // Reboots the selected box
-        private void restartBox(KV boxManager)
+        private void restartBox(BoxManager boxManager)
         {
             // TODO: Add box restart code here
         }
@@ -354,7 +327,7 @@ namespace DotaHostServerManager
             {
                 // Set the current visible stats to those of the box manager
                 string boxIP = boxesList.SelectedItem.ToString();
-                setBoxStatsGUI(boxManagers.getKV(boxIP));
+                setBoxStatsGUI(boxManagers.getBoxManager(boxIP));
                 wsServer.send("gameServers", boxIP);
             }
             else
@@ -400,7 +373,7 @@ namespace DotaHostServerManager
         // Temporary button, destroys the selected server
         private void button2_Click(object sender, EventArgs e)
         {
-            removeBoxManager(boxManagers.getKV(boxesList.SelectedItem.ToString()));
+            removeBoxManager(boxManagers.getBoxManager(boxesList.SelectedItem.ToString()));
         }
 
         #endregion
@@ -428,7 +401,7 @@ namespace DotaHostServerManager
         }
 
         // Sets all the stats of the GUI to that of the given boxmanager
-        private void setBoxStatsGUI(KV boxManager)
+        private void setBoxStatsGUI(BoxManager boxManager)
         {
             setBoxNameGUI(boxManager);
             setBoxStatusGUI(boxManager);
@@ -439,9 +412,9 @@ namespace DotaHostServerManager
         }
 
         // Sets the name label to that of the name of the given name
-        private void setBoxNameGUI(KV boxManager)
+        private void setBoxNameGUI(BoxManager boxManager)
         {
-            setBoxNameGUI(boxManager.getValue("name"));
+            setBoxNameGUI(boxManager.Ip);
         }
         private void setBoxNameGUI(string name)
         {
@@ -449,9 +422,9 @@ namespace DotaHostServerManager
         }
 
         // Sets the value and color of the status label to that of the status of the given status
-        private void setBoxStatusGUI(KV boxManager)
+        private void setBoxStatusGUI(BoxManager boxManager)
         {
-            setBoxStatusGUI(Convert.ToByte(boxManager.getValue("status")));
+            setBoxStatusGUI(boxManager.Status);
         }
         private void setBoxStatusGUI(byte status)
         {
@@ -484,15 +457,14 @@ namespace DotaHostServerManager
         }
 
         // Sets ram labels color and value to that of the given ram levels
-        private void setBoxRAMGUI(KV boxManager)
+        private void setBoxRAMGUI(BoxManager boxManager)
         {
-            string[] split = boxManager.getValue("ram").Split(' ');
-            short[] ram = new short[2];
-            ram[0] = Convert.ToInt16(split[0]);
-            ram[1] = Convert.ToInt16(split[1]);
+            ushort[] ram = new ushort[2];
+            ram[0] = boxManager.RamAvailable;
+            ram[1] = boxManager.RamTotal;
             setBoxRAMGUI(ram[0], ram[1]);
         }
-        private void setBoxRAMGUI(short remaining, short total)
+        private void setBoxRAMGUI(ushort remaining, ushort total)
         {
             short current = (short)(total - remaining);
             modGUI(boxRAMBar, () =>
@@ -520,9 +492,9 @@ namespace DotaHostServerManager
         }
 
         // Sets cpu label and bar to that of the % cpu usage given
-        private void setBoxCPUGUI(KV boxManager)
+        private void setBoxCPUGUI(BoxManager boxManager)
         {
-            setBoxCPUGUI(Convert.ToByte(boxManager.getValue("cpu")));
+            setBoxCPUGUI(boxManager.Cpu);
         }
         private void setBoxCPUGUI(int percent)
         {
@@ -546,15 +518,14 @@ namespace DotaHostServerManager
         }
 
         // Sets the network labels
-        private void setBoxNetworkGUI(KV boxManager)
+        private void setBoxNetworkGUI(BoxManager boxManager)
         {
-            string[] split = boxManager.getValue("network").Split(' ');
-            int[] network = new int[2];
-            network[0] = Convert.ToInt32(split[0]);
-            network[1] = Convert.ToInt32(split[1]);
+            uint[] network = new uint[2];
+            network[0] = boxManager.Upload;
+            network[1] = boxManager.Download;
             setBoxNetworkGUI(network[0], network[1]);
         }
-        private void setBoxNetworkGUI(int upload, int download)
+        private void setBoxNetworkGUI(uint upload, uint download)
         {
             modGUI(boxUploadLabel, () =>
             {
@@ -592,9 +563,9 @@ namespace DotaHostServerManager
         }
 
         // Sets the network labels
-        private void setBoxVerifiedGUI(KV boxManager)
+        private void setBoxVerifiedGUI(BoxManager boxManager)
         {
-            bool verified = !Convert.ToBoolean(boxManager.getValue("thirdParty"));
+            bool verified = !Convert.ToBoolean(boxManager.ThirdParty);
             setBoxVerifiedGUI(verified);
         }
         private void setBoxVerifiedGUI(bool verified)

@@ -19,14 +19,14 @@ namespace DotaHostClientLibrary
             removeKey(lobby);
         }
 
-        public void removeLobby(byte id)
+        public void removeLobby(string key)
         {
-            removeKey(id.ToString());
+            removeKey(key);
         }
 
-        public void getLobby(byte id)
+        public Lobby getLobby(string key)
         {
-            getKV(id.ToString());
+            return (Lobby)getKV(key);
         }
 
 

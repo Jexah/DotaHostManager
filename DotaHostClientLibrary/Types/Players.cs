@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace DotaHostClientLibrary
 {
     public class Players : KV
@@ -25,20 +20,20 @@ namespace DotaHostClientLibrary
             removeKey(player);
         }
 
-        public void removePlayer(byte id)
+        public void removePlayer(string id)
         {
-            removeKey(id.ToString());
+            removeKey(id);
         }
 
-        public Player getPlayer(byte id)
+        public Player getPlayer(string id)
         {
-            return (Player)getKV(id.ToString());
+            return (Player)getKV(id);
         }
 
         public Players()
         {
             initObject();
         }
-    
+
     }
 }

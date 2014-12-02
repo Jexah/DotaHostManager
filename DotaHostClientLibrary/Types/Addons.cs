@@ -19,14 +19,18 @@ namespace DotaHostClientLibrary
             removeKey(addon);
         }
 
-        public void removeAddon(byte id)
+        public void removeAddon(string key)
         {
-            removeKey(id.ToString());
+            removeKey(key);
         }
 
-        public void getAddon(byte id)
+        public Addon getAddon(string key)
         {
-            getKV(id.ToString());
+            return (Addon)getKV(key);
+        }
+        public Addons()
+        {
+            initObject();
         }
 
     }

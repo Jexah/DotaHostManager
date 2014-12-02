@@ -20,63 +20,63 @@ namespace DotaHostLibrary
 
         }
 
-        public string Cpu
+        public byte Cpu
         {
             get
             {
-                return getValue("1");
+                return Convert.ToByte(getValue("1"));
             }
             set
             {
-                setValue("1", value);
+                setValue("1", value.ToString());
             }
         }
 
-        public string RamAvailable
+        public ushort RamAvailable
         {
             get
             {
-                return getValue("2");
+                return Convert.ToByte(getValue("2"));
             }
             set
             {
-                setValue("2", value);
+                setValue("2", value.ToString());
             }
         }
 
-        public string RamTotal
+        public ushort RamTotal
         {
             get
             {
-                return getValue("3");
+                return Convert.ToUInt16(getValue("3"));
             }
             set
             {
-                setValue("3", value);
+                setValue("3", value.ToString());
             }
         }
 
-        public string Upload
+        public uint Upload
         {
             get
             {
-                return getValue("4");
+                return Convert.ToUInt32(getValue("4"));
             }
             set
             {
-                setValue("4", value);
+                setValue("4", value.ToString());
             }
         }
 
-        public string Download
+        public uint Download
         {
             get
             {
-                return getValue("5");
+                return Convert.ToUInt32(getValue("5"));
             }
             set
             {
-                setValue("5", value);
+                setValue("5", value.ToString());
             }
         }
 
@@ -92,7 +92,7 @@ namespace DotaHostLibrary
             }
         }
 
-        public string subID
+        public string SubID
         {
             get
             {
@@ -104,15 +104,39 @@ namespace DotaHostLibrary
             }
         }
 
-        public string region
+        public byte Region
         {
             get
             {
-                return getValue("8");
+                return Convert.ToByte(getValue("8"));
             }
             set
             {
-                setValue("8", value);
+                setValue("8", value.ToString());
+            }
+        }
+
+        public byte Status
+        {
+            get
+            {
+                return Convert.ToByte(getValue("9"));
+            }
+            set
+            {
+                setValue("9", value.ToString());
+            }
+        }
+
+        public GameServers GameServers
+        {
+            get
+            {
+                return (GameServers)getKV("a");
+            }
+            set
+            {
+                setKey("b", value);
             }
         }
 
