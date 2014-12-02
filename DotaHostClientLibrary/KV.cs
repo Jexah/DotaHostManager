@@ -80,6 +80,12 @@ namespace DotaHostClientLibrary
             return true;
         }
 
+        // Clears the a given key, then recreates it with the given value
+        public bool setValue(string key, string value)
+        {
+            return (removeKey(key) && addValue(key, value));
+        }
+
         // Adds a value to the KV
         public bool addValue(string key, string value)
         {

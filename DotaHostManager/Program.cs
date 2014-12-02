@@ -1,11 +1,9 @@
 ﻿using DotaHostClientLibrary;
-using DotaHostLibrary;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Net;
 using System.Reflection;
 using System.Timers;

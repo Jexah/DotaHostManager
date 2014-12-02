@@ -12,7 +12,7 @@ namespace DotaHostLobbyManager
 
         private static KV lobbies = new KV();
 
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, 8080);
+        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Global.LOBBY_MANAGER_PORT);
 
 
         public Form1()

@@ -83,7 +83,7 @@ namespace DotaHostBoxManager
         private static string websocketUserID;
 
         // List of game server running on the box
-        private static KV gameServers;
+        private static KV gameServers = new KV();
 
         // Box Server status
         private static byte status;
@@ -229,7 +229,7 @@ namespace DotaHostBoxManager
                 int[] args = getSystemDiagnostics();
                 if (status != Vultr.BOX_DEACTIVATED)
                 {
-                    if (gameServers.getKeys().Count == 0)
+                    if (gameServers.getKeys() != null && gameServers.getKeys().Count == 0)
                     {
                         status = Vultr.BOX_IDLE;
                     }

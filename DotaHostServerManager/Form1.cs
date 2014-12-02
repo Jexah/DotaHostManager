@@ -134,6 +134,8 @@ namespace DotaHostServerManager
                         setBoxStatsGUI(boxManager);
                     }
                 });
+
+                Helpers.log(boxManager.toString());
                 
 
                 // Request system stats
@@ -146,6 +148,8 @@ namespace DotaHostServerManager
             #region wsServer.addhook("system");
             wsServer.addHook("system", (c, x) =>
             {
+                // func;status;cpu;ramAvailable;ramTotal;upload;download
+
                 if(!boxManagers.containsKey(c.ClientAddress.ToString()))
                 {
                     return;
@@ -155,7 +159,10 @@ namespace DotaHostServerManager
                 KV boxManager = boxManagers.getKV(c.ClientAddress.ToString());
 
                 // Refresh all stats of server
-                boxManager = KV.parse(String.Join("", Helpers.RemoveIndex(x, 0)));
+                boxManager.setValue("status", x[1]);
+                boxManager.setValue("cpu", x[2]);
+                boxManager.setValue("ram", x[3] + " " + x[4]);
+                boxManager.setValue("network", x[5] + " " + x[6]);
 
                 // Request GUI-safe thread
                 modGUI(boxesList, () =>
@@ -348,7 +355,7 @@ namespace DotaHostServerManager
             {
                 // Set the current visible stats to those of the box manager
                 string boxIP = boxesList.SelectedItem.ToString();
-                setBoxStatsGUI(boxManagers.getKV("boxIP"));
+                setBoxStatsGUI(boxManagers.getKV(boxIP));
                 wsServer.send("gameServers", boxIP);
             }
             else
@@ -516,7 +523,7 @@ namespace DotaHostServerManager
         // Sets cpu label and bar to that of the % cpu usage given
         private void setBoxCPUGUI(KV boxManager)
         {
-            setBoxCPUGUI(Convert.ToByte(boxManager.getValue("cpuPercent")));
+            setBoxCPUGUI(Convert.ToByte(boxManager.getValue("cpu")));
         }
         private void setBoxCPUGUI(int percent)
         {
