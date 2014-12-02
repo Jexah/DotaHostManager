@@ -38,10 +38,10 @@ namespace DotaHostManager
         private static bool exiting = false;
 
         // Our websocket server
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Parse("127.0.0.1"), 2074);
+        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, 2074);
 
         // Our websocket client
-        private static WebSocketClient wsClient = new WebSocketClient("ws://localhost:8080");
+        private static WebSocketClient wsClient = new WebSocketClient("ws://localhost:" + Global.LOBBY_MANAGER_PORT + "/");
 
         private static void Main(string[] i)
         {

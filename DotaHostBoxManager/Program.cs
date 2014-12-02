@@ -255,7 +255,7 @@ namespace DotaHostBoxManager
                 gameServers.addKey(gameServer.getValue("name"), gameServer);
 
                 // Launch the server using the string options
-                //launchGameServer(gameServer, gameServerArgsStr);
+                launchGameServer(gameServer);
 
             });
             #endregion
@@ -271,7 +271,7 @@ namespace DotaHostBoxManager
         }
 
         // Starts a specific game server with a specific set of arguments
-        private static void launchGameServer(KV gameServer, string gameServerArgs)
+        private static void launchGameServer(KV gameServer)
         {
             // NOTE: WE NEED TO ENSURE ONLY ONE SERVER IS BOOTING AT A TIME, OR WE WILL HAVE A SHIT STORM!
 

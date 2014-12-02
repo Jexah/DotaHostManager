@@ -62,6 +62,9 @@ namespace DotaHostLobbyManager
             Environment.Exit(0);
         }
 
+        private void requestGameServer(KV lobby)
+        {
 
+        }
     }
 }
