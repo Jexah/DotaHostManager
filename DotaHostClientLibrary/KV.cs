@@ -67,20 +67,48 @@ namespace DotaHostClientLibrary
             return true;
         }
 
-        // Adds a key to the KV
+        // Removes a key from the KV
         public bool removeKey(string key)
         {
             // Ensure this is an object sort
             if (this.sort != SORT_OBJECT) return false;
 
-            // Add the key
+            // Remove the key
             this.keys.Remove(key);
 
             // Success
             return true;
         }
 
-        // Clears the a given key, then recreates it with the given value
+        // Removes a key with given value from the KV
+        public bool removeKey(KV kv)
+        {
+            // Ensure this is an object sort
+            if (this.sort != SORT_OBJECT) return false;
+
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                if (kvp.Value == kv)
+                {
+                    // Remove key
+                    this.keys.Remove(kvp.Key);
+
+                    // Success
+                    return true;
+                }
+            }
+
+            // Remove failed
+            return false;
+        }
+
+        // Clears the a given key, then recreates it with the given KV
+        public bool setKey(string key, KV kv)
+        {
+            return (removeKey(key) && addKey(key, kv));
+        }
+
+        // Clears the a given value at key, then recreates that key with the given value
         public bool setValue(string key, string value)
         {
             return (removeKey(key) && addValue(key, value));
