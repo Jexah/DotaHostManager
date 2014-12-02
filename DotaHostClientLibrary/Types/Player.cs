@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace DotaHostClientLibrary
 {
     public class Player : KV
@@ -12,11 +7,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("steamid");
+                return getValue("0");
             }
             set
             {
-                setValue("steamid", value);
+                setValue("0", value);
             }
         }
 
@@ -24,11 +19,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("personaname");
+                return getValue("1");
             }
             set
             {
-                setValue("personaname", value);
+                setValue("1", value);
             }
         }
 
@@ -36,11 +31,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("avatar");
+                return getValue("2");
             }
             set
             {
-                setValue("avatar", value);
+                setValue("2", value);
             }
         }
 
@@ -48,12 +43,17 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("profileurl");
+                return getValue("3");
             }
             set
             {
-                setValue("profileurl", value);
+                setValue("3", value);
             }
+        }
+
+        public Player()
+        {
+            initObject();
         }
 
     }

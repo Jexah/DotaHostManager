@@ -2,7 +2,6 @@
 using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
 using System.Net;
 using System.Windows.Forms;
@@ -17,10 +16,10 @@ namespace DotaHostServerManager
         private static Color danger = Color.Red;
 
         // Initialize boxManagers dictionary
-        private static KV boxManagers = new KV();
+        private static BoxManager boxManagers = new BoxManager();
 
         // Initialize addonRequirements dictionary
-        private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string,AddonRequirements>();
+        private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string, AddonRequirements>();
 
         // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Vultr.SERVER_MANAGER_PORT);
@@ -61,7 +60,7 @@ namespace DotaHostServerManager
                     updateCurrentBoxGameServers();
                 });
             });
-            
+
         }
 
         // Set hardcoded benchmarks here
@@ -73,7 +72,7 @@ namespace DotaHostServerManager
             addonRequirements.Add("csp", csp);
         }
 
-         // Socket hooks go here
+        // Socket hooks go here
         private void hookWSocketServerEvents()
         {
             // Print received messages to console for debugging
@@ -89,7 +88,7 @@ namespace DotaHostServerManager
             wsServer.addHook("box", (c, x) =>
             {
                 // Initialize the new BoxManager
-                KV boxManager = new KV();
+                BoxManager boxManager = new BoxManager();
 
                 // Get a list of servers
                 Vultr.getServers((jsonObj) =>
@@ -105,13 +104,13 @@ namespace DotaHostServerManager
                         if (serverIP == boxIP)
                         {
                             serverInfo = kvp.Value;
-                            boxManager.addValue("thirdParty", false.ToString());
+                            boxManager.ThirdParty = false;
                         }
                     }
                     if (!Convert.ToBoolean(boxManager.getValue("thirdParty")))
                     {
                         // Sets the subID so it can be destroyed later
-                        boxManager.addValue("subID", serverInfo.SUBID);
+                        boxManager.subID = serverInfo.SUBID;
 
                         // Sets the region so we know where it is hosted
                         boxManager.addValue("region", Vultr.NAME_TO_REGION_ID[serverInfo.location].ToString());
@@ -136,7 +135,7 @@ namespace DotaHostServerManager
                 });
 
                 Helpers.log(boxManager.toString());
-                
+
 
                 // Request system stats
                 c.Send("system");
@@ -150,7 +149,7 @@ namespace DotaHostServerManager
             {
                 // func;status;cpu;ramAvailable;ramTotal;upload;download
 
-                if(!boxManagers.containsKey(c.ClientAddress.ToString()))
+                if (!boxManagers.containsKey(c.ClientAddress.ToString()))
                 {
                     return;
                 }
@@ -168,7 +167,7 @@ namespace DotaHostServerManager
                 modGUI(boxesList, () =>
                 {
                     // Add BoxManager to the GUI List if it's not there
-                    if(!boxesList.Items.Contains(c.ClientAddress.ToString()))
+                    if (!boxesList.Items.Contains(c.ClientAddress.ToString()))
                     {
                         boxesList.Items.Add(c.ClientAddress.ToString());
                     }
@@ -209,7 +208,7 @@ namespace DotaHostServerManager
 
                 KV boxManager = findBoxManager(region, lobby.getKV("addons"));
 
-                if(boxManager != null)
+                if (boxManager != null)
                 {
                     wsServer.send(String.Join(";", x), boxManager.getValue("ip"));
                 }
@@ -227,7 +226,7 @@ namespace DotaHostServerManager
                 string boxesListSelectedItem = "";
                 modGUI(boxesList, () =>
                 {
-                    if(boxesList.SelectedItem != null)
+                    if (boxesList.SelectedItem != null)
                     {
                         boxesListSelectedItem = boxesList.SelectedItem.ToString();
                     }
@@ -248,7 +247,7 @@ namespace DotaHostServerManager
                         }
                     }
                 });
-                
+
             });
             #endregion
 
@@ -351,7 +350,7 @@ namespace DotaHostServerManager
             object selectedItem = boxesList.SelectedItem;
 
             // If the selected item is actually something
-            if(selectedItem != null && selectedItem.ToString() != "")
+            if (selectedItem != null && selectedItem.ToString() != "")
             {
                 // Set the current visible stats to those of the box manager
                 string boxIP = boxesList.SelectedItem.ToString();
@@ -372,7 +371,7 @@ namespace DotaHostServerManager
                 }
             }
         }
-        
+
         // Form 1 load
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -501,7 +500,7 @@ namespace DotaHostServerManager
                 boxRAMBar.Maximum = total;
                 boxRAMBar.Value = current;
             });
-            modGUI(boxRAMLabel, () => 
+            modGUI(boxRAMLabel, () =>
             {
                 boxRAMLabel.Text = current + " / " + total;
                 float percent = (float)current / (float)total;
@@ -528,7 +527,7 @@ namespace DotaHostServerManager
         private void setBoxCPUGUI(int percent)
         {
             modGUI(boxCPUBar, () => { boxCPUBar.Value = percent; });
-            modGUI(boxCPULabel, () => 
+            modGUI(boxCPULabel, () =>
             {
                 boxCPULabel.Text = percent + "%";
                 if (percent < 75)
@@ -557,7 +556,7 @@ namespace DotaHostServerManager
         }
         private void setBoxNetworkGUI(int upload, int download)
         {
-            modGUI(boxUploadLabel, () => 
+            modGUI(boxUploadLabel, () =>
             {
                 boxUploadLabel.Text = (upload * 8 / 1000) + " kb/s";
                 if (upload < 7500000)
@@ -571,10 +570,10 @@ namespace DotaHostServerManager
                 else
                 {
                     boxUploadLabel.ForeColor = danger;
-                }           
+                }
             });
-            modGUI(boxDownloadLabel, () => 
-            { 
+            modGUI(boxDownloadLabel, () =>
+            {
                 boxDownloadLabel.Text = (download * 8 / 1000) + " kb/s";
                 if (download < 7500000)
                 {
@@ -589,7 +588,7 @@ namespace DotaHostServerManager
                     boxDownloadLabel.ForeColor = danger;
                 }
             });
-            
+
         }
 
         // Sets the network labels
@@ -600,7 +599,7 @@ namespace DotaHostServerManager
         }
         private void setBoxVerifiedGUI(bool verified)
         {
-            modGUI(boxVerifiedLabel, () => 
+            modGUI(boxVerifiedLabel, () =>
             {
                 boxVerifiedLabel.Text = verified.ToString();
                 if (verified)

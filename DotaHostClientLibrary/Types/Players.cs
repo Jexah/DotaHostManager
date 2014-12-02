@@ -35,5 +35,10 @@ namespace DotaHostClientLibrary
             return (Player)getKV(id.ToString());
         }
 
+        public Players()
+        {
+            initObject();
+        }
+    
     }
 }

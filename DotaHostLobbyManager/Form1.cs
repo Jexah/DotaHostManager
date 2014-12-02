@@ -1,16 +1,14 @@
 ﻿using DotaHostClientLibrary;
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Windows.Forms;
-using DotaHostLibrary;
 
 namespace DotaHostLobbyManager
 {
     public partial class Form1 : Form
     {
 
-        private static KV lobbies = new KV();
+        private static Lobbies lobbies = new Lobbies();
 
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Global.LOBBY_MANAGER_PORT);
 
@@ -51,7 +49,7 @@ namespace DotaHostLobbyManager
             wsServer.addHook("getLobby", (c, x) =>
             {
                 string send = "getLobby;";
-                KV lobby = lobbies.getKV(x[1]);
+                Lobby lobby = (Lobby)lobbies.getKV(x[1]);
                 send += lobby.toString();
                 c.Send(send);
             });
@@ -62,7 +60,7 @@ namespace DotaHostLobbyManager
             Environment.Exit(0);
         }
 
-        private void requestGameServer(KV lobby)
+        private void requestGameServer(Lobby lobby)
         {
 
         }

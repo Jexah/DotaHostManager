@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DotaHostClientLibrary
 {
@@ -12,11 +8,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("name");
+                return getValue("0");
             }
             set
             {
-                setValue("name", value);
+                setValue("0", value);
             }
         }
 
@@ -24,11 +20,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return (Teams)getKV("teams");
+                return (Teams)getKV("1");
             }
             set
             {
-                setKey("teams", value);
+                setKey("1", value);
             }
         }
 
@@ -36,11 +32,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return (Addons)getKV("addons");
+                return (Addons)getKV("2");
             }
             set
             {
-                setKey("addons", value);
+                setKey("2", value);
             }
         }
 
@@ -48,11 +44,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("maxPlayers"));
+                return Convert.ToByte(getValue("3"));
             }
             set
             {
-                setValue("maxPlayers", value.ToString());
+                setValue("3", value.ToString());
             }
         }
 
@@ -60,12 +56,18 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("currentPlayers"));
+                return Convert.ToByte(getValue("4"));
             }
             set
             {
-                setValue("currentPlayers", value.ToString());
+                setValue("4", value.ToString());
             }
         }
+
+        public Lobby()
+        {
+            initObject();
+        }
+
     }
 }

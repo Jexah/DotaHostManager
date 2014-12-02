@@ -35,5 +35,10 @@ namespace DotaHostClientLibrary
             return (Team)getKV(teamName);
         }
 
+        public Teams()
+        {
+            initObject();
+        }
+
     }
 }

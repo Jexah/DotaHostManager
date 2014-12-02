@@ -1,33 +1,38 @@
 ﻿
 namespace DotaHostClientLibrary
 {
-    public class Addons : KV
+    public class Lobbies : KV
     {
-        public void addAddon(Addon addon)
+        public void addLobby(Lobby lobby)
         {
             for (byte i = 0; true; ++i)
             {
                 if (!containsKey(i.ToString()))
                 {
-                    setKey(i.ToString(), addon);
+                    setKey(i.ToString(), lobby);
                 }
             }
         }
 
-        public void removeAddon(Addon addon)
+        public void removeLobby(Lobby lobby)
         {
-            removeKey(addon);
+            removeKey(lobby);
         }
 
-        public void removeAddon(byte id)
+        public void removeLobby(byte id)
         {
             removeKey(id.ToString());
         }
 
-        public void getAddon(byte id)
+        public void getLobby(byte id)
         {
             getKV(id.ToString());
         }
 
+
+        public Lobbies()
+        {
+            initObject();
+        }
     }
 }

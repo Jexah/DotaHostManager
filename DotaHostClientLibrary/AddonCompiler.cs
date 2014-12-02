@@ -1,11 +1,7 @@
-﻿using DotaHostClientLibrary;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DotaHostClientLibrary
 {
@@ -18,7 +14,7 @@ namespace DotaHostClientLibrary
         // if generateRandomPath is true, it will append a random folder to the end
         // NOTE: Path NEEDS to lead in a slash
         // ASSUMPTION: This function CAN NOT be run in parrellel! Wait for it to finish before running again!
-        public static string compileAddons(KV addons, string outputPath, bool generateRandomPath=false, string serverSettings=null)
+        public static string compileAddons(Addons addons, string outputPath, bool generateRandomPath = false, string serverSettings = null)
         {
             // Validate input
             if (addons == null) return null;
@@ -46,10 +42,12 @@ namespace DotaHostClientLibrary
             List<string> addonScriptList = new List<string>();
 
             // Compile each addon in
-            foreach(KeyValuePair<string, KV> addon in addons.getKeys())
+            foreach (KeyValuePair<string, KV> kvp in addons.getKeys())
             {
+                Addon addon = (Addon)kvp.Value;
+
                 // Get ID of addon
-                string addonID = addon.Value.getValue("id");
+                string addonID = addon.Id;
 
                 // The name of the archive
                 zipName = searchPath + addonID + ".zip";
@@ -181,7 +179,7 @@ namespace DotaHostClientLibrary
                                 KV kv2 = KV.read(addonDir + file);
 
                                 // Ensure both are valid (if not, keep the original)
-                                if(kv1 != null && kv2 != null)
+                                if (kv1 != null && kv2 != null)
                                 {
                                     // Perform the merge
                                     kv1.merge(kv2);
@@ -199,7 +197,7 @@ namespace DotaHostClientLibrary
                                 // File doesn't exist, just copy
                                 File.Copy(addonDir + file, outputPath + file, true);
                             }
-                            
+
                         }
                     }
                 }

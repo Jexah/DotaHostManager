@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DotaHostClientLibrary
 {
@@ -12,23 +8,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("name");
+                return getValue("0");
             }
             set
             {
-                setValue("name", value);
-            }
-        }
-
-        public Players Players
-        {
-            get
-            {
-                return (Players)getKV("players");
-            }
-            set
-            {
-                setKey("players", value);
+                setValue("0", value);
             }
         }
 
@@ -36,12 +20,29 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("maxPlayers"));
+                return Convert.ToByte(getValue("1"));
             }
             set
             {
-                setValue("maxPlayers", value.ToString());
+                setValue("1", value.ToString());
             }
+        }
+
+        public Players Players
+        {
+            get
+            {
+                return (Players)getKV("2");
+            }
+            set
+            {
+                setKey("2", value);
+            }
+        }
+
+        public Team()
+        {
+            initObject();
         }
 
     }

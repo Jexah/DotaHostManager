@@ -31,6 +31,11 @@ namespace DotaHostClientLibrary
         // Create a new KV that can store keys
         public KV()
         {
+            initObject();
+        }
+
+        protected void initObject()
+        {
             // This is an object sort
             this.sort = SORT_OBJECT;
 

@@ -12,5 +12,10 @@ namespace DotaHostClientLibrary
         {
             setValue(key, value);
         }
+
+        public Options()
+        {
+            initObject();
+        }
     }
 }
