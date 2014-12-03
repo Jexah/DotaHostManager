@@ -262,6 +262,12 @@ namespace DotaHostClientLibrary
             return this.keys;
         }
 
+        // Escapes a string for output
+        public static string escapeString(string toEscape)
+        {
+            return toEscape.Replace(@"\", @"\\").Replace("\"", "\\\"");
+        }
+
         // Compiles this KV into a string
         public string toString(string key = null)
         {
@@ -282,7 +288,7 @@ namespace DotaHostClientLibrary
                         output += " ";
                     }
 
-                    output += '"' + key + "\" \"" + this.values[i] + '"';
+                    output += '"' + key + "\" \"" + escapeString(this.values[i]) + '"';
                 }
             }
             else if (this.sort == SORT_OBJECT)
@@ -303,13 +309,54 @@ namespace DotaHostClientLibrary
                     output += entry.Value.toString(entry.Key);
                 }
 
+                if (key != null)
+                {
+                    output = '"' + escapeString(key) + "\" {" + output + "}";
+                }
+
+            }
+
+            return output;
+        }
+
+        // Compiles this KV into a string (JSON FORMATTED)
+        public string toJSON(string key = null)
+        {
+            string output = "";
+
+            if (this.sort == SORT_VALUE)
+            {
+                // Ensure we have a key
+                if (key == null) return "";
+
+                // Return only the first value
+                return '"' + escapeString(key) + "\": \"" + escapeString(this.values[0]) + '"';
+            }
+            else if (this.sort == SORT_OBJECT)
+            {
+                bool first = true;
+
+                foreach (KeyValuePair<string, KV> entry in this.keys)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        output += ", ";
+                    }
+
+                    output += entry.Value.toJSON(entry.Key);
+                }
+
                 if (key == null)
                 {
                     output = "{" + output + "}";
                 }
                 else
                 {
-                    output = '"' + key + "\" {" + output + "}";
+                    output = '"' + escapeString(key) + "\": {" + output + "}";
                 }
 
             }
@@ -367,7 +414,7 @@ namespace DotaHostClientLibrary
         }
 
         // Reads the KV file at the given path
-        public static KV read(string path)
+        public static KV read(string path, bool isJSON=false)
         {
             // The file may fail to read
             try
@@ -376,7 +423,7 @@ namespace DotaHostClientLibrary
                 string data = File.ReadAllText(path, Encoding.UTF8);
 
                 // Pass the data
-                return parse(data);
+                return parse(data, isJSON);
             }
             catch
             {
@@ -386,11 +433,17 @@ namespace DotaHostClientLibrary
         }
 
         // Parses KV Data
-        public static KV parse(string kvString)
+        public static KV parse(string kvString, bool isJSON=false)
         {
             // Ensure nothing bad happens
             try
             {
+                // If it's json, we need to strip the first and last character
+                if (isJSON)
+                {
+                    kvString = kvString.Substring(1, kvString.Length - 2);
+                }
+
                 // Create initial trees
                 List<KV> tree = new List<KV>();
                 tree.Add(new KV());
@@ -413,6 +466,14 @@ namespace DotaHostClientLibrary
                     if (chr == ' ' || chr == '\t')
                     {
                         // Ignore white space
+                    }
+                    else if (isJSON && chr == ':')
+                    {
+                        // Ignore, JSON character
+                    }
+                    else if (isJSON && chr == ',')
+                    {
+                        // Ignore, JSON character
                     }
                     else if (chr == '\n')
                     {
