@@ -14,14 +14,17 @@ namespace DotaHostClientLibrary
         // if generateRandomPath is true, it will append a random folder to the end
         // NOTE: Path NEEDS to lead in a slash
         // ASSUMPTION: This function CAN NOT be run in parrellel! Wait for it to finish before running again!
-        public static string compileAddons(KV lobby, string outputPath, bool generateRandomPath = false, string serverSettings = null)
+        public static string compileAddons(KV lobbyKV, string outputPath, bool generateRandomPath = false, string serverSettings = null)
         {
             // Validate input
-            if (lobby == null) return null;
+            if (lobbyKV == null) return null;
             if (outputPath == null) return null;
 
+            // Load lobby
+            Lobby lobby = new Lobby(lobbyKV);
+
             // Attempt to grab the addons
-            KV addons = lobby.getKV("2");
+            Addons addons = lobby.Addons;
             if (addons == null) return null;
 
             // Grab the install location for addons
@@ -56,13 +59,16 @@ namespace DotaHostClientLibrary
             // Compile each addon in
             foreach (KeyValuePair<string, KV> kvp in addons.getKeys())
             {
-                KV addon = kvp.Value;
+                // Process this addon
+                if (kvp.Value == null) continue;
+                Addon addon = new Addon(kvp.Value);
+                if (addon == null) continue;
 
                 // Get ID of addon
-                string addonID = addon.getValue("0");
+                string addonID = addon.Id;
 
                 // Store the options
-                options.setGenericKey(addonID, addon.getKV("1"));
+                options.setGenericKey(addonID, addon.Options);
 
                 // The name of the archive
                 zipName = searchPath + addonID + ".zip";
