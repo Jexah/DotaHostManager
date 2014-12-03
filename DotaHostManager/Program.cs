@@ -40,9 +40,6 @@ namespace DotaHostManager
         // Our websocket server
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, 2074);
 
-        // Our websocket client
-        private static WebSocketClient wsClient = new WebSocketClient("ws://localhost:" + Global.LOBBY_MANAGER_PORT + "/");
-
         private static void Main(string[] i)
         {
             // Reset log file
@@ -98,9 +95,6 @@ namespace DotaHostManager
             }
             // Start websocket server
             Timers.setTimeout(500, Timers.MILLISECONDS, wsServer.start);
-
-            // Start websocket client
-            Timers.setTimeout(500, Timers.MILLISECONDS, wsClient.start);
 
             // Begin exit timer
             appKeepAlive();
@@ -161,7 +155,8 @@ namespace DotaHostManager
                             dlManager.download(Global.DOWNLOAD_PATH_UPDATER, Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
                             {
                                 appUpdaterDownloadProgress(e2.ProgressPercentage);
-                            }, (e2) => {
+                            }, (e2) =>
+                            {
                                 // Begin the updater
                                 startUpdater(version);
                             });
@@ -217,7 +212,7 @@ namespace DotaHostManager
 
             }
         }
-        
+
         // Generates a json structure of installed addon information, sends it to client
         private static void checkAddons()
         {
@@ -284,14 +279,14 @@ namespace DotaHostManager
                 return true;
             }
         }
-        
+
         // Updates the dota path
         private static void updateDotaPath(string newPath)
         {
             // Check if newPath is a valid directory
             if (!Directory.Exists(newPath))
             {
-                Helpers.log("Directory does not exist: " +  newPath);
+                Helpers.log("Directory does not exist: " + newPath);
             }
             else
             {
@@ -327,7 +322,7 @@ namespace DotaHostManager
                 AddonDownloader.updateAddon(x[1], (addonID, success) =>
                 {
                     // Tell the server what happened
-                    if(success)
+                    if (success)
                     {
                         // Installation was successful, send formatted string to most recent connection
                         wsServer.send("installationComplete;addon;" + addonID);
@@ -344,7 +339,7 @@ namespace DotaHostManager
             });
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
         }
-            
+
         // Removes the old timer, and ccreates and binds another one
         private static void appKeepAlive()
         {
@@ -360,12 +355,12 @@ namespace DotaHostManager
         // Application.DoEvents() + check closeRequest and zeroCanClose
         private static void doEvents()
         {
-                System.Windows.Forms.Application.DoEvents();
-                if (requestClose && zeroCanClose == 0)
-                {
-                    exit();
-                }
-                Timers.setTimeout(1, Timers.SECONDS, doEvents);
+            System.Windows.Forms.Application.DoEvents();
+            if (requestClose && zeroCanClose == 0)
+            {
+                exit();
+            }
+            Timers.setTimeout(1, Timers.SECONDS, doEvents);
         }
 
         // Function to request registration of the dotahost uri protocol
@@ -474,7 +469,7 @@ namespace DotaHostManager
                 Timers.setTimeout(1, Timers.SECONDS, () => { Environment.Exit(0); });
             }
         }
-    
+
     }
 
 }

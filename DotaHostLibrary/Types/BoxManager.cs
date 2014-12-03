@@ -151,7 +151,7 @@ namespace DotaHostLibrary
 
         public BoxManager(KV source)
         {
-            if(source == null)
+            if (source == null)
             {
                 this.sort = 1;
                 this.keys = null;

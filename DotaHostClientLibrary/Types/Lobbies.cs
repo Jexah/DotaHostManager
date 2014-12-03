@@ -7,9 +7,9 @@ namespace DotaHostClientLibrary
         {
             for (byte i = 0; true; ++i)
             {
-                if (!containsKey(i.ToString()))
+                if (!containsKey(lobby.Name))
                 {
-                    setKey(i.ToString(), lobby);
+                    setKey(lobby.Name, lobby);
                     return;
                 }
             }
