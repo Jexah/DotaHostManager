@@ -14,11 +14,15 @@ namespace DotaHostClientLibrary
         // if generateRandomPath is true, it will append a random folder to the end
         // NOTE: Path NEEDS to lead in a slash
         // ASSUMPTION: This function CAN NOT be run in parrellel! Wait for it to finish before running again!
-        public static string compileAddons(Addons addons, string outputPath, bool generateRandomPath = false, string serverSettings = null)
+        public static string compileAddons(KV lobby, string outputPath, bool generateRandomPath = false, string serverSettings = null)
         {
             // Validate input
-            if (addons == null) return null;
+            if (lobby == null) return null;
             if (outputPath == null) return null;
+
+            // Attempt to grab the addons
+            KV addons = lobby.getKV("2");
+            if (addons == null) return null;
 
             // Grab the install location for addons
             string searchPath = AddonDownloader.getAddonInstallLocation();
@@ -41,13 +45,24 @@ namespace DotaHostClientLibrary
             // Build list of loaded addons with scripts
             List<string> addonScriptList = new List<string>();
 
+            // Build settings KV
+            GenericKV settings = new GenericKV();
+            GenericKV options = new GenericKV();
+            settings.setGenericKey("options", options);
+
+            // Add the teams
+            settings.setGenericKey("teams", lobby.getKV("1"));
+
             // Compile each addon in
             foreach (KeyValuePair<string, KV> kvp in addons.getKeys())
             {
-                Addon addon = (Addon)kvp.Value;
+                KV addon = kvp.Value;
 
                 // Get ID of addon
-                string addonID = addon.Id;
+                string addonID = addon.getValue("0");
+
+                // Store the options
+                options.setGenericKey(addonID, addon.getKV("1"));
 
                 // The name of the archive
                 zipName = searchPath + addonID + ".zip";
@@ -235,29 +250,6 @@ namespace DotaHostClientLibrary
                     // See if there is an addon directory
                     string addonDir = fixAddonDir(manifest.getValue("directory"));
 
-                    // Patch addon_init_gamemode
-                    try
-                    {
-                        // Read in the data
-                        string data = File.ReadAllText(addonDir + @"scripts\vscripts\addon_game_mode.lua");
-
-                        // Replace in the addon list
-                        data = data.Replace("--[[$addons]]", string.Join(",", addonScriptList.ToArray()));
-
-                        // Replace in the server settings
-                        if (serverSettings != null)
-                        {
-                            data = data.Replace("--[[$serverSettings]]nil", serverSettings);
-                        }
-
-                        // Replace the file
-                        File.WriteAllText(addonDir + @"scripts\vscripts\addon_game_mode.lua", data);
-                    }
-                    catch
-                    {
-                        Helpers.log("WARNING: Failed to patch serverinit::addon_game_mode.lua");
-                    }
-
                     // Copy directory in
                     Helpers.directoryCopy(addonDir, outputPath, true);
                 }
@@ -267,6 +259,9 @@ namespace DotaHostClientLibrary
                 // Oh god, this can't end well!
                 Helpers.log("WARNING: serverinit.zip not found! No vscripts will load!");
             }
+
+            // Output the settings KV
+            File.WriteAllText(outputPath + "settings.kv", settings.toString("settings"));
 
             // Cleanup temp folder
             Helpers.deleteFolder(TEMP_DIR, true);
