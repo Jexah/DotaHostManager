@@ -70,8 +70,9 @@ namespace DotaHostLobbyManager
                 validate(x[1], x[2], (player) =>
                 {
                     // Have to implement KV.parseJson and kv.toJson
+
                     /*
-                    Lobby lobby = KV.parseJson(x[3]);
+                    Lobby lobby = new Lobby(KV.parseJson(x[3]));
                     lobbies.addLobby(lobby);
                     joinLobby(lobby, player);
                     */
@@ -139,21 +140,17 @@ namespace DotaHostLobbyManager
                 data.Add("token", token);
                 data.Add("steamID", steamid);
 
-                HTTPRequestManager.startRequest("http://dotahost.net/validate.php", "GET", (r) =>
+                HTTPRequestManager.startRequest("http://127.0.0.1/validate.php", "GET", (r) =>
                 {
                     if (r != "get the fuck out of here")
                     {
                         // Do stuff with r (response) to get it into 4 variables, rest is complete
 
-                        Player player = new Player();
-                        // player.SteamID = steamid;
-                        player.SteamID = "28090256";
-                        // player.PersonaName = personaname;
-                        player.PersonaName = "Ash47";
-                        // player.Avatar = avatar;
-                        player.Avatar = "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/d2/d24b838a3e82a455bae9ed4f2ec0e4e478082984.jpg";
-                        // player.ProfileURL = profile;
-                        player.ProfileURL = "http://steamcommunity.com/id/Ash47/";
+                        Player player = new Player(KV.parse(r).getKV("player"));
+                        player.SteamID = player.SteamID;
+                        player.PersonaName = player.PersonaName;
+                        player.Avatar = player.Avatar;
+                        player.ProfileURL = player.ProfileURL;
 
                         playerCache.Add(new KeyValuePair<string, string>(token, steamid), player);
 
