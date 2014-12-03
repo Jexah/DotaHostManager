@@ -154,6 +154,20 @@ namespace DotaHostBoxManager
                 }
             });
 
+            // Attempt to install serverinit (server scripts)
+            AddonDownloader.updateAddon("serverinit", (addonID, success) =>
+            {
+                // Check if it worked!
+                if (success)
+                {
+                    Helpers.log(addonID + " was successfully installed!");
+                }
+                else
+                {
+                    Helpers.log(addonID + " failed to install!");
+                }
+            });
+
             status = Vultr.BOX_IDLE;
 
             setupSystemDiagnostics();

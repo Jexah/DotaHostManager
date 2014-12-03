@@ -72,12 +72,13 @@ namespace DotaHostClientLibrary
 
             string version = info[0];
             string correctCRC = info[1];
+            string actualCRC = "";
 
             // Check if the addon is already downloaded
             if (File.Exists(addonInstallLocation + addonID + ".zip"))
             {
                 // Check the CRC
-                string actualCRC = Helpers.calculateCRC(addonInstallLocation + addonID + ".zip");
+                actualCRC = Helpers.calculateCRC(addonInstallLocation + addonID + ".zip");
 
                 // If it matches, we're already upto date
                 if (actualCRC == correctCRC)
@@ -92,7 +93,7 @@ namespace DotaHostClientLibrary
             string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDONS, addonID, version);
 
             // Directory or file does not exist, or version does not match most recent
-            Helpers.log("[Addon] " + addonID + " out of date. New version: " + version);
+            Helpers.log("[Addon] " + addonID + " out of date. New version: " + version + " [" + actualCRC + "] VS " + correctCRC);
             Helpers.log("[Downloading] " + downloadPath);
 
             // Begins downloading addon from GitHub
