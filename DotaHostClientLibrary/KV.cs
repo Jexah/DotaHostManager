@@ -309,11 +309,7 @@ namespace DotaHostClientLibrary
                     output += entry.Value.toString(entry.Key);
                 }
 
-                if (key == null)
-                {
-                    output = "{" + output + "}";
-                }
-                else
+                if (key != null)
                 {
                     output = '"' + escapeString(key) + "\" {" + output + "}";
                 }
@@ -418,7 +414,7 @@ namespace DotaHostClientLibrary
         }
 
         // Reads the KV file at the given path
-        public static KV read(string path)
+        public static KV read(string path, bool isJSON=false)
         {
             // The file may fail to read
             try
@@ -427,7 +423,7 @@ namespace DotaHostClientLibrary
                 string data = File.ReadAllText(path, Encoding.UTF8);
 
                 // Pass the data
-                return parse(data);
+                return parse(data, isJSON);
             }
             catch
             {
@@ -437,11 +433,17 @@ namespace DotaHostClientLibrary
         }
 
         // Parses KV Data
-        public static KV parse(string kvString)
+        public static KV parse(string kvString, bool isJSON=false)
         {
             // Ensure nothing bad happens
             try
             {
+                // If it's json, we need to strip the first and last character
+                if (isJSON)
+                {
+                    kvString = kvString.Substring(1, kvString.Length - 2);
+                }
+
                 // Create initial trees
                 List<KV> tree = new List<KV>();
                 tree.Add(new KV());
@@ -464,6 +466,14 @@ namespace DotaHostClientLibrary
                     if (chr == ' ' || chr == '\t')
                     {
                         // Ignore white space
+                    }
+                    else if (isJSON && chr == ':')
+                    {
+                        // Ignore, JSON character
+                    }
+                    else if (isJSON && chr == ',')
+                    {
+                        // Ignore, JSON character
                     }
                     else if (chr == '\n')
                     {
