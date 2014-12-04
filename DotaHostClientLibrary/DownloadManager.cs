@@ -38,7 +38,7 @@ namespace DotaHostClientLibrary
             DownloadInstruction dlInstruction = new DownloadInstruction(sourceFile, targetFile, downloadProgress, downloadComplete);
 
             // Checks if there are any downloads int the queue
-            if (toDownload.Count == 0)
+            if (currentDownload == null && toDownload.Count == 0)
             {
                 // Sets the current download to the instruction provided
                 currentDownload = dlInstruction;
@@ -72,6 +72,9 @@ namespace DotaHostClientLibrary
             Helpers.log("[Download] Complete");
 
             currentDownload.DownloadComplete(e);
+
+            // No longer downloading anything
+            currentDownload = null;
 
             // Starts the next download in the queue
             beginNext();
