@@ -99,6 +99,8 @@ namespace DotaHostBoxManager
         // The main entry point into the program
         private static void Main(string[] args)
         {
+            Directory.CreateDirectory(Global.TEMP);
+
             GameServer gs = new GameServer();
             gs.Ip = "yolo";
             gs.Port = 1234;
@@ -296,8 +298,9 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("create");
             wsClient.addHook("create", (c, x) =>
             {
+
                 // Create server object to handle game server info
-                GameServer gameServer = (GameServer)KV.parse(x[1]);
+                GameServer gameServer = new GameServer(KV.parse(x[1]));
 
                 gameServers.addGameServer(gameServer);
 
@@ -329,7 +332,7 @@ namespace DotaHostBoxManager
             int maxPlayers = gameServer.Lobby.MaxPlayers;
 
             // Port to open on, perhaps we keep track of what ports are in use? or test? idk
-            int port = 27017;
+            int port = gameServer.Port;
 
             // The map to load up
             string map = "dota";
@@ -391,10 +394,14 @@ namespace DotaHostBoxManager
                 // Woot, success
                 Helpers.log("Server was launched successfully!");
 
+                wsClient.send("gameServerInfo;success;" + gameServer.toString());
+
                 // We probably want to store a reference to the process so we can see if it dies
             }
             catch
             {
+
+                wsClient.send("gameServerInfo;" + gameServer.Lobby.Name + ";failed");
                 Helpers.log("Failed to launch the server!");
             }
         }

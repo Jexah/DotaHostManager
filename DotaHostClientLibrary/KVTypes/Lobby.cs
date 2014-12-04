@@ -64,6 +64,18 @@ namespace DotaHostClientLibrary
             }
         }
 
+        public byte Region
+        {
+            get
+            {
+                return Convert.ToByte(getValue("5"));
+            }
+            set
+            {
+                setValue("5", value.ToString());
+            }
+        }
+
         public Lobby()
         {
             initObject();

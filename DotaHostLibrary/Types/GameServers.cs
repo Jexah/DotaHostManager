@@ -1,4 +1,5 @@
 ﻿using DotaHostClientLibrary;
+using System.Collections.Generic;
 
 namespace DotaHostLibrary
 {
@@ -29,6 +30,16 @@ namespace DotaHostLibrary
         public GameServer getGameServer(byte id)
         {
             return new GameServer(getKV(id.ToString()));
+        }
+
+        public List<GameServer> getTeams()
+        {
+            List<GameServer> gameServers = new List<GameServer>();
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                gameServers.Add(new GameServer(kvp.Value));
+            }
+            return gameServers;
         }
 
 

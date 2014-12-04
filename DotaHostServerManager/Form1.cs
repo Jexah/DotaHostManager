@@ -1,4 +1,5 @@
-﻿using DotaHostClientLibrary;
+﻿using Alchemy.Classes;
+using DotaHostClientLibrary;
 using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,9 @@ namespace DotaHostServerManager
 
         // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Loopback, Vultr.SERVER_MANAGER_PORT);
+
+        // This is our lobby manager 
+        private static UserContext lobbyManager;
 
         // Soft BoxManager limit
         private static byte serverSoftCap;
@@ -202,19 +206,18 @@ namespace DotaHostServerManager
             #endregion
 
             // Receive game server request from webserver
-            #region wsServer.addHook("create");
-            wsServer.addHook("create", (c, x) =>
+            #region wsServer.addHook("gameServer");
+            wsServer.addHook("createGameServer", (c, x) =>
             {
+                Lobby lobby = new Lobby(KV.parse(x[1]));
 
-                byte region = Convert.ToByte(x[1]);
+                BoxManager boxManager = findBoxManager(lobby);
 
-                Lobby lobby = (Lobby)KV.parse(x[2]);
-
-                BoxManager boxManager = findBoxManager(region, lobby.Addons);
+                GameServer gameServer = createGameServer(boxManager, lobby);
 
                 if (boxManager != null)
                 {
-                    wsServer.send(String.Join(";", x), boxManager.Ip);
+                    c.Send("gameServerInfo;" + gameServer);
                 }
                 else
                 {
@@ -222,6 +225,34 @@ namespace DotaHostServerManager
                 }
             });
             #endregion
+
+            // Receive confirmation of createGameServer from BoxManager
+            #region wsServer.addHook("gameServer");
+            wsServer.addHook("gameServerInfo", (c, x) =>
+            {
+                if (x[2] == "success")
+                {
+                    GameServer gameServer = new GameServer(KV.parse(x[3]));
+                    foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                    {
+                        foreach (Player player in team.Players.getPlayers())
+                        {
+                            lobbyManager.Send("gameServerInfo;" + gameServer.toString());
+                        }
+                    }
+                }
+            });
+            #endregion
+
+            #region wsServer.addHook("lobbyManager");
+            wsServer.addHook("lobbyManager", (c, x) =>
+            {
+                Helpers.log(c.ClientAddress.ToString());
+                if (c.ClientAddress.ToString().Split(':')[0] == "127.0.0.1")
+                {
+                    lobbyManager = c;
+                }
+            });
 
         }
 
@@ -274,20 +305,20 @@ namespace DotaHostServerManager
         }
 
         // Finds a server to host the gamemode selected, in the region selected
-        private BoxManager findBoxManager(byte region, Addons addons)
+        private BoxManager findBoxManager(Lobby lobby)
         {
             int totalRam = 0;
             int totalCpu = 0;
-            foreach (KeyValuePair<string, KV> kvp in addons.getKeys())
+            foreach (KeyValuePair<string, KV> kvp in lobby.Addons.getKeys())
             {
-                Addon addon = (Addon)kvp.Value;
+                Addon addon = new Addon(kvp.Value);
                 totalRam += addonRequirements[addon.Id].Ram;
                 totalCpu += addonRequirements[addon.Id].Cpu;
             }
             foreach (KeyValuePair<string, KV> kvp in boxManagers.getKeys())
             {
-                BoxManager boxManager = (BoxManager)kvp.Value;
-                if (boxManager.Region == region)
+                BoxManager boxManager = new BoxManager(kvp.Value);
+                if (boxManager.Region == lobby.Region)
                 {
                     Helpers.log("region OK");
                     if (boxManager.RamAvailable > totalRam && 100 - boxManager.Cpu > totalCpu)
@@ -300,6 +331,32 @@ namespace DotaHostServerManager
             return null;
         }
 
+        // Creates a game server
+        private GameServer createGameServer(BoxManager boxManager, Lobby lobby)
+        {
+            List<ushort> ports = new List<ushort>();
+            foreach (KeyValuePair<string, KV> kvp in boxManager.GameServers.getKeys())
+            {
+                GameServer gs = new GameServer(kvp.Value);
+                ports.Add(gs.Port);
+            }
+            GameServer gameServer = null;
+            for (ushort i = 27015; i < 27025; ++i)
+            {
+                if (!ports.Contains(i))
+                {
+                    gameServer = new GameServer();
+                    gameServer.Port = i;
+                    gameServer.Lobby = lobby;
+                    gameServer.Ip = boxManager.Ip;
+
+                    wsServer.send("create;" + gameServer, gameServer.Ip);
+
+                    break;
+                }
+            }
+            return gameServer;
+        }
 
         // Reboots the selected box
         private void restartBox(BoxManager boxManager)

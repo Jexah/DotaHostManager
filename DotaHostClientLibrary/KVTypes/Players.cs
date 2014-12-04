@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 namespace DotaHostClientLibrary
 {
     public class Players : KV
@@ -29,6 +30,16 @@ namespace DotaHostClientLibrary
         public Player getPlayer(string id)
         {
             return new Player(getKV(id));
+        }
+
+        public List<Player> getPlayers()
+        {
+            List<Player> players = new List<Player>();
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                players.Add(new Player(kvp.Value));
+            }
+            return players;
         }
 
         public Players()

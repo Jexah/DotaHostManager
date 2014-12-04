@@ -1,4 +1,5 @@
 ﻿using DotaHostClientLibrary;
+using System.Collections.Generic;
 
 namespace DotaHostLibrary
 {
@@ -22,6 +23,17 @@ namespace DotaHostLibrary
         public BoxManager getBoxManager(string key)
         {
             return new BoxManager(getKV(key));
+        }
+
+
+        public List<BoxManager> getTeams()
+        {
+            List<BoxManager> boxManagers = new List<BoxManager>();
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                boxManagers.Add(new BoxManager(kvp.Value));
+            }
+            return boxManagers;
         }
 
 

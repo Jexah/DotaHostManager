@@ -16,7 +16,11 @@ namespace DotaHostLobbyManager
 
         private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, Global.LOBBY_MANAGER_PORT);
 
+        private static WebSocketClient wsClient = new WebSocketClient("ws://127.0.0.1:" + Vultr.SERVER_MANAGER_PORT + "/");
+
         private static Dictionary<KeyValuePair<string, string>, Player> playerCache = new Dictionary<KeyValuePair<string, string>, Player>();
+
+        private static Dictionary<string, string> playersIPs = new Dictionary<string, string>();
 
         public Form1()
         {
@@ -72,6 +76,8 @@ namespace DotaHostLobbyManager
 
         public static void hookWSocketEvents()
         {
+
+            #region wsServer.addHook("getLobbies");
             wsServer.addHook("getLobbies", (c, x) =>
             {
                 string lobbiesJson = lobbies.toJSON();
@@ -83,14 +89,16 @@ namespace DotaHostLobbyManager
                 c.Send(lobbiesJson);
                 //c.Send(compressed);
             });
+            #endregion
 
+            #region wsServer.addHook("createLobby");
             wsServer.addHook("createLobby", (c, x) =>
             {
                 if (x.Length != 4)
                 {
                     return;
                 }
-                validate(x[1], x[2], (player) =>
+                validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     // Have to implement KV.parseJson and kv.toJson
 
@@ -101,19 +109,23 @@ namespace DotaHostLobbyManager
                     */
                 });
             });
+            #endregion
 
+            #region wsServer.addHook("joinLobby");
             wsServer.addHook("joinLobby", (c, x) =>
             {
                 if (x.Length != 4)
                 {
                     return;
                 }
-                validate(x[1], x[2], (player) =>
+                validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     joinLobby(lobbies.getLobby(x[3]), player, c);
                 });
             });
+            #endregion
 
+            #region wsServer.addHook("getLobby");
             wsServer.addHook("getLobby", (c, x) =>
             {
                 if (x.Length != 2)
@@ -125,6 +137,35 @@ namespace DotaHostLobbyManager
                 send += lobby.toString();
                 c.Send(send);
             });
+            #endregion
+
+
+            wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
+            {
+                c.Send("lobbyManager");
+            });
+
+            #region wsClient.addHook("gameServerInfo");
+            wsClient.addHook("gameServerInfo", (c, x) =>
+            {
+                GameServer gameServer = new GameServer(KV.parse(x[3]));
+                foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                {
+                    foreach (Player player in team.Players.getPlayers())
+                    {
+                        if (x[1] == "success")
+                        {
+                            wsServer.send("gameServerInfo;success;" + gameServer.Ip + ":" + gameServer.Port, playersIPs[player.SteamID]);
+                        }
+                        else
+                        {
+                            wsServer.send("gameServerInfo;failed");
+                        }
+                    }
+                }
+            });
+            #endregion
+
         }
 
         private static void joinLobby(Lobby lobby, Player player, UserContext c)
@@ -150,7 +191,7 @@ namespace DotaHostLobbyManager
             }
         }
 
-        private static void validate(string token, string steamid, Action<Player> callback)
+        private static void validate(string token, string steamid, string ip, Action<Player> callback)
         {
             KeyValuePair<string, string> kvp = new KeyValuePair<string, string>(token, steamid);
             if (playerCache.ContainsKey(kvp))
@@ -176,6 +217,7 @@ namespace DotaHostLobbyManager
                         player.ProfileURL = player.ProfileURL;
 
                         playerCache.Add(new KeyValuePair<string, string>(token, steamid), player);
+                        playersIPs.Add(steamid, ip);
 
                         callback(player);
                     }
@@ -190,7 +232,7 @@ namespace DotaHostLobbyManager
 
         private void requestGameServer(Lobby lobby)
         {
-
+            wsClient.send("createGameServer;" + lobby.toString());
         }
 
         public static List<int> Compress(string uncompressed)

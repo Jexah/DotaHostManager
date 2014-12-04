@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 namespace DotaHostClientLibrary
 {
     public class Addons : KV
@@ -28,6 +29,16 @@ namespace DotaHostClientLibrary
         public Addon getAddon(string key)
         {
             return new Addon(getKV(key));
+        }
+
+        public List<Addon> getAddons()
+        {
+            List<Addon> addons = new List<Addon>();
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                addons.Add(new Addon(kvp.Value));
+            }
+            return addons;
         }
 
         public Addons()

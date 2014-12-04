@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 namespace DotaHostClientLibrary
 {
     public class Lobbies : KV
@@ -25,6 +26,16 @@ namespace DotaHostClientLibrary
         public Lobby getLobby(string key)
         {
             return new Lobby(getKV(key));
+        }
+
+        public List<Lobby> getLobbies()
+        {
+            List<Lobby> lobbies = new List<Lobby>();
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                lobbies.Add(new Lobby(kvp.Value));
+            }
+            return lobbies;
         }
 
 
