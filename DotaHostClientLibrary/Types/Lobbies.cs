@@ -5,13 +5,10 @@ namespace DotaHostClientLibrary
     {
         public void addLobby(Lobby lobby)
         {
-            for (byte i = 0; true; ++i)
+            if (!containsKey(lobby.Name))
             {
-                if (!containsKey(lobby.Name))
-                {
-                    setKey(lobby.Name, lobby);
-                    return;
-                }
+                setKey(lobby.Name, lobby);
+                return;
             }
         }
 

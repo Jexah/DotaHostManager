@@ -587,6 +587,26 @@ namespace DotaHostServerManager
             });
         }
 
+        // Update region label
+        private void setBoxRegionGUI(BoxManager boxManager)
+        {
+            setBoxRegionLGUI(boxManager.Region);
+        }
+        private void setBoxRegionLGUI(byte region)
+        {
+            modGUI(boxRegionLabel, () =>
+            {
+                if (Vultr.REGION_ID_TO_NAME.ContainsKey(region))
+                {
+                    boxVerifiedLabel.Text = Vultr.REGION_ID_TO_NAME[region];
+                }
+                else
+                {
+                    boxVerifiedLabel.Text = "None";
+                }
+            });
+        }
+
         // Refreshes the GameServer list
         private void updateGameServerListGUI(BoxManager boxManager)
         {

@@ -31,6 +31,6 @@ namespace DotaHostClientLibrary
         public const string CLIENT_ADDON_INSTALL_LOCATION = @"{0}\dota\addons_dotahost\";
 
         // Lobby Manager Port
-        public const int LOBBY_MANAGER_PORT = 3876;
+        public const int LOBBY_MANAGER_PORT = 2075;
     }
 }

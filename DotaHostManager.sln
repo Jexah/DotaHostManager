@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostClientLibrary", "Do
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotaHostLobbyManager", "DotaHostLobbyManager\DotaHostLobbyManager.csproj", "{0115D92D-DC35-475A-B25E-6E01E922A6ED}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SevenZip", "SevenZip\SevenZip.csproj", "{C3A18161-BEFE-42D5-B141-E2726506D29E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0115D92D-DC35-475A-B25E-6E01E922A6ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3A18161-BEFE-42D5-B141-E2726506D29E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3A18161-BEFE-42D5-B141-E2726506D29E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3A18161-BEFE-42D5-B141-E2726506D29E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3A18161-BEFE-42D5-B141-E2726506D29E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

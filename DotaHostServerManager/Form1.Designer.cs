@@ -50,6 +50,8 @@
             this.button2 = new System.Windows.Forms.Button();
             this.boxVerifiedLabel = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
+            this.boxRegionLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // boxesList
@@ -283,11 +285,35 @@
             this.label10.Text = "Verified:";
             this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // label9
+            // 
+            this.label9.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label9.Location = new System.Drawing.Point(121, 114);
+            this.label9.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(106, 26);
+            this.label9.TabIndex = 24;
+            this.label9.Text = "Region:";
+            this.label9.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // boxRegionLabel
+            // 
+            this.boxRegionLabel.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.boxRegionLabel.Location = new System.Drawing.Point(231, 114);
+            this.boxRegionLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.boxRegionLabel.Name = "boxRegionLabel";
+            this.boxRegionLabel.Size = new System.Drawing.Size(136, 26);
+            this.boxRegionLabel.TabIndex = 25;
+            this.boxRegionLabel.Text = "None";
+            this.boxRegionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1016, 565);
+            this.Controls.Add(this.boxRegionLabel);
+            this.Controls.Add(this.label9);
             this.Controls.Add(this.boxVerifiedLabel);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.button2);
@@ -344,6 +370,8 @@
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Label boxVerifiedLabel;
         private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label boxRegionLabel;
     }
 }
 

@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0115D92D-DC35-475A-B25E-6E01E922A6ED}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DotaHostLobbyManager</RootNamespace>
     <AssemblyName>DotaHostLobbyManager</AssemblyName>
@@ -30,6 +30,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Alchemy">
@@ -88,6 +91,10 @@
     <ProjectReference Include="..\DotaHostLibrary\DotaHostLibrary.csproj">
       <Project>{f61404e4-f077-4126-872d-6149647698ab}</Project>
       <Name>DotaHostLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SevenZip\SevenZip.csproj">
+      <Project>{c3a18161-befe-42d5-b141-e2726506d29e}</Project>
+      <Name>SevenZip</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

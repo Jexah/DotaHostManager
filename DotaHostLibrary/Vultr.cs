@@ -1,9 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DotaHostLibrary
 {
@@ -25,6 +22,9 @@ namespace DotaHostLibrary
         // Define string -> byte region map
         public static readonly Dictionary<string, byte> NAME_TO_REGION_ID;
 
+        // Define byte -> string region map
+        public static readonly Dictionary<byte, string> REGION_ID_TO_NAME;
+
         // Vultr API key
         public const string VULTR_API_KEY = "***REMOVED***";
 
@@ -35,7 +35,7 @@ namespace DotaHostLibrary
 
         // Set plan IDs into 
         public static readonly Dictionary<byte, byte> PLAN_IDS;
-        
+
         // Vultr OS IDs
         public const byte CUSTOM_OS = 159;
         public const byte SNAPSHOT_OS = 164;
@@ -65,17 +65,23 @@ namespace DotaHostLibrary
             {
                 { "Australia", AUSTRALIA },
                 { "Amsterdam", EUROPE },
-                { "Chicago", AMERICA },
                 { "Dallas", AMERICA }
+            };
+
+            REGION_ID_TO_NAME = new Dictionary<byte, string>()
+            {
+                { AUSTRALIA, "Australia" },
+                { EUROPE, "Amsterdam" },
+                { AMERICA, "Dallas" }
             };
         }
 
         // Vultr create server with snapshot in given region
         public static void createServer(byte region)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) => 
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) =>
             {
-                
+
             }, new Dictionary<string, string>(){
                 { "api_key", VULTR_API_KEY },
                 { "DCID", region.ToString() },
@@ -88,9 +94,9 @@ namespace DotaHostLibrary
         // Destroy the server with the given subid
         public static void destroyServer(int subID)
         {
-            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) => 
-            { 
-            
+            HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) =>
+            {
+
             }, new Dictionary<string, string>(){
                 { "api_key", VULTR_API_KEY },
                 { "SUBID", subID.ToString() }
@@ -103,12 +109,12 @@ namespace DotaHostLibrary
             HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "GET", (body) =>
                 {
                     // Take the raw JSON body and convert it into a dictionary of server properties
-                    Dictionary<string, VultrServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, VultrServerProperties>>(body);  
+                    Dictionary<string, VultrServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, VultrServerProperties>>(body);
                     func(data);
                 }, new Dictionary<string, string>(){
                 { "api_key", VULTR_API_KEY }
             });
         }
-    
+
     }
 }
