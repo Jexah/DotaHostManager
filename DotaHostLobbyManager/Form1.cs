@@ -113,13 +113,16 @@ namespace DotaHostLobbyManager
                 }
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
-                    // Have to implement KV.parseJson and kv.toJson
-
-                    /*
-                    Lobby lobby = new Lobby(KV.parseJson(x[3]));
-                    lobbies.addLobby(lobby);
-                    joinLobby(lobby, player);
-                    */
+                    Lobby lobby = new Lobby(KV.parse(x[3], true));
+                    if (lobbies.getLobby(lobby.Name) != null)
+                    {
+                        lobbies.addLobby(lobby);
+                        joinLobby(lobbies.getLobby(lobby.Name), player, c);
+                    }
+                    else
+                    {
+                        c.Send("createLobby;failed");
+                    }
                 });
             });
             #endregion
@@ -166,7 +169,7 @@ namespace DotaHostLobbyManager
             #region wsClient.addHook("gameServerInfo");
             wsClient.addHook("gameServerInfo", (c, x) =>
             {
-                GameServer gameServer = new GameServer(KV.parse(x[3]));
+                GameServer gameServer = new GameServer(KV.parse(x[2]));
                 foreach (Team team in gameServer.Lobby.Teams.getTeams())
                 {
                     foreach (Player player in team.Players.getPlayers())
@@ -189,9 +192,8 @@ namespace DotaHostLobbyManager
         private static void joinLobby(Lobby lobby, Player player, UserContext c)
         {
             bool joined = false;
-            foreach (KeyValuePair<string, KV> kvp in lobby.Teams.getKeys())
+            foreach (Team team in lobby.Teams.getTeams())
             {
-                Team team = new Team(kvp.Value);
                 if (team.Players.getKeys().Count < team.MaxPlayers)
                 {
                     team.Players.addPlayer(player);
@@ -204,8 +206,7 @@ namespace DotaHostLobbyManager
             }
             else
             {
-                c.Send("joinLobby;success;lobbyData");
-                //c.Send("joinLobby;success;" + Lobby.toJson());
+                c.Send("joinLobby;success;" + lobby.toJSON());
             }
         }
 

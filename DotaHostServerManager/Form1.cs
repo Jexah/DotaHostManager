@@ -230,13 +230,14 @@ namespace DotaHostServerManager
 
                     if (boxManager != null)
                     {
-                        c.Send("gameServerInfo;" + gameServer);
+                        c.Send("gameServerInfo;success;" + gameServer.toString());
                     }
                     else
                     {
                         Helpers.log("Could not find server");
                     }
                 }
+                c.Send("gameServerInfo;failed;" + lobby.toString());
             });
             #endregion
 
