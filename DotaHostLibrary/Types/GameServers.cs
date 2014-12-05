@@ -32,7 +32,7 @@ namespace DotaHostLibrary
             return new GameServer(getKV(id.ToString()));
         }
 
-        public List<GameServer> getTeams()
+        public List<GameServer> getGameServers()
         {
             List<GameServer> gameServers = new List<GameServer>();
             foreach (KeyValuePair<string, KV> kvp in getKeys())

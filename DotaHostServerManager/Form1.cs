@@ -4,6 +4,7 @@ using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Net;
 using System.Windows.Forms;
 
@@ -32,14 +33,16 @@ namespace DotaHostServerManager
         private static byte serverSoftCap;
 
         // Hard BoxManager limit
-        private const byte SERVER_HARD_CAP = 5;
+        private const byte SERVER_HARD_CAP = 2;
 
 
         public Form1()
         {
+            File.Delete("log.txt");
+
             setAddonRequirements();
 
-            serverSoftCap = 1;
+            serverSoftCap = 2;
 
             InitializeComponent();
 
@@ -111,6 +114,10 @@ namespace DotaHostServerManager
                     {
                         string serverIP = kvp.Value.main_ip;
                         string boxIP = c.ClientAddress.ToString().Split(':')[0];
+
+                        Helpers.log(serverIP);
+                        Helpers.log(boxIP);
+
                         if (serverIP == boxIP)
                         {
                             serverInfo = kvp.Value;
@@ -129,7 +136,6 @@ namespace DotaHostServerManager
 
 
                     // Send SUBID to server so it knows its place
-                    Helpers.log(boxManager.toString("box"));
                     c.Send("box;" + boxManager.toString("box"));
 
                 });
@@ -147,8 +153,6 @@ namespace DotaHostServerManager
                         setBoxStatsGUI(boxManager);
                     }
                 });
-
-                Helpers.log(boxManager.toString("box"));
 
 
             });
@@ -206,28 +210,32 @@ namespace DotaHostServerManager
             #endregion
 
             // Receive game server request from webserver
-            #region wsServer.addHook("gameServer");
+            #region wsServer.addHook("createGameServer");
             wsServer.addHook("createGameServer", (c, x) =>
             {
+                Helpers.log(x[1]);
                 Lobby lobby = new Lobby(KV.parse(x[1]));
 
                 BoxManager boxManager = findBoxManager(lobby);
 
-                GameServer gameServer = createGameServer(boxManager, lobby);
-
                 if (boxManager != null)
                 {
-                    c.Send("gameServerInfo;" + gameServer);
-                }
-                else
-                {
-                    Helpers.log("Could not find server");
+                    GameServer gameServer = createGameServer(boxManager, lobby);
+
+                    if (boxManager != null)
+                    {
+                        c.Send("gameServerInfo;" + gameServer);
+                    }
+                    else
+                    {
+                        Helpers.log("Could not find server");
+                    }
                 }
             });
             #endregion
 
             // Receive confirmation of createGameServer from BoxManager
-            #region wsServer.addHook("gameServer");
+            #region wsServer.addHook("gameServerInfo");
             wsServer.addHook("gameServerInfo", (c, x) =>
             {
                 if (x[2] == "success")
@@ -244,6 +252,7 @@ namespace DotaHostServerManager
             });
             #endregion
 
+
             #region wsServer.addHook("lobbyManager");
             wsServer.addHook("lobbyManager", (c, x) =>
             {
@@ -253,6 +262,7 @@ namespace DotaHostServerManager
                     lobbyManager = c;
                 }
             });
+            #endregion
 
         }
 
@@ -307,11 +317,11 @@ namespace DotaHostServerManager
         // Finds a server to host the gamemode selected, in the region selected
         private BoxManager findBoxManager(Lobby lobby)
         {
+            Helpers.log(lobby.toJSON());
             int totalRam = 0;
             int totalCpu = 0;
-            foreach (KeyValuePair<string, KV> kvp in lobby.Addons.getKeys())
+            foreach (Addon addon in lobby.Addons.getAddons())
             {
-                Addon addon = new Addon(kvp.Value);
                 totalRam += addonRequirements[addon.Id].Ram;
                 totalCpu += addonRequirements[addon.Id].Cpu;
             }
@@ -335,9 +345,8 @@ namespace DotaHostServerManager
         private GameServer createGameServer(BoxManager boxManager, Lobby lobby)
         {
             List<ushort> ports = new List<ushort>();
-            foreach (KeyValuePair<string, KV> kvp in boxManager.GameServers.getKeys())
+            foreach (GameServer gs in boxManager.GameServers.getGameServers())
             {
-                GameServer gs = new GameServer(kvp.Value);
                 ports.Add(gs.Port);
             }
             GameServer gameServer = null;
@@ -688,6 +697,11 @@ namespace DotaHostServerManager
         }
 
         #endregion
+
+        private void boxUpdateButton_Click(object sender, EventArgs e)
+        {
+            wsServer.send("updateServer", boxesList.SelectedItem.ToString());
+        }
 
 
     }

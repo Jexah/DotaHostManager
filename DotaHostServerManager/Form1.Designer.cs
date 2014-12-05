@@ -52,6 +52,7 @@
             this.label10 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
             this.boxRegionLabel = new System.Windows.Forms.Label();
+            this.boxUpdateButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // boxesList
@@ -307,11 +308,22 @@
             this.boxRegionLabel.Text = "None";
             this.boxRegionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
+            // boxUpdateButton
+            // 
+            this.boxUpdateButton.Location = new System.Drawing.Point(342, 263);
+            this.boxUpdateButton.Name = "boxUpdateButton";
+            this.boxUpdateButton.Size = new System.Drawing.Size(120, 45);
+            this.boxUpdateButton.TabIndex = 26;
+            this.boxUpdateButton.Text = "Update Selected Box";
+            this.boxUpdateButton.UseVisualStyleBackColor = true;
+            this.boxUpdateButton.Click += new System.EventHandler(this.boxUpdateButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1016, 565);
+            this.Controls.Add(this.boxUpdateButton);
             this.Controls.Add(this.boxRegionLabel);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.boxVerifiedLabel);
@@ -372,6 +384,7 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Label boxRegionLabel;
+        private System.Windows.Forms.Button boxUpdateButton;
     }
 }
 

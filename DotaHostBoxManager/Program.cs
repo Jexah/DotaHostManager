@@ -101,9 +101,12 @@ namespace DotaHostBoxManager
         {
             Directory.CreateDirectory(Global.TEMP);
 
+            // Delete the old log file
+            File.Delete(Global.BASE_PATH + "log.txt");
+
             GameServer gs = new GameServer();
             gs.Ip = "yolo";
-            gs.Port = 1234;
+            gs.Port = 27015;
             Lobby l = new Lobby();
             Addons ads = new Addons();
             Addon ad = new Addon();
@@ -116,6 +119,8 @@ namespace DotaHostBoxManager
             l.MaxPlayers = 5;
             l.Name = "trolol";
             Teams ts = new Teams();
+
+            // First team, with us on it
             Team t = new Team();
             t.MaxPlayers = 5;
             Players ps = new Players();
@@ -123,21 +128,44 @@ namespace DotaHostBoxManager
             p.Avatar = "avatar URL here";
             p.PersonaName = "some personan name";
             p.ProfileURL = "http://steamcommunity.com/jexah";
-            p.SteamID = "32-bit steam id";
+            p.SteamID = "45686503";
+            //p.SteamID = "41686503";
             ps.addPlayer(p);
+            Player p2 = new Player();
+            p2.Avatar = "avatar URL here";
+            p2.PersonaName = "some personan name";
+            p2.ProfileURL = "http://steamcommunity.com/jexah";
+            //p.SteamID = "45686503";
+            p2.SteamID = "28090256";
+            ps.addPlayer(p2);
             t.Players = ps;
             t.TeamName = "teamMeowingtons";
+
+            // Second team, dummy player
+            Team t2 = new Team();
+            t2.MaxPlayers = 5;
+            t2.TeamName = "teamMeowingtons";
+            Players ps2 = new Players();
+            Player p3 = new Player();
+            p3.Avatar = "avatar URL here";
+            p3.PersonaName = "some personan name";
+            p3.ProfileURL = "http://steamcommunity.com/jexah";
+            p3.SteamID = "28123256";
+            ps2.addPlayer(p3);
+            t2.Players = ps2;
+
+            // Add second team first
+            ts.addTeam(t2);
             ts.addTeam(t);
             l.Teams = ts;
             gs.Lobby = l;
             gameServers.addGameServer(gs);
 
+            Helpers.log(ts.toJSON());
+
             /*/ Compile our test settings
             AddonCompiler.compileAddons(l, Global.BASE_PATH + @"addons\", true);
             return;//*/
-
-            // Delete the old log file
-            File.Delete(Global.BASE_PATH + "log.txt");
 
             // Cleanup addons folder
             Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
@@ -307,6 +335,13 @@ namespace DotaHostBoxManager
                 // Launch the server using the string options
                 launchGameServer(gameServer);
 
+            });
+            #endregion
+
+            #region wsClient.addHook("updateServer");
+            wsClient.addHook("updateServer", (c, x) =>
+            {
+                updateServers();
             });
             #endregion
 

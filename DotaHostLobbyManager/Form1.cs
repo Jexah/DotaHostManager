@@ -22,56 +22,69 @@ namespace DotaHostLobbyManager
 
         private static Dictionary<string, string> playersIPs = new Dictionary<string, string>();
 
+        private static Lobby l = new Lobby();
+
+
         public Form1()
         {
             InitializeComponent();
 
             hookWSocketEvents();
 
-            for (int i = 0; i < 100; ++i)
-            {
-                Lobby l = new Lobby();
-                Addons ads = new Addons();
-                Addon ad = new Addon();
-                ad.Id = "lod";
-                ad.Options = new Options();
-                ads.addAddon(ad);
-                l.Addons = ads;
-                l.CurrentPlayers = 0;
-                l.MaxPlayers = 10;
-                if (i == 0)
-                {
-                    l.Name = "yolo1234";
-                }
-                else
-                {
-                    l.Name = Helpers.randomString(10);
-                }
-                Teams ts = new Teams();
-                Team t = new Team();
-                Team t2 = new Team();
-                t.MaxPlayers = 5;
-                Players ps = new Players();
-                for (var j = 0; j < 10; ++j)
-                {
-                    Player p = new Player();
-                    p.Avatar = Helpers.randomString(70);
-                    p.PersonaName = Helpers.randomString(30);
-                    p.ProfileURL = Helpers.randomString(40);
-                    p.SteamID = Helpers.randomString(10);
-                    ps.addPlayer(p);
-                }
-                t.Players = ps;
-                t.TeamName = Helpers.randomString(15);
-                t2.Players = ps;
-                t2.TeamName = Helpers.randomString(15);
-                ts.addTeam(t);
-                ts.addTeam(t2);
-                l.Teams = ts;
-                lobbies.addLobby(l);
-            }
+            Addons ads = new Addons();
+            Addon ad = new Addon();
+            ad.Id = "lod";
+            ad.Options = new Options();
+            ad.Options.setOption("pickingMode", "All Pick");
+            ads.addAddon(ad);
+            l.Addons = ads;
+            l.CurrentPlayers = 3;
+            l.MaxPlayers = 5;
+            l.Name = "trolol";
+            l.Region = Vultr.AUSTRALIA;
+            Teams ts = new Teams();
+
+            // First team, with us on it
+            Team t = new Team();
+            t.MaxPlayers = 5;
+            Players ps = new Players();
+            Player p = new Player();
+            p.Avatar = "avatar URL here";
+            p.PersonaName = "some personan name";
+            p.ProfileURL = "http://steamcommunity.com/jexah";
+            p.SteamID = "45686503";
+            //p.SteamID = "41686503";
+            ps.addPlayer(p);
+            Player p2 = new Player();
+            p2.Avatar = "avatar URL here";
+            p2.PersonaName = "some personan name";
+            p2.ProfileURL = "http://steamcommunity.com/jexah";
+            //p.SteamID = "45686503";
+            p2.SteamID = "28090256";
+            ps.addPlayer(p2);
+            t.Players = ps;
+            t.TeamName = "teamMeowingtons";
+
+            // Second team, dummy player
+            Team t2 = new Team();
+            t2.MaxPlayers = 5;
+            t2.TeamName = "teamMeowingtons";
+            Players ps2 = new Players();
+            Player p3 = new Player();
+            p3.Avatar = "avatar URL here";
+            p3.PersonaName = "some personan name";
+            p3.ProfileURL = "http://steamcommunity.com/jexah";
+            p3.SteamID = "28123256";
+            ps2.addPlayer(p3);
+            t2.Players = ps2;
+
+            // Add second team first
+            ts.addTeam(t2);
+            ts.addTeam(t);
+            l.Teams = ts;
 
             wsServer.start();
+            wsClient.start();
         }
 
         public static void hookWSocketEvents()
@@ -143,6 +156,10 @@ namespace DotaHostLobbyManager
             wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
             {
                 c.Send("lobbyManager");
+
+                Helpers.log(l.toString());
+
+                requestGameServer(l);
             });
 
             #region wsClient.addHook("gameServerInfo");
@@ -230,7 +247,7 @@ namespace DotaHostLobbyManager
             Environment.Exit(0);
         }
 
-        private void requestGameServer(Lobby lobby)
+        private static void requestGameServer(Lobby lobby)
         {
             wsClient.send("createGameServer;" + lobby.toString());
         }
