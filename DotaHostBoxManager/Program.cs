@@ -163,16 +163,6 @@ namespace DotaHostBoxManager
             gameServers.addGameServer(gs);
 
             Helpers.log(ts.toJSON());
-=======
-            /*/ Server updater
-            updateServers();
-
-            while (true)
-            {
-                System.Threading.Thread.Sleep(50);
-            }//*/
-
->>>>>>> origin/master
 
             /*/ Compile our test settings
             AddonCompiler.compileAddons(l, Global.BASE_PATH + @"addons\", true);
