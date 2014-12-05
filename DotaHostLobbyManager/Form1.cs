@@ -104,6 +104,20 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            #region wsServer.addHook("validate");
+            wsServer.addHook("validate", (c, x) =>
+            {
+                if (x.Length != 3)
+                {
+                    return;
+                }
+                validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
+                {
+                    c.Send("validate;success");
+                });
+            });
+            #endregion
+
             #region wsServer.addHook("createLobby");
             wsServer.addHook("createLobby", (c, x) =>
             {
@@ -114,9 +128,12 @@ namespace DotaHostLobbyManager
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     Lobby lobby = new Lobby(KV.parse(x[3], true));
-                    if (lobbies.getLobby(lobby.Name) != null)
+
+                    Helpers.log(KV.parse(x[3], true).toString());
+                    Helpers.log(lobby.Name);
+
+                    if (lobby.Name != null && lobbies.addLobby(lobby))
                     {
-                        lobbies.addLobby(lobby);
                         joinLobby(lobbies.getLobby(lobby.Name), player, c);
                     }
                     else
@@ -239,6 +256,7 @@ namespace DotaHostLobbyManager
                         playersIPs.Add(steamid, ip);
 
                         callback(player);
+
                     }
                 }, data);
             }

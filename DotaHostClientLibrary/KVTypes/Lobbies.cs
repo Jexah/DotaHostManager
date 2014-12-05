@@ -4,13 +4,15 @@ namespace DotaHostClientLibrary
 {
     public class Lobbies : KV
     {
-        public void addLobby(Lobby lobby)
+        public bool addLobby(Lobby lobby)
         {
             if (!containsKey(lobby.Name))
             {
                 setKey(lobby.Name, lobby);
-                return;
+                return true;
             }
+
+            return false;
         }
 
         public void removeLobby(Lobby lobby)
