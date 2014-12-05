@@ -99,20 +99,11 @@ namespace DotaHostBoxManager
         // The main entry point into the program
         private static void Main(string[] args)
         {
-<<<<<<< HEAD
+            // Ensure temp dir exists
             Directory.CreateDirectory(Global.TEMP);
 
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
-=======
-            /*/ Server updater
-            updateServers();
-
-            while (true)
-            {
-                System.Threading.Thread.Sleep(50);
-            }//*/
->>>>>>> 28f0450e40711c1d275b84a973ad17e6a1c44143
 
             GameServer gs = new GameServer();
             gs.Ip = "yolo";
