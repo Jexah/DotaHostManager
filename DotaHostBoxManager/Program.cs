@@ -99,12 +99,11 @@ namespace DotaHostBoxManager
         // The main entry point into the program
         private static void Main(string[] args)
         {
-<<<<<<< HEAD
             Directory.CreateDirectory(Global.TEMP);
 
             // Delete the old log file
             File.Delete(Global.BASE_PATH + "log.txt");
-=======
+
             /*/ Server updater
             updateServers();
 
@@ -112,66 +111,7 @@ namespace DotaHostBoxManager
             {
                 System.Threading.Thread.Sleep(50);
             }//*/
->>>>>>> 28f0450e40711c1d275b84a973ad17e6a1c44143
 
-            GameServer gs = new GameServer();
-            gs.Ip = "yolo";
-            gs.Port = 27015;
-            Lobby l = new Lobby();
-            Addons ads = new Addons();
-            Addon ad = new Addon();
-            ad.Id = "lod";
-            ad.Options = new Options();
-            ad.Options.setOption("pickingMode", "All Pick");
-            ads.addAddon(ad);
-            l.Addons = ads;
-            l.CurrentPlayers = 3;
-            l.MaxPlayers = 5;
-            l.Name = "trolol";
-            Teams ts = new Teams();
-
-            // First team, with us on it
-            Team t = new Team();
-            t.MaxPlayers = 5;
-            Players ps = new Players();
-            Player p = new Player();
-            p.Avatar = "avatar URL here";
-            p.PersonaName = "some personan name";
-            p.ProfileURL = "http://steamcommunity.com/jexah";
-            p.SteamID = "45686503";
-            //p.SteamID = "41686503";
-            ps.addPlayer(p);
-            Player p2 = new Player();
-            p2.Avatar = "avatar URL here";
-            p2.PersonaName = "some personan name";
-            p2.ProfileURL = "http://steamcommunity.com/jexah";
-            //p.SteamID = "45686503";
-            p2.SteamID = "28090256";
-            ps.addPlayer(p2);
-            t.Players = ps;
-            t.TeamName = "teamMeowingtons";
-
-            // Second team, dummy player
-            Team t2 = new Team();
-            t2.MaxPlayers = 5;
-            t2.TeamName = "teamMeowingtons";
-            Players ps2 = new Players();
-            Player p3 = new Player();
-            p3.Avatar = "avatar URL here";
-            p3.PersonaName = "some personan name";
-            p3.ProfileURL = "http://steamcommunity.com/jexah";
-            p3.SteamID = "28123256";
-            ps2.addPlayer(p3);
-            t2.Players = ps2;
-
-            // Add second team first
-            ts.addTeam(t2);
-            ts.addTeam(t);
-            l.Teams = ts;
-            gs.Lobby = l;
-            gameServers.addGameServer(gs);
-
-            Helpers.log(ts.toJSON());
 
             /*/ Compile our test settings
             AddonCompiler.compileAddons(l, Global.BASE_PATH + @"addons\", true);
@@ -306,8 +246,8 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("box");
             wsClient.addHook("box", (c, x) =>
             {
-                boxManager = new BoxManager(KV.parse(x[1]).getKV("box"));
-                c.Send("system;" + boxManager.toString("box"));
+                boxManager = new BoxManager(KV.parse(x[1]));
+                c.Send("system;" + boxManager.toString());
             });
             #endregion
 
@@ -326,7 +266,8 @@ namespace DotaHostBoxManager
                     {
                         status = Vultr.BOX_ACTIVE;
                     }
-                    c.Send("system;" + boxManager.toString("box"));
+                    Helpers.log(boxManager.toString());
+                    c.Send("system;" + boxManager.toString());
                 }
 
             });
@@ -340,6 +281,8 @@ namespace DotaHostBoxManager
                 // Create server object to handle game server info
                 GameServer gameServer = new GameServer(KV.parse(x[1]));
 
+                Helpers.log("YOLO:" + x[1]);
+
                 gameServers.addGameServer(gameServer);
 
                 // Launch the server using the string options
@@ -347,6 +290,7 @@ namespace DotaHostBoxManager
 
             });
             #endregion
+
 
             #region wsClient.addHook("updateServer");
             wsClient.addHook("updateServer", (c, x) =>

@@ -160,6 +160,7 @@ namespace DotaHostLobbyManager
                 Helpers.log(l.toString());
 
                 requestGameServer(l);
+
             });
 
             #region wsClient.addHook("gameServerInfo");

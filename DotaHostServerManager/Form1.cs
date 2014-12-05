@@ -86,7 +86,7 @@ namespace DotaHostServerManager
             #region wsServer.addHook(WebSocketServer.RECEIVE);
             wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
             {
-                Helpers.log(c.DataFrame.ToString());
+                Helpers.log("Receive: " + c.DataFrame.ToString());
             });
             #endregion
 
@@ -115,8 +115,8 @@ namespace DotaHostServerManager
                         string serverIP = kvp.Value.main_ip;
                         string boxIP = c.ClientAddress.ToString().Split(':')[0];
 
-                        Helpers.log(serverIP);
-                        Helpers.log(boxIP);
+                        Helpers.log("ServerIP: " + serverIP);
+                        Helpers.log("Box IP  " + boxIP);
 
                         if (serverIP == boxIP)
                         {
@@ -136,7 +136,7 @@ namespace DotaHostServerManager
 
 
                     // Send SUBID to server so it knows its place
-                    c.Send("box;" + boxManager.toString("box"));
+                    c.Send("box;" + boxManager.toString());
 
                 });
 
@@ -162,7 +162,6 @@ namespace DotaHostServerManager
             #region wsServer.addhook("system");
             wsServer.addHook("system", (c, x) =>
             {
-                // func;status;cpu;ramAvailable;ramTotal;upload;download
 
                 if (!boxManagers.containsKey(c.ClientAddress.ToString()))
                 {
@@ -172,7 +171,15 @@ namespace DotaHostServerManager
                 // Create pointer to box manager
                 BoxManager boxManager = boxManagers.getBoxManager(c.ClientAddress.ToString());
 
-                boxManager = new BoxManager(KV.parse(x[1]).getKV("box"));
+                boxManager = new BoxManager(KV.parse(x[1]));
+
+                boxManagers.addBoxManager(boxManager);
+
+                Helpers.log("Received Available Ram: " + boxManager.RamAvailable);
+
+                BoxManager k = boxManagers.getBoxManager(c.ClientAddress.ToString());
+
+                Helpers.log(k.RamAvailable.ToString());
 
                 // Request GUI-safe thread
                 modGUI(boxesList, () =>
@@ -213,7 +220,6 @@ namespace DotaHostServerManager
             #region wsServer.addHook("createGameServer");
             wsServer.addHook("createGameServer", (c, x) =>
             {
-                Helpers.log(x[1]);
                 Lobby lobby = new Lobby(KV.parse(x[1]));
 
                 BoxManager boxManager = findBoxManager(lobby);
@@ -256,7 +262,6 @@ namespace DotaHostServerManager
             #region wsServer.addHook("lobbyManager");
             wsServer.addHook("lobbyManager", (c, x) =>
             {
-                Helpers.log(c.ClientAddress.ToString());
                 if (c.ClientAddress.ToString().Split(':')[0] == "127.0.0.1")
                 {
                     lobbyManager = c;
@@ -317,7 +322,6 @@ namespace DotaHostServerManager
         // Finds a server to host the gamemode selected, in the region selected
         private BoxManager findBoxManager(Lobby lobby)
         {
-            Helpers.log(lobby.toJSON());
             int totalRam = 0;
             int totalCpu = 0;
             foreach (Addon addon in lobby.Addons.getAddons())
@@ -325,12 +329,16 @@ namespace DotaHostServerManager
                 totalRam += addonRequirements[addon.Id].Ram;
                 totalCpu += addonRequirements[addon.Id].Cpu;
             }
-            foreach (KeyValuePair<string, KV> kvp in boxManagers.getKeys())
+            foreach (BoxManager boxManager in boxManagers.getBoxManagers())
             {
-                BoxManager boxManager = new BoxManager(kvp.Value);
                 if (boxManager.Region == lobby.Region)
                 {
                     Helpers.log("region OK");
+                    Helpers.log("Total req RAM: " + totalRam);
+                    Helpers.log("Available RAM: " + boxManager.RamAvailable);
+                    Helpers.log("Total req CPU: " + totalCpu);
+                    Helpers.log("Available CPU: " + (100 - boxManager.Cpu).ToString());
+
                     if (boxManager.RamAvailable > totalRam && 100 - boxManager.Cpu > totalCpu)
                     {
                         Helpers.log("stats OK");
@@ -354,12 +362,14 @@ namespace DotaHostServerManager
             {
                 if (!ports.Contains(i))
                 {
+                    Helpers.log("BoxManager Found");
+
                     gameServer = new GameServer();
                     gameServer.Port = i;
                     gameServer.Lobby = lobby;
                     gameServer.Ip = boxManager.Ip;
 
-                    wsServer.send("create;" + gameServer, gameServer.Ip);
+                    wsServer.send("create;" + gameServer.toString(), boxManager.Ip);
 
                     break;
                 }
