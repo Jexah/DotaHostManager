@@ -26,7 +26,7 @@ namespace DotaHostLibrary
         }
 
 
-        public List<BoxManager> getTeams()
+        public List<BoxManager> getBoxManagers()
         {
             List<BoxManager> boxManagers = new List<BoxManager>();
             foreach (KeyValuePair<string, KV> kvp in getKeys())

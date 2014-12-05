@@ -7,8 +7,8 @@ namespace DotaHostLibrary
     public static class Vultr
     {
         // Server Manager IP
-        //public const string SERVER_MANAGER_IP = "110.175.72.12";
-        public const string SERVER_MANAGER_IP = "127.0.0.1";
+        public const string SERVER_MANAGER_IP = "110.175.72.12";
+        //public const string SERVER_MANAGER_IP = "127.0.0.1";
         //public const string SERVER_MANAGER_IP = "108.61.169.195";
 
         // Server Manager Port

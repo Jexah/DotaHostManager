@@ -163,6 +163,16 @@ namespace DotaHostBoxManager
             gameServers.addGameServer(gs);
 
             Helpers.log(ts.toJSON());
+=======
+            /*/ Server updater
+            updateServers();
+
+            while (true)
+            {
+                System.Threading.Thread.Sleep(50);
+            }//*/
+
+>>>>>>> origin/master
 
             /*/ Compile our test settings
             AddonCompiler.compileAddons(l, Global.BASE_PATH + @"addons\", true);
@@ -297,8 +307,8 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("box");
             wsClient.addHook("box", (c, x) =>
             {
-                boxManager = new BoxManager(KV.parse(x[1]).getKV("box"));
-                c.Send("system;" + boxManager.toString("box"));
+                boxManager = new BoxManager(KV.parse(x[1]));
+                c.Send("system;" + boxManager.toString());
             });
             #endregion
 
@@ -317,7 +327,8 @@ namespace DotaHostBoxManager
                     {
                         status = Vultr.BOX_ACTIVE;
                     }
-                    c.Send("system;" + boxManager.toString("box"));
+                    Helpers.log(boxManager.toString());
+                    c.Send("system;" + boxManager.toString());
                 }
 
             });
@@ -331,6 +342,8 @@ namespace DotaHostBoxManager
                 // Create server object to handle game server info
                 GameServer gameServer = new GameServer(KV.parse(x[1]));
 
+                Helpers.log("YOLO:" + x[1]);
+
                 gameServers.addGameServer(gameServer);
 
                 // Launch the server using the string options
@@ -338,6 +351,7 @@ namespace DotaHostBoxManager
 
             });
             #endregion
+
 
             #region wsClient.addHook("updateServer");
             wsClient.addHook("updateServer", (c, x) =>
