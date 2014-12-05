@@ -99,6 +99,14 @@ namespace DotaHostBoxManager
         // The main entry point into the program
         private static void Main(string[] args)
         {
+            /*/ Server updater
+            updateServers();
+
+            while (true)
+            {
+                System.Threading.Thread.Sleep(50);
+            }//*/
+
             GameServer gs = new GameServer();
             gs.Ip = "yolo";
             gs.Port = 1234;
@@ -459,7 +467,7 @@ namespace DotaHostBoxManager
         private static void installServerFile(string localFileCheck, string downloadURL, string extractTo, string friendlyName, Action callback)
         {
             // Check if steamcmd exists
-            if (!File.Exists("localFileCheck"))
+            if (!File.Exists(localFileCheck))
             {
                 // Debug log
                 Helpers.log(friendlyName + " not found, downloading...");
