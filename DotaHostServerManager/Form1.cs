@@ -118,7 +118,7 @@ namespace DotaHostServerManager
                         Helpers.log("ServerIP: " + serverIP);
                         Helpers.log("Box IP  " + boxIP);
 
-                        if (serverIP == boxIP)
+                        if (serverIP == boxIP || serverIP.Split(':')[0] == "127.0.0.1")
                         {
                             serverInfo = kvp.Value;
                             boxManager.ThirdParty = false;
