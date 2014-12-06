@@ -93,6 +93,10 @@ namespace DotaHostLobbyManager
 
         public static void hookWSocketEvents()
         {
+            wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
+            {
+                Helpers.log("Received: " + c.DataFrame.ToString());
+            });
 
             #region wsServer.addHook("getLobbies");
             wsServer.addHook("getLobbies", (c, x) =>
@@ -132,9 +136,6 @@ namespace DotaHostLobbyManager
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     Lobby lobby = new Lobby(KV.parse(x[3], true));
-
-                    Helpers.log(KV.parse(x[3], true).toString());
-                    Helpers.log(lobby.Name);
 
                     if (lobby.Name != null && lobbies.addLobby(lobby))
                     {
@@ -178,6 +179,14 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            wsServer.addHook("startGames", (c, x) =>
+            {
+                foreach (Lobby l in lobbies.getLobbies())
+                {
+                    requestGameServer(l);
+                }
+            });
+
 
             wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
             {
@@ -185,7 +194,7 @@ namespace DotaHostLobbyManager
 
                 Helpers.log(l.toString());
 
-                requestGameServer(l);
+                //requestGameServer(l);
 
             });
 
@@ -214,17 +223,34 @@ namespace DotaHostLobbyManager
 
         private static void joinLobby(Lobby lobby, Player player, UserContext c)
         {
+            Helpers.log(lobby.toString());
             bool joined = false;
-            Helpers.log("3");
-            foreach (Team team in lobby.Teams.getTeams())
+            if (lobby.Teams != null)
             {
-                Helpers.log("4");
-                if (team.Players.getKeys().Count < team.MaxPlayers)
+                foreach (KeyValuePair<string, KV> kvp in lobby.Teams.getKeys())
                 {
-                    Helpers.log("5");
-                    team.Players.addPlayer(player);
-                    joined = true;
-                    break;
+                    if (kvp.Value == null)
+                    {
+                        Team team = new Team();
+                        team.TeamName = kvp.Key;
+                        team.MaxPlayers = 5;
+                        team.Players = new Players();
+                        lobby.Teams.addTeam(team);
+                    }
+                }
+                foreach (Team team in lobby.Teams.getTeams())
+                {
+                    if (team.Players == null)
+                    {
+                        team.Players = new Players();
+                    }
+                    Helpers.log(team.toJSON());
+                    if (team.Players.getKeys().Count < team.MaxPlayers)
+                    {
+                        team.Players.addPlayer(player);
+                        joined = true;
+                        break;
+                    }
                 }
             }
             if (!joined)
