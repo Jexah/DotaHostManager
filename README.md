@@ -64,6 +64,7 @@ NOTE: If you want to change this layout, you NEED to change the layout in the Do
  - Translate the options + lobby data into a string so it can be passed to the addonCompiler
  - Translate the string in Lua into something useable
  - Implement method to find the next free port
+ - FILTER THE LOBBY -- THE STUFF SENT FROM THE CLIENT'S CREATE LOBBY COMMAND NEEDS TO BE FILTERED!
 
 ###Needs testing###
  - Test the AddonDownloader on the client
