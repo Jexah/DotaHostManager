@@ -330,7 +330,7 @@ namespace DotaHostClientLibrary
                 if (key == null) return "";
 
                 // Return only the first value
-                return '"' + escapeString(key) + "\": \"" + escapeString(this.values[0]) + '"';
+                return '"' + escapeString(key) + "\":\"" + escapeString(this.values[0]) + '"';
             }
             else if (this.sort == SORT_OBJECT)
             {
@@ -344,7 +344,7 @@ namespace DotaHostClientLibrary
                     }
                     else
                     {
-                        output += ", ";
+                        output += ",";
                     }
 
                     output += entry.Value.toJSON(entry.Key);
@@ -356,7 +356,7 @@ namespace DotaHostClientLibrary
                 }
                 else
                 {
-                    output = '"' + escapeString(key) + "\": {" + output + "}";
+                    output = '"' + escapeString(key) + "\":{" + output + "}";
                 }
 
             }
@@ -414,7 +414,7 @@ namespace DotaHostClientLibrary
         }
 
         // Reads the KV file at the given path
-        public static KV read(string path, bool isJSON=false)
+        public static KV read(string path, bool isJSON = false)
         {
             // The file may fail to read
             try
@@ -433,7 +433,7 @@ namespace DotaHostClientLibrary
         }
 
         // Parses KV Data
-        public static KV parse(string kvString, bool isJSON=false)
+        public static KV parse(string kvString, bool isJSON = false)
         {
             // Ensure nothing bad happens
             try

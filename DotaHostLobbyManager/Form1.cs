@@ -3,6 +3,7 @@ using DotaHostClientLibrary;
 using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -27,6 +28,9 @@ namespace DotaHostLobbyManager
 
         public Form1()
         {
+
+            File.Delete("log.txt");
+
             InitializeComponent();
 
             hookWSocketEvents();
@@ -134,10 +138,12 @@ namespace DotaHostLobbyManager
 
                     if (lobby.Name != null && lobbies.addLobby(lobby))
                     {
+                        Helpers.log("1");
                         joinLobby(lobbies.getLobby(lobby.Name), player, c);
                     }
                     else
                     {
+                        Helpers.log("2");
                         c.Send("createLobby;failed");
                     }
                 });
@@ -209,20 +215,26 @@ namespace DotaHostLobbyManager
         private static void joinLobby(Lobby lobby, Player player, UserContext c)
         {
             bool joined = false;
+            Helpers.log("3");
             foreach (Team team in lobby.Teams.getTeams())
             {
+                Helpers.log("4");
                 if (team.Players.getKeys().Count < team.MaxPlayers)
                 {
+                    Helpers.log("5");
                     team.Players.addPlayer(player);
                     joined = true;
+                    break;
                 }
             }
             if (!joined)
             {
+                Helpers.log("6");
                 c.Send("joinLobby;failed;full");
             }
             else
             {
+                Helpers.log("7");
                 c.Send("joinLobby;success;" + lobby.toJSON());
             }
         }
@@ -246,7 +258,9 @@ namespace DotaHostLobbyManager
                     {
                         // Do stuff with r (response) to get it into 4 variables, rest is complete
 
-                        Player player = new Player(KV.parse(r).getKV("player"));
+                        Helpers.log(r);
+
+                        Player player = new Player(KV.parse(r, true));
                         player.SteamID = player.SteamID;
                         player.PersonaName = player.PersonaName;
                         player.Avatar = player.Avatar;
