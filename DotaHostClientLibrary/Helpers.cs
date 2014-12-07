@@ -126,5 +126,11 @@ namespace DotaHostClientLibrary
             }
             catch {}
         }
+
+        // Packs arguments nicely for you
+        public static string packArguments(params string[] arguments)
+        {
+            return String.Join("" + Global.MSG_SEP, arguments);
+        }
     }
 }

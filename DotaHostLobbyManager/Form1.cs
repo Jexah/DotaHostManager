@@ -104,9 +104,9 @@ namespace DotaHostLobbyManager
                 string lobbiesJson = lobbies.toJSON();
                 byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
                 Console.WriteLine("Original is: " + data.Length.ToString());
-                byte[] compressed = SevenZip.Compression.LZMA.SevenZipHelper.Compress(data);
-                Console.WriteLine("Compressed is: " + compressed.Length.ToString());
-                //c.Send("getLobbies;" + System.Text.Encoding.Default.GetString(compressed));
+                //byte[] compressed = SevenZip.Compression.LZMA.SevenZipHelper.Compress(data);
+                //Console.WriteLine("Compressed is: " + compressed.Length.ToString());
+                //c.Send(Helpers.packArguments("getLobbies", System.Text.Encoding.Default.GetString(compressed)));
                 c.Send(lobbiesJson);
                 //c.Send(compressed);
             });
@@ -121,7 +121,7 @@ namespace DotaHostLobbyManager
                 }
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
-                    c.Send("validate;success");
+                    c.Send(Helpers.packArguments("validate", "success"));
                 });
             });
             #endregion
@@ -145,7 +145,7 @@ namespace DotaHostLobbyManager
                     else
                     {
                         Helpers.log("2");
-                        c.Send("createLobby;failed");
+                        c.Send(Helpers.packArguments("createLobby", "failed"));
                     }
                 });
             });
@@ -208,11 +208,11 @@ namespace DotaHostLobbyManager
                     {
                         if (x[1] == "success")
                         {
-                            wsServer.send("gameServerInfo;success;" + gameServer.Ip + ":" + gameServer.Port, playersIPs[player.SteamID]);
+                            wsServer.send(Helpers.packArguments("gameServerInfo", "success", gameServer.Ip + ":" + gameServer.Port), playersIPs[player.SteamID]);
                         }
                         else
                         {
-                            wsServer.send("gameServerInfo;failed");
+                            wsServer.send(Helpers.packArguments("gameServerInfo", "failed"));
                         }
                     }
                 }
@@ -256,12 +256,12 @@ namespace DotaHostLobbyManager
             if (!joined)
             {
                 Helpers.log("6");
-                c.Send("joinLobby;failed;full");
+                c.Send(Helpers.packArguments("joinLobby", "failed", "full"));
             }
             else
             {
                 Helpers.log("7");
-                c.Send("joinLobby;success;" + lobby.toJSON());
+                c.Send(Helpers.packArguments("joinLobby", "success", lobby.toJSON()));
             }
         }
 
@@ -309,7 +309,7 @@ namespace DotaHostLobbyManager
 
         private static void requestGameServer(Lobby lobby)
         {
-            wsClient.send("createGameServer;" + lobby.toString());
+            wsClient.send(Helpers.packArguments("createGameServer", lobby.toString()));
         }
 
         public static List<int> Compress(string uncompressed)

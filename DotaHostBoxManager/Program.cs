@@ -115,7 +115,7 @@ namespace DotaHostBoxManager
             Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
 
             // Attempt to install Legends of Dota
-            AddonDownloader.updateAddon("lod", (addonID, success) =>
+            /*AddonDownloader.updateAddon("lod", (addonID, success) =>
             {
                 // Check if it worked!
                 if (success)
@@ -140,7 +140,7 @@ namespace DotaHostBoxManager
                 {
                     Helpers.log(addonID + " failed to install!");
                 }
-            });
+            });*/
 
             status = Vultr.BOX_IDLE;
 
@@ -150,6 +150,93 @@ namespace DotaHostBoxManager
 
 
             wsClient.start();
+
+
+
+
+
+
+
+
+
+
+
+
+            /*GameServer gs = new GameServer();		
+            gs.Ip = "yolo";		
+            gs.Port = 27015;		
+            Lobby l = new Lobby();		
+            Addons ads = new Addons();		
+            Addon ad = new Addon();		
+            ad.Id = "lod";		
+            ad.Options = new Options();		
+            ad.Options.setOption("pickingMode", "All Pick");		
+            ads.addAddon(ad);		
+            l.Addons = ads;		
+            l.CurrentPlayers = 3;		
+            l.MaxPlayers = 5;		
+            l.Name = "trolol";		
+            Teams ts = new Teams();		
+		
+            // First team, with us on it		
+            Team t = new Team();		
+            t.MaxPlayers = 5;		
+            Players ps = new Players();		
+            Player p = new Player();		
+            p.Avatar = "avatar URL here";		
+            p.PersonaName = "some personan name";		
+            p.ProfileURL = "http://steamcommunity.com/jexah";		
+            p.SteamID = "45686503";		
+            //p.SteamID = "41686503";		
+            ps.addPlayer(p);		
+            Player p2 = new Player();		
+            p2.Avatar = "avatar URL here";		
+            p2.PersonaName = "some personan name";		
+            p2.ProfileURL = "http://steamcommunity.com/jexah";		
+            //p.SteamID = "45686503";		
+            p2.SteamID = "28090256";		
+            ps.addPlayer(p2);		
+            t.Players = ps;		
+            t.TeamName = "teamMeowingtons";		
+		
+            // Second team, dummy player		
+            Team t2 = new Team();		
+            t2.MaxPlayers = 5;		
+            t2.TeamName = "teamMeowingtons";		
+            Players ps2 = new Players();		
+            Player p3 = new Player();		
+            p3.Avatar = "avatar URL here";		
+            p3.PersonaName = "some personan name";		
+            p3.ProfileURL = "http://steamcommunity.com/jexah";		
+            p3.SteamID = "28123256";		
+            ps2.addPlayer(p3);		
+            t2.Players = ps2;		
+		
+            // Add second team first		
+            ts.addTeam(t2);		
+            ts.addTeam(t);		
+            l.Teams = ts;		
+            gs.Lobby = l;
+
+            launchGameServer(gs);*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
 
             // Update the dota install
             //updateDotaSource1();
@@ -241,7 +328,7 @@ namespace DotaHostBoxManager
             wsClient.addHook("box", (c, x) =>
             {
                 boxManager = new BoxManager(KV.parse(x[1]));
-                c.Send("system;" + boxManager.toString());
+                c.Send(Helpers.packArguments("system", boxManager.toString()));
             });
             #endregion
 
@@ -261,7 +348,7 @@ namespace DotaHostBoxManager
                         status = Vultr.BOX_ACTIVE;
                     }
                     Helpers.log(boxManager.toString());
-                    c.Send("system;" + boxManager.toString());
+                    c.Send(Helpers.packArguments("system", boxManager.toString()));
                 }
 
             });
@@ -304,6 +391,8 @@ namespace DotaHostBoxManager
             // ASSUMPTION: THE SERVERS ARE FULLY INSTALLED AND ADDONS ARE GOOD TO LOAD
 
             // We probably want to report that the server failed, if it did infact fail
+
+            Helpers.log("Here we go...");
 
 
             // BEGIN OPTIONS: SHOULD AUTO FILL THESE
@@ -367,6 +456,9 @@ namespace DotaHostBoxManager
             proc.WorkingDirectory = path;
             proc.FileName = path + app;
             proc.Arguments = args;
+            //proc.RedirectStandardOutput = true;
+            proc.RedirectStandardError = true;
+            proc.UseShellExecute = false;
 
             // Attempt to launch the server
             try
@@ -374,17 +466,43 @@ namespace DotaHostBoxManager
                 // Start the process
                 Process process = Process.Start(proc);
 
+                // Server wacher dog
+                System.Threading.ThreadPool.QueueUserWorkItem(delegate
+                {
+                    // Wait for an error (if process exits, this will be null)
+                    string stderrx = process.StandardError.ReadLine();
+                    
+                    // Check if we got an error
+                    if (stderrx == null)
+                    {
+                        // No error, server exited, report to master server
+
+                    }
+                    else
+                    {
+                        // Log the error
+                        Helpers.log("SRCDS Error: " + stderrx);
+
+                        // We got an error, kill SRCDS if it is still open
+                        if (!process.HasExited) process.Kill();
+
+                        // Report error to master server
+                        wsClient.send(Helpers.packArguments("gameServerExit", "error",  gameServer.toString()));
+
+                    }
+                }, null);
+
                 // Woot, success
                 Helpers.log("Server was launched successfully!");
 
-                wsClient.send("gameServerInfo;success;" + gameServer.toString());
+                wsClient.send(Helpers.packArguments("gameServerInfo","success", gameServer.toString()));
 
                 // We probably want to store a reference to the process so we can see if it dies
             }
             catch
             {
 
-                wsClient.send("gameServerInfo;" + gameServer.Lobby.Name + ";failed");
+                wsClient.send(Helpers.packArguments("gameServerInfo", gameServer.Lobby.Name, "failed"));
                 Helpers.log("Failed to launch the server!");
             }
         }

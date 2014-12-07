@@ -32,5 +32,8 @@ namespace DotaHostClientLibrary
 
         // Lobby Manager Port
         public const int LOBBY_MANAGER_PORT = 2075;
+
+        // Character used to seperate values in strings
+        public const char MSG_SEP = '\0';
     }
 }
