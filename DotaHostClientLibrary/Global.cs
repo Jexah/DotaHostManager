@@ -35,5 +35,14 @@ namespace DotaHostClientLibrary
 
         // Character used to seperate values in strings
         public const char MSG_SEP = '\0';
+
+        // A user failed to connect to our server
+        public const int PLAYER_STATUS_NOT_CONNECTED = 1;
+
+        // A user connected to our server successfully
+        public const int PLAYER_STATUS_CONNECTED = 2;
+
+        // A user disconnected part way through a match
+        public const int PLAYER_STATUS_DISCONNECTED = 3;
     }
 }

@@ -162,7 +162,7 @@ namespace DotaHostBoxManager
 
 
 
-            /*GameServer gs = new GameServer();		
+            GameServer gs = new GameServer();		
             gs.Ip = "yolo";		
             gs.Port = 27015;		
             Lobby l = new Lobby();		
@@ -218,7 +218,7 @@ namespace DotaHostBoxManager
             l.Teams = ts;		
             gs.Lobby = l;
 
-            launchGameServer(gs);*/
+            launchGameServer(gs);
 
 
 
@@ -456,7 +456,7 @@ namespace DotaHostBoxManager
             proc.WorkingDirectory = path;
             proc.FileName = path + app;
             proc.Arguments = args;
-            //proc.RedirectStandardOutput = true;
+            proc.RedirectStandardOutput = true;
             proc.RedirectStandardError = true;
             proc.UseShellExecute = false;
 
@@ -471,6 +471,76 @@ namespace DotaHostBoxManager
                 {
                     // Wait for an error (if process exits, this will be null)
                     string stderrx = process.StandardError.ReadLine();
+
+                    // Ensure the process is dead
+                    if (!process.HasExited) process.Kill();
+
+                    // Did the server even activate?
+                    bool activated = false;
+                    
+                    // Create diconary to check who has played
+                    Dictionary<string, int> connections = new Dictionary<string, int>();
+
+                    // Default everyone to not connected yet
+                    foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                    {
+                        foreach (Player player in team.Players.getPlayers())
+                        {
+                            connections[player.SteamID] = Global.PLAYER_STATUS_NOT_CONNECTED;
+                        }
+                    }
+
+                    while (true)
+                    {
+                        // Read a line and check if it;s the end of our input
+                        string line = process.StandardOutput.ReadLine();
+                        if (line == null) break;
+                        
+                        // Check for Lua data
+                        string[] message = line.Split('\u0007');
+                        if (message.Length > 1)
+                        {
+                            Helpers.log(message[0]);
+                            switch (message[0])
+                            {
+                                // The server activated successfully
+                                case "activate":
+                                    activated = true;
+                                    break;
+
+                                case "print":
+                                    // Output from a mod, lets just log for now
+                                    Helpers.log(message[1]);
+                                    break;
+
+                                // A user connects successfully
+                                case "connect":
+                                    connections[message[1]] = Global.PLAYER_STATUS_CONNECTED;
+                                    break;
+
+                                // A user disconnected
+                                case "disconnect":
+                                    connections[message[1]] = Global.PLAYER_STATUS_DISCONNECTED;
+                                    break;
+
+                                // Unknown message, doh!
+                                default:
+                                    Helpers.log(message[0] + " = " + message[1]);
+                                    break;
+                            }
+                        }
+                    }
+
+                    // DEBUG: Print who has connected and who hasn't
+                    foreach(KeyValuePair<string, int> pair in connections) {
+                        Helpers.log(pair.Key + " - " + pair.Value);
+                    }
+
+                    // DEBUG: Log if something went REALLY wrong
+                    if (!activated)
+                    {
+                        Helpers.log("The server didnt even activate, we have a SERIOUS problem!");
+                    }
                     
                     // Check if we got an error
                     if (stderrx == null)
@@ -482,9 +552,6 @@ namespace DotaHostBoxManager
                     {
                         // Log the error
                         Helpers.log("SRCDS Error: " + stderrx);
-
-                        // We got an error, kill SRCDS if it is still open
-                        if (!process.HasExited) process.Kill();
 
                         // Report error to master server
                         wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
