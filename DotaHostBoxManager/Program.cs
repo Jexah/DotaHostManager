@@ -476,7 +476,7 @@ namespace DotaHostBoxManager
                     if (stderrx == null)
                     {
                         // No error, server exited, report to master server
-
+                        wsClient.send(Helpers.packArguments("gameServerExit", "good", gameServer.toString()));
                     }
                     else
                     {
@@ -487,7 +487,7 @@ namespace DotaHostBoxManager
                         if (!process.HasExited) process.Kill();
 
                         // Report error to master server
-                        wsClient.send(Helpers.packArguments("gameServerExit", "error",  gameServer.toString()));
+                        wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
 
                     }
                 }, null);
