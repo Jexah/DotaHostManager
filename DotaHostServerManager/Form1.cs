@@ -137,7 +137,6 @@ namespace DotaHostServerManager
 
                     // Send SUBID to server so it knows its place
                     c.Send(Helpers.packArguments("box", boxManager.toString()));
-
                 });
 
                 // Sets the IP of the box manager
