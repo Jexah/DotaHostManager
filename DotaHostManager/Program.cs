@@ -182,7 +182,7 @@ namespace DotaHostManager
         // Called every time the app updater download progresses
         private static void appUpdaterDownloadProgress(int percentage)
         {
-            wsServer.send("appUpdater;percent;" + percentage.ToString());
+            wsServer.send(Helpers.packArguments("appUpdater", "percent", percentage.ToString()));
         }
 
         // Exits the program as soon as it is finished the current task
@@ -325,16 +325,16 @@ namespace DotaHostManager
                     if (success)
                     {
                         // Installation was successful, send formatted string to most recent connection
-                        wsServer.send("installationComplete;addon;" + addonID);
+                        wsServer.send(Helpers.packArguments("installationComplete", "addon", addonID));
                     }
                     else
                     {
-                        wsServer.send("installationFailed;addon;" + addonID);
+                        wsServer.send(Helpers.packArguments("installationFailed", "addon", addonID));
                     }
                 }, (addonID, e) =>
                 {
                     // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                    wsServer.send("addon;" + addonID + ";percent;" + e.ProgressPercentage.ToString());
+                    wsServer.send(Helpers.packArguments("addon", addonID, "percent", e.ProgressPercentage.ToString()));
                 });
             });
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });

@@ -136,7 +136,7 @@ namespace DotaHostServerManager
 
 
                     // Send SUBID to server so it knows its place
-                    c.Send("box;" + boxManager.toString());
+                    c.Send(Helpers.packArguments("box", boxManager.toString()));
 
                 });
 
@@ -230,14 +230,18 @@ namespace DotaHostServerManager
                     /*
                     if (gameServer != null)
                     {
-                        c.Send("gameServerInfo;success;" + gameServer.toString());
+                        c.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                     }
                     else
                     {
                         Helpers.log("Could not find server");
                     }*/
                 }
+<<<<<<< HEAD
                 //c.Send("gameServerInfo;failed;" + lobby.toString());
+=======
+                c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
+>>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
             });
             #endregion
 
@@ -255,9 +259,30 @@ namespace DotaHostServerManager
                     {
                         foreach (Player player in team.Players.getPlayers())
                         {
+<<<<<<< HEAD
                             lobbyManager.Send("gameServerInfo;success;" + gameServer.toString());
+=======
+                            lobbyManager.Send(Helpers.packArguments("gameServerInfo", gameServer.toString()));
+>>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
                         }
                     }
+                }
+            });
+            #endregion
+
+            // A game server has exited
+            #region wsServer.addHook("gameServerExit");
+            wsServer.addHook("gameServerExit", (c, x) =>
+            {
+                if (x[2] == "good")
+                {
+                    //GameServer gameServer = new GameServer(KV.parse(x[3]));
+                    
+                    // The game server has exited properly, match was good
+                }
+                else if(x[2] == "error")
+                {
+                    // The game serer had an error, doh!
                 }
             });
             #endregion
@@ -373,7 +398,7 @@ namespace DotaHostServerManager
                     gameServer.Lobby = lobby;
                     gameServer.Ip = boxManager.Ip;
 
-                    wsServer.send("create;" + gameServer.toString(), boxManager.Ip);
+                    wsServer.send(Helpers.packArguments("create", gameServer.toString()), boxManager.Ip);
 
                     break;
                 }
