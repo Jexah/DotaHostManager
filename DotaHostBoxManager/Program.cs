@@ -569,7 +569,7 @@ namespace DotaHostBoxManager
             catch
             {
 
-                wsClient.send(Helpers.packArguments("gameServerInfo", "failed", gameServer.toString());
+                wsClient.send(Helpers.packArguments("gameServerInfo", "failed", gameServer.toString()));
                 wsClient.send(Helpers.packArguments("gameServerInfo", "failed", gameServer.toString()));
                 Helpers.log("Failed to launch the server!");
             }
