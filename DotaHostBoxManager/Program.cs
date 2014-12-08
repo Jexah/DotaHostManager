@@ -172,7 +172,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.SEND, (c) =>
             {
-                Helpers.log("SENT SOMETHING");
+                //Helpers.log("SENT SOMETHING");
             });
             #endregion
 
@@ -180,7 +180,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
             {
-                Helpers.log("RECEIVE: " + c.DataFrame.ToString());
+                //Helpers.log("RECEIVE: " + c.DataFrame.ToString());
             });
             #endregion
 
@@ -224,7 +224,6 @@ namespace DotaHostBoxManager
             wsClient.addHook("subid", (c, x) =>
             {
                 subID = Convert.ToInt32(x[1]);
-                Helpers.log(x[1]);
             });
             #endregion
 
@@ -260,7 +259,6 @@ namespace DotaHostBoxManager
                     {
                         status = Vultr.BOX_ACTIVE;
                     }
-                    Helpers.log(boxManager.toString());
                     c.Send("system;" + boxManager.toString());
                 }
 
@@ -384,7 +382,7 @@ namespace DotaHostBoxManager
             catch
             {
 
-                wsClient.send("gameServerInfo;" + gameServer.Lobby.Name + ";failed");
+                wsClient.send("gameServerInfo;failed;" + gameServer.toString());
                 Helpers.log("Failed to launch the server!");
             }
         }

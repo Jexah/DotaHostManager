@@ -139,12 +139,10 @@ namespace DotaHostLobbyManager
 
                     if (lobby.Name != null && lobbies.addLobby(lobby))
                     {
-                        Helpers.log("1");
                         joinLobby(lobbies.getLobby(lobby.Name), player, c);
                     }
                     else
                     {
-                        Helpers.log("2");
                         c.Send("createLobby;failed");
                     }
                 });
@@ -192,8 +190,6 @@ namespace DotaHostLobbyManager
             {
                 c.Send("lobbyManager");
 
-                Helpers.log(l.toString());
-
                 //requestGameServer(l);
 
             });
@@ -201,21 +197,28 @@ namespace DotaHostLobbyManager
             #region wsClient.addHook("gameServerInfo");
             wsClient.addHook("gameServerInfo", (c, x) =>
             {
+                Helpers.log(String.Join(";", x));
                 GameServer gameServer = new GameServer(KV.parse(x[2]));
+                Helpers.log(gameServer.toString());
                 foreach (Team team in gameServer.Lobby.Teams.getTeams())
                 {
+                    Helpers.log("2");
                     foreach (Player player in team.Players.getPlayers())
                     {
+                        Helpers.log("3");
                         if (x[1] == "success")
                         {
-                            wsServer.send("gameServerInfo;success;" + gameServer.Ip + ":" + gameServer.Port, playersIPs[player.SteamID]);
+                            Helpers.log("4");
+                            wsServer.send("gameServerInfo;success;" + gameServer.Ip.Split(':')[0] + ":" + gameServer.Port, playersIPs[player.SteamID]);
                         }
                         else
                         {
+                            Helpers.log("5");
                             wsServer.send("gameServerInfo;failed");
                         }
                     }
                 }
+                Helpers.log("6");
             });
             #endregion
 
@@ -223,7 +226,6 @@ namespace DotaHostLobbyManager
 
         private static void joinLobby(Lobby lobby, Player player, UserContext c)
         {
-            Helpers.log(lobby.toString());
             bool joined = false;
             if (lobby.Teams != null)
             {
@@ -244,7 +246,6 @@ namespace DotaHostLobbyManager
                     {
                         team.Players = new Players();
                     }
-                    Helpers.log(team.toJSON());
                     if (team.Players.getKeys().Count < team.MaxPlayers)
                     {
                         team.Players.addPlayer(player);
@@ -255,12 +256,10 @@ namespace DotaHostLobbyManager
             }
             if (!joined)
             {
-                Helpers.log("6");
                 c.Send("joinLobby;failed;full");
             }
             else
             {
-                Helpers.log("7");
                 c.Send("joinLobby;success;" + lobby.toJSON());
             }
         }
@@ -283,8 +282,6 @@ namespace DotaHostLobbyManager
                     if (r != "get the fuck out of here")
                     {
                         // Do stuff with r (response) to get it into 4 variables, rest is complete
-
-                        Helpers.log(r);
 
                         Player player = new Player(KV.parse(r, true));
                         player.SteamID = player.SteamID;
