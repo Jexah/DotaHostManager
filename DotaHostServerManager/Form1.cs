@@ -174,11 +174,7 @@ namespace DotaHostServerManager
 
                 boxManagers.addBoxManager(boxManager);
 
-                Helpers.log("Received Available Ram: " + boxManager.RamAvailable);
-
                 BoxManager k = boxManagers.getBoxManager(c.ClientAddress.ToString());
-
-                Helpers.log(k.RamAvailable.ToString());
 
                 // Request GUI-safe thread
                 modGUI(boxesList, () =>
@@ -507,6 +503,7 @@ namespace DotaHostServerManager
             setBoxRAMGUI(boxManager);
             setBoxNetworkGUI(boxManager);
             setBoxVerifiedGUI(boxManager);
+            setBoxRegionGUI(boxManager);
             updateGameServerListGUI(boxManager);
         }
 
@@ -686,19 +683,21 @@ namespace DotaHostServerManager
         // Update region label
         private void setBoxRegionGUI(BoxManager boxManager)
         {
-            setBoxRegionLGUI(boxManager.Region);
+            setBoxRegionGUI(boxManager.Region);
         }
-        private void setBoxRegionLGUI(byte region)
+        private void setBoxRegionGUI(byte region)
         {
             modGUI(boxRegionLabel, () =>
             {
                 if (Vultr.REGION_ID_TO_NAME.ContainsKey(region))
                 {
-                    boxVerifiedLabel.Text = Vultr.REGION_ID_TO_NAME[region];
+                    boxRegionLabel.Text = Vultr.REGION_ID_TO_NAME[region];
+                    boxRegionLabel.ForeColor = success;
                 }
                 else
                 {
-                    boxVerifiedLabel.Text = "None";
+                    boxRegionLabel.Text = "None";
+                    boxRegionLabel.ForeColor = Color.Black;
                 }
             });
         }
