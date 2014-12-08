@@ -237,11 +237,7 @@ namespace DotaHostServerManager
                         Helpers.log("Could not find server");
                     }*/
                 }
-<<<<<<< HEAD
-                //c.Send("gameServerInfo;failed;" + lobby.toString());
-=======
                 c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
->>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
             });
             #endregion
 
@@ -259,11 +255,7 @@ namespace DotaHostServerManager
                     {
                         foreach (Player player in team.Players.getPlayers())
                         {
-<<<<<<< HEAD
-                            lobbyManager.Send("gameServerInfo;success;" + gameServer.toString());
-=======
-                            lobbyManager.Send(Helpers.packArguments("gameServerInfo", gameServer.toString()));
->>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
+                            lobbyManager.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                         }
                     }
                 }
@@ -277,10 +269,10 @@ namespace DotaHostServerManager
                 if (x[2] == "good")
                 {
                     //GameServer gameServer = new GameServer(KV.parse(x[3]));
-                    
+
                     // The game server has exited properly, match was good
                 }
-                else if(x[2] == "error")
+                else if (x[2] == "error")
                 {
                     // The game serer had an error, doh!
                 }

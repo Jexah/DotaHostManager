@@ -143,12 +143,8 @@ namespace DotaHostLobbyManager
                     }
                     else
                     {
-<<<<<<< HEAD
-                        c.Send("createLobby;failed");
-=======
                         Helpers.log("2");
                         c.Send(Helpers.packArguments("createLobby", "failed"));
->>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
                     }
                 });
             });
@@ -213,21 +209,13 @@ namespace DotaHostLobbyManager
                         Helpers.log("3");
                         if (x[1] == "success")
                         {
-<<<<<<< HEAD
                             Helpers.log("4");
-                            wsServer.send("gameServerInfo;success;" + gameServer.Ip.Split(':')[0] + ":" + gameServer.Port, playersIPs[player.SteamID]);
-                        }
-                        else
-                        {
-                            Helpers.log("5");
-                            wsServer.send("gameServerInfo;failed");
-=======
                             wsServer.send(Helpers.packArguments("gameServerInfo", "success", gameServer.Ip + ":" + gameServer.Port), playersIPs[player.SteamID]);
                         }
                         else
                         {
+                            Helpers.log("5");
                             wsServer.send(Helpers.packArguments("gameServerInfo", "failed"));
->>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
                         }
                     }
                 }
@@ -269,13 +257,6 @@ namespace DotaHostLobbyManager
             }
             if (!joined)
             {
-<<<<<<< HEAD
-                c.Send("joinLobby;failed;full");
-            }
-            else
-            {
-                c.Send("joinLobby;success;" + lobby.toJSON());
-=======
                 Helpers.log("6");
                 c.Send(Helpers.packArguments("joinLobby", "failed", "full"));
             }
@@ -283,7 +264,6 @@ namespace DotaHostLobbyManager
             {
                 Helpers.log("7");
                 c.Send(Helpers.packArguments("joinLobby", "success", lobby.toJSON()));
->>>>>>> 3de3eb4cccc8058ad9705b9d076a1d8afb66e96e
             }
         }
 
