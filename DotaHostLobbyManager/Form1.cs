@@ -171,10 +171,8 @@ namespace DotaHostLobbyManager
                 {
                     return;
                 }
-                string send = "getLobby;";
                 Lobby lobby = new Lobby(lobbies.getLobby(x[1]));
-                send += lobby.toString();
-                c.Send(send);
+                c.Send(Helpers.packArguments("getLobby", lobby.toString()));
             });
             #endregion
 
