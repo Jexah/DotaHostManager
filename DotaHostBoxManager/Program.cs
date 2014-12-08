@@ -162,7 +162,7 @@ namespace DotaHostBoxManager
 
 
 
-            GameServer gs = new GameServer();		
+            /*GameServer gs = new GameServer();		
             gs.Ip = "yolo";		
             gs.Port = 27015;		
             Lobby l = new Lobby();		
@@ -218,7 +218,7 @@ namespace DotaHostBoxManager
             l.Teams = ts;		
             gs.Lobby = l;
 
-            launchGameServer(gs);
+            launchGameServer(gs);*/
 
 
 
