@@ -35,6 +35,9 @@ namespace DotaHostLobbyManager
 
             hookWSocketEvents();
 
+
+
+
             Addons ads = new Addons();
             Addon ad = new Addon();
             ad.Id = "lod";
@@ -87,6 +90,9 @@ namespace DotaHostLobbyManager
             ts.addTeam(t);
             l.Teams = ts;
 
+            lobbies.addLobby(l);
+
+
             wsServer.start();
             wsClient.start();
         }
@@ -107,7 +113,7 @@ namespace DotaHostLobbyManager
                 //byte[] compressed = SevenZip.Compression.LZMA.SevenZipHelper.Compress(data);
                 //Console.WriteLine("Compressed is: " + compressed.Length.ToString());
                 //c.Send(Helpers.packArguments("getLobbies", System.Text.Encoding.Default.GetString(compressed)));
-                c.Send(lobbiesJson);
+                c.Send(Helpers.packArguments("getLobbies", lobbiesJson));
                 //c.Send(compressed);
             });
             #endregion
@@ -245,6 +251,11 @@ namespace DotaHostLobbyManager
                     {
                         team.Players = new Players();
                     }
+                    if (team.Players.getPlayers().Find(item => item.SteamID == player.SteamID) != null)
+                    {
+                        Helpers.log("Player duplicate");
+                        removeFromLobby(lobby, player, c);
+                    }
                     if (team.Players.getKeys().Count < team.MaxPlayers)
                     {
                         team.Players.addPlayer(player);
@@ -262,6 +273,22 @@ namespace DotaHostLobbyManager
             {
                 Helpers.log("7");
                 c.Send(Helpers.packArguments("joinLobby", "success", lobby.toJSON()));
+            }
+        }
+
+        public static void removeFromLobby(Lobby lobby, Player player, UserContext c)
+        {
+            Helpers.log("remove from lobby start");
+            foreach (Team team in lobby.Teams.getTeams())
+            {
+                Helpers.log("team 1");
+                Player toRemove = team.Players.getPlayers().Find(item => item.SteamID == player.SteamID);
+                if (toRemove != null)
+                {
+                    Helpers.log(team.Players.toJSON());
+                    team.Players.removePlayer(toRemove);
+                    Helpers.log(team.Players.toJSON());
+                }
             }
         }
 

@@ -19,7 +19,15 @@ namespace DotaHostClientLibrary
 
         public void removePlayer(Player player)
         {
-            removeKey(player);
+            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            {
+                Player p = new Player(kvp.Value);
+                if (player.SteamID == p.SteamID)
+                {
+                    removeKey(kvp.Key);
+                    return;
+                }
+            }
         }
 
         public void removePlayer(string id)
