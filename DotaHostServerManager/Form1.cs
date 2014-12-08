@@ -86,7 +86,7 @@ namespace DotaHostServerManager
             #region wsServer.addHook(WebSocketServer.RECEIVE);
             wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
             {
-                Helpers.log("Receive: " + c.DataFrame.ToString());
+                //Helpers.log("Receive: " + c.DataFrame.ToString());
             });
             #endregion
 
@@ -227,15 +227,15 @@ namespace DotaHostServerManager
                 if (boxManager != null)
                 {
                     GameServer gameServer = createGameServer(boxManager, lobby);
-
-                    if (boxManager != null)
+                    /*
+                    if (gameServer != null)
                     {
                         c.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                     }
                     else
                     {
                         Helpers.log("Could not find server");
-                    }
+                    }*/
                 }
                 c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
             });
@@ -245,14 +245,17 @@ namespace DotaHostServerManager
             #region wsServer.addHook("gameServerInfo");
             wsServer.addHook("gameServerInfo", (c, x) =>
             {
-                if (x[2] == "success")
+                if (x[1] == "success")
                 {
-                    GameServer gameServer = new GameServer(KV.parse(x[3]));
+                    GameServer gameServer = new GameServer(KV.parse(x[2]));
+
+                    Helpers.log("GAME SERVER: " + gameServer.toString());
+
                     foreach (Team team in gameServer.Lobby.Teams.getTeams())
                     {
                         foreach (Player player in team.Players.getPlayers())
                         {
-                            lobbyManager.Send(Helpers.packArguments("gameServerInfo", gameServer.toString()));
+                            lobbyManager.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                         }
                     }
                 }
@@ -266,10 +269,10 @@ namespace DotaHostServerManager
                 if (x[2] == "good")
                 {
                     //GameServer gameServer = new GameServer(KV.parse(x[3]));
-                    
+
                     // The game server has exited properly, match was good
                 }
-                else if(x[2] == "error")
+                else if (x[2] == "error")
                 {
                     // The game serer had an error, doh!
                 }

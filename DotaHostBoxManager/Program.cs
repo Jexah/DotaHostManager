@@ -162,60 +162,60 @@ namespace DotaHostBoxManager
 
 
 
-            /*GameServer gs = new GameServer();		
-            gs.Ip = "yolo";		
-            gs.Port = 27015;		
-            Lobby l = new Lobby();		
-            Addons ads = new Addons();		
-            Addon ad = new Addon();		
-            ad.Id = "lod";		
-            ad.Options = new Options();		
-            ad.Options.setOption("pickingMode", "All Pick");		
-            ads.addAddon(ad);		
-            l.Addons = ads;		
-            l.CurrentPlayers = 3;		
-            l.MaxPlayers = 5;		
-            l.Name = "trolol";		
-            Teams ts = new Teams();		
-		
+            /*GameServer gs = new GameServer();
+            gs.Ip = "yolo";
+            gs.Port = 27015;
+            Lobby l = new Lobby();
+            Addons ads = new Addons();
+            Addon ad = new Addon();
+            ad.Id = "lod";
+            ad.Options = new Options();
+            ad.Options.setOption("pickingMode", "All Pick");
+            ads.addAddon(ad);
+            l.Addons = ads;
+            l.CurrentPlayers = 3;
+            l.MaxPlayers = 5;
+            l.Name = "trolol";
+            Teams ts = new Teams();
+
             // First team, with us on it		
-            Team t = new Team();		
-            t.MaxPlayers = 5;		
-            Players ps = new Players();		
-            Player p = new Player();		
-            p.Avatar = "avatar URL here";		
-            p.PersonaName = "some personan name";		
-            p.ProfileURL = "http://steamcommunity.com/jexah";		
-            p.SteamID = "45686503";		
+            Team t = new Team();
+            t.MaxPlayers = 5;
+            Players ps = new Players();
+            Player p = new Player();
+            p.Avatar = "avatar URL here";
+            p.PersonaName = "some personan name";
+            p.ProfileURL = "http://steamcommunity.com/jexah";
+            p.SteamID = "45686503";
             //p.SteamID = "41686503";		
-            ps.addPlayer(p);		
-            Player p2 = new Player();		
-            p2.Avatar = "avatar URL here";		
-            p2.PersonaName = "some personan name";		
-            p2.ProfileURL = "http://steamcommunity.com/jexah";		
+            ps.addPlayer(p);
+            Player p2 = new Player();
+            p2.Avatar = "avatar URL here";
+            p2.PersonaName = "some personan name";
+            p2.ProfileURL = "http://steamcommunity.com/jexah";
             //p.SteamID = "45686503";		
-            p2.SteamID = "28090256";		
-            ps.addPlayer(p2);		
-            t.Players = ps;		
-            t.TeamName = "teamMeowingtons";		
-		
+            p2.SteamID = "28090256";
+            ps.addPlayer(p2);
+            t.Players = ps;
+            t.TeamName = "teamMeowingtons";
+
             // Second team, dummy player		
-            Team t2 = new Team();		
-            t2.MaxPlayers = 5;		
-            t2.TeamName = "teamMeowingtons";		
-            Players ps2 = new Players();		
-            Player p3 = new Player();		
-            p3.Avatar = "avatar URL here";		
-            p3.PersonaName = "some personan name";		
-            p3.ProfileURL = "http://steamcommunity.com/jexah";		
-            p3.SteamID = "28123256";		
-            ps2.addPlayer(p3);		
-            t2.Players = ps2;		
-		
+            Team t2 = new Team();
+            t2.MaxPlayers = 5;
+            t2.TeamName = "teamMeowingtons";
+            Players ps2 = new Players();
+            Player p3 = new Player();
+            p3.Avatar = "avatar URL here";
+            p3.PersonaName = "some personan name";
+            p3.ProfileURL = "http://steamcommunity.com/jexah";
+            p3.SteamID = "28123256";
+            ps2.addPlayer(p3);
+            t2.Players = ps2;
+
             // Add second team first		
-            ts.addTeam(t2);		
-            ts.addTeam(t);		
-            l.Teams = ts;		
+            ts.addTeam(t2);
+            ts.addTeam(t);
+            l.Teams = ts;
             gs.Lobby = l;
 
             launchGameServer(gs);*/
@@ -236,7 +236,7 @@ namespace DotaHostBoxManager
 
 
 
-            
+
 
             // Update the dota install
             //updateDotaSource1();
@@ -259,7 +259,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.SEND, (c) =>
             {
-                Helpers.log("SENT SOMETHING");
+                //Helpers.log("SENT SOMETHING");
             });
             #endregion
 
@@ -267,7 +267,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
             {
-                Helpers.log("RECEIVE: " + c.DataFrame.ToString());
+                //Helpers.log("RECEIVE: " + c.DataFrame.ToString());
             });
             #endregion
 
@@ -311,7 +311,6 @@ namespace DotaHostBoxManager
             wsClient.addHook("subid", (c, x) =>
             {
                 subID = Convert.ToInt32(x[1]);
-                Helpers.log(x[1]);
             });
             #endregion
 
@@ -477,7 +476,7 @@ namespace DotaHostBoxManager
 
                     // Did the server even activate?
                     bool activated = false;
-                    
+
                     // Create diconary to check who has played
                     Dictionary<string, int> connections = new Dictionary<string, int>();
 
@@ -495,7 +494,7 @@ namespace DotaHostBoxManager
                         // Read a line and check if it;s the end of our input
                         string line = process.StandardOutput.ReadLine();
                         if (line == null) break;
-                        
+
                         // Check for Lua data
                         string[] message = line.Split('\u0007');
                         if (message.Length > 1)
@@ -532,7 +531,8 @@ namespace DotaHostBoxManager
                     }
 
                     // DEBUG: Print who has connected and who hasn't
-                    foreach(KeyValuePair<string, int> pair in connections) {
+                    foreach (KeyValuePair<string, int> pair in connections)
+                    {
                         Helpers.log(pair.Key + " - " + pair.Value);
                     }
 
@@ -541,7 +541,7 @@ namespace DotaHostBoxManager
                     {
                         Helpers.log("The server didnt even activate, we have a SERIOUS problem!");
                     }
-                    
+
                     // Check if we got an error
                     if (stderrx == null)
                     {
@@ -562,14 +562,15 @@ namespace DotaHostBoxManager
                 // Woot, success
                 Helpers.log("Server was launched successfully!");
 
-                wsClient.send(Helpers.packArguments("gameServerInfo","success", gameServer.toString()));
+                wsClient.send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
 
                 // We probably want to store a reference to the process so we can see if it dies
             }
             catch
             {
 
-                wsClient.send(Helpers.packArguments("gameServerInfo", gameServer.Lobby.Name, "failed"));
+                wsClient.send("gameServerInfo;failed;" + gameServer.toString());
+                wsClient.send(Helpers.packArguments("gameServerInfo", "failed", gameServer.toString()));
                 Helpers.log("Failed to launch the server!");
             }
         }
@@ -781,13 +782,13 @@ namespace DotaHostBoxManager
         {
             // List of maps to patch
             string[] maps = new string[]
-            {
-                "dota",
-                "dota_681",
-                "dota_autumn",
-                "dota_diretide_12",
-                "dota_winter"
-            };
+			{
+				"dota",
+				"dota_681",
+				"dota_autumn",
+				"dota_diretide_12",
+				"dota_winter"
+			};
 
             // Path to the map folder
             string mapPath = Global.BASE_PATH + SOURCE_PATH + @"dota\maps\";
