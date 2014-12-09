@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DotaHostClientLibrary
 {
@@ -20,7 +15,7 @@ namespace DotaHostClientLibrary
         private static DownloadManager dlManager = new DownloadManager();
 
         // The location to install addons to (note: this can be changed via setAddonInstallLocation)
-        private static string addonInstallLocation = Global.BASE_PATH + @"addonZips\";
+        private static string addonInstallLocation = Global.BASE_PATH + @"addons_dotahost\";
 
         // Changes where addons are installed to
         public static void setAddonInstallLocation(string newInstallLocation)
@@ -63,7 +58,7 @@ namespace DotaHostClientLibrary
             Helpers.deleteSafe(Global.TEMP + addonID);
 
             // Verify the size of the info packet
-            if(info.Length != 2)
+            if (info.Length != 2)
             {
                 Helpers.log("ERROR: Infopacket for " + addonID + " is corrupted! Got " + info.Length + " lines instead of 2.");
                 onComplete(addonID, false);

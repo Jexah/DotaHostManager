@@ -1,4 +1,5 @@
-﻿using DotaHostClientLibrary;
+﻿using Alchemy.Classes;
+using DotaHostClientLibrary;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
@@ -15,6 +16,13 @@ namespace DotaHostManager
     {
         // Program version
         private const string VERSION = "0.1.1";
+
+        // Addon status consts
+        private const byte ADDON_STATUS_ERROR = 0;
+        private const byte ADDON_STATUS_MISSING = 1;
+        private const byte ADDON_STATUS_UPDATE = 2;
+        private const byte ADDON_STATUS_READY = 3;
+
 
         // Keep-alive timer
         private static System.Timers.Timer keepAlive;
@@ -214,33 +222,59 @@ namespace DotaHostManager
         }
 
         // Generates a json structure of installed addon information, sends it to client
-        private static void checkAddons()
+        private static void checkAddons(UserContext c)
         {
-            // Define json structure
-            string json = "{";
-
-            // Generates json structure
-            foreach (var dir in Directory.GetDirectories(dotaPath + @"dota\addons\"))
+            string[] fileList = Directory.GetFiles(dotaPath + @"dota\addons_dotahost");
+            for (int i = 0; i < fileList.Length; ++i)
             {
-                string[] path = dir.Split('\\');
-                byte length = (byte)path.Length;
-                string addonID = path[length - 1];
-                if (File.Exists(dir + @"\version"))
+                try
                 {
-                    byte version = (byte)Convert.ToInt16(File.ReadAllText(dir + @"\version"));
-                    json += "\"" + addonID + "\":\"" + version + "\",";
+                    string[] arr = fileList[i].Split('\\');
+                    string addonID = arr[arr.Length - 1].Split('.')[0];
+                    Helpers.log(addonID);
+                    string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, addonID);
+                    dlManager.downloadSync(downloadPath, Global.TEMP + addonID);
+                    string[] info = File.ReadAllLines(Global.TEMP + addonID);
+                    Helpers.deleteSafe(Global.TEMP + addonID);
+                    if (info.Length != 2)
+                    {
+                        Helpers.log("ERROR: Infopacket for " + addonID + " is corrupted! Got " + info.Length + " lines instead of 2.");
+                        c.Send(Helpers.packArguments("addon", ADDON_STATUS_ERROR.ToString(), addonID));
+                        continue;
+                    }
+
+                    string version = info[0];
+                    string correctCRC = info[1];
+                    string actualCRC = "";
+
+                    // Check if the addon is already downloaded
+                    if (File.Exists(AddonDownloader.getAddonInstallLocation() + addonID + ".zip"))
+                    {
+                        // Check the CRC
+                        actualCRC = Helpers.calculateCRC(AddonDownloader.getAddonInstallLocation() + addonID + ".zip");
+
+                        // If it matches, we're already upto date
+                        if (actualCRC == correctCRC)
+                        {
+                            c.Send(Helpers.packArguments("addon", ADDON_STATUS_READY.ToString(), addonID));
+                            continue;
+                        }
+                        else
+                        {
+                            c.Send(Helpers.packArguments("addon", ADDON_STATUS_UPDATE.ToString(), addonID));
+                        }
+                    }
+                    else
+                    {
+                        c.Send(Helpers.packArguments("addon", ADDON_STATUS_MISSING.ToString(), addonID));
+                        continue;
+                    }
+                }
+                catch
+                {
+
                 }
             }
-
-            // If the structure contains anything, remove the last comma
-            if (json.Length > 1)
-            {
-                json = json.Substring(0, json.Length - 1);
-            }
-
-            // Close and send
-            json += "}";
-            wsServer.send(json);
         }
 
         // Attempts to find the dota path, returns false if not found
@@ -336,6 +370,10 @@ namespace DotaHostManager
                     // If a socket connection has previously been opened, send the progress percentage in a formatted string
                     wsServer.send(Helpers.packArguments("addon", addonID, "percent", e.ProgressPercentage.ToString()));
                 });
+            });
+            wsServer.addHook("getAddonStatus", (c, x) =>
+            {
+                checkAddons(c);
             });
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
         }
