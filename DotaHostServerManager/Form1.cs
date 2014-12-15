@@ -232,7 +232,7 @@ namespace DotaHostServerManager
                         Helpers.log("Could not find server");
                     }*/
                 }
-                c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
+                //c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
             });
             #endregion
 

@@ -21,7 +21,8 @@ namespace DotaHostLobbyManager
 
         private static Dictionary<KeyValuePair<string, string>, Player> playerCache = new Dictionary<KeyValuePair<string, string>, Player>();
 
-        private static Dictionary<string, string> playersIPs = new Dictionary<string, string>();
+        private static Dictionary<string, string> steamIDToIP = new Dictionary<string, string>();
+        private static Dictionary<string, string> ipToSteamID = new Dictionary<string, string>();
 
         private static Lobby l = new Lobby();
 
@@ -90,9 +91,6 @@ namespace DotaHostLobbyManager
             ts.addTeam(t);
             l.Teams = ts;
 
-            lobbies.addLobby(l);
-
-
             wsServer.start();
             wsClient.start();
         }
@@ -142,6 +140,33 @@ namespace DotaHostLobbyManager
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     Lobby lobby = new Lobby(KV.parse(x[3], true));
+                    //Lobby lobby = new Lobby();
+
+                    // Temp stuff to limit to LoD
+                    Team radiant = new Team();
+                    radiant.TeamName = "Radiant";
+                    radiant.MaxPlayers = 5;
+                    radiant.Players = new Players();
+                    Team dire = new Team();
+                    dire.TeamName = "Dire";
+                    dire.MaxPlayers = 5;
+                    dire.Players = new Players();
+                    Team unallocated = new Team();
+                    unallocated.TeamName = "Unallocated";
+                    unallocated.MaxPlayers = 10;
+                    unallocated.Players = new Players();
+                    lobby.Teams = new Teams();
+                    lobby.Teams.addTeam(radiant);
+                    lobby.Teams.addTeam(dire);
+                    lobby.Teams.addTeam(unallocated);
+                    Addon lod = new Addon();
+                    lod.Id = "lod";
+                    lod.Options = lobby.Addons.getAddon("0").Options;
+                    lobby.Addons = new Addons();
+                    lobby.Addons.addAddon(lod);
+                    lobby.MaxPlayers = 10;
+                    lobby.CurrentPlayers = 0;
+                    // End temp stuff
 
                     if (lobby.Name != null && lobbies.addLobby(lobby))
                     {
@@ -182,6 +207,41 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            #region wsServer.addHook("changeTeams");
+            wsServer.addHook("changeTeams", (c, x) =>
+            {
+                if (x.Length != 3)
+                {
+                    return;
+                }
+                string teamID = x[1];
+                string lobbyID = x[2];
+                string playerID = ipToSteamID[c.ClientAddress.ToString()];
+                Lobby lobby = lobbies.getLobby(lobbyID);
+                foreach (Team team in lobby.Teams.getTeams())
+                {
+                    foreach (Player player in team.Players.getPlayers())
+                    {
+                        if (player.SteamID == playerID)
+                        {
+                            if (swapTeam(team, lobby.Teams.getTeam(teamID), player))
+                            {
+                                c.Send(Helpers.packArguments("swapTeam", "success", teamID));
+                            }
+                            else
+                            {
+                                c.Send(Helpers.packArguments("swapTeam", "failure"));
+                            }
+                            return;
+                        }
+                    }
+                }
+                c.Send(Helpers.packArguments("swapTeam", "failure"));
+
+            });
+            #endregion
+
+            #region wsServer.addHook("startGames");
             wsServer.addHook("startGames", (c, x) =>
             {
                 foreach (Lobby l in lobbies.getLobbies())
@@ -189,8 +249,10 @@ namespace DotaHostLobbyManager
                     requestGameServer(l);
                 }
             });
+            #endregion
 
 
+            #region wsClient.addHook(CONNECTED);
             wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
             {
                 c.Send("lobbyManager");
@@ -198,28 +260,47 @@ namespace DotaHostLobbyManager
                 //requestGameServer(l);
 
             });
+            #endregion
 
             #region wsClient.addHook("gameServerInfo");
             wsClient.addHook("gameServerInfo", (c, x) =>
             {
-                Helpers.log(String.Join(";", x));
                 GameServer gameServer = new GameServer(KV.parse(x[2]));
                 Helpers.log(gameServer.toString());
-                foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                if (gameServer.Lobby.Teams != null)
                 {
-                    Helpers.log("2");
-                    foreach (Player player in team.Players.getPlayers())
+                    foreach (KeyValuePair<string, KV> kvp in gameServer.Lobby.Teams.getKeys())
                     {
-                        Helpers.log("3");
-                        if (x[1] == "success")
+                        if (kvp.Value == null)
                         {
-                            Helpers.log("4");
-                            wsServer.send(Helpers.packArguments("gameServerInfo", "success", gameServer.Ip + ":" + gameServer.Port), playersIPs[player.SteamID]);
+                            Team team = new Team();
+                            team.TeamName = kvp.Key;
+                            team.MaxPlayers = 5;
+                            team.Players = new Players();
+                            gameServer.Lobby.Teams.addTeam(team);
                         }
-                        else
+                    }
+                    foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                    {
+                        foreach (KeyValuePair<string, string> kvp in steamIDToIP)
                         {
-                            Helpers.log("5");
-                            wsServer.send(Helpers.packArguments("gameServerInfo", "failed"));
+                            Helpers.log("KVP: " + kvp.Key + ":" + kvp.Value);
+                        }
+                        foreach (Player player in team.Players.getPlayers())
+                        {
+                            Helpers.log(player.SteamID);
+                            Helpers.log("'" + player.SteamID + "' == '" + player.SteamID + "'");
+                            Helpers.log((player.SteamID == player.SteamID).ToString());
+                            if (x[1] == "success")
+                            {
+                                Helpers.log("4");
+                                wsServer.send(Helpers.packArguments("gameServerInfo", "success", gameServer.Ip.Split(':')[0] + ":" + gameServer.Port), steamIDToIP[player.SteamID]);
+                            }
+                            else
+                            {
+                                Helpers.log("5");
+                                wsServer.send(Helpers.packArguments("gameServerInfo", "failed", steamIDToIP[player.SteamID]));
+                            }
                         }
                     }
                 }
@@ -227,6 +308,22 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+        }
+
+        private static void refreshTeam(Team team)
+        {
+
+        }
+
+        private static bool swapTeam(Team oldTeam, Team newTeam, Player player)
+        {
+            if (newTeam.Players.getPlayers().Count < newTeam.MaxPlayers)
+            {
+                oldTeam.Players.removePlayer(player);
+                newTeam.Players.addPlayer(player);
+                return true;
+            }
+            return false;
         }
 
         private static void joinLobby(Lobby lobby, Player player, UserContext c)
@@ -245,6 +342,26 @@ namespace DotaHostLobbyManager
                         lobby.Teams.addTeam(team);
                     }
                 }
+                Helpers.log(lobby.Teams.toJSON());
+                Team unallocated = lobby.Teams.getTeam("2");
+                Helpers.log(unallocated.toJSON());
+                if (unallocated.Players == null)
+                {
+                    unallocated.Players = new Players();
+                }
+                if (unallocated.Players.getPlayers().Find(item => item.SteamID == player.SteamID) != null)
+                {
+                    Helpers.log("Player duplicate");
+                    removeFromLobby(lobby, player, c);
+                }
+                if (unallocated.Players.getKeys().Count < unallocated.MaxPlayers)
+                {
+                    unallocated.Players.addPlayer(player);
+                    joined = true;
+                    lobby.CurrentPlayers++;
+                }
+
+                /* Loop through teams and ad to first found with space
                 foreach (Team team in lobby.Teams.getTeams())
                 {
                     if (team.Players == null)
@@ -260,34 +377,31 @@ namespace DotaHostLobbyManager
                     {
                         team.Players.addPlayer(player);
                         joined = true;
+                        lobby.CurrentPlayers++;
                         break;
                     }
-                }
+                }*/
             }
             if (!joined)
             {
-                Helpers.log("6");
                 c.Send(Helpers.packArguments("joinLobby", "failed", "full"));
             }
             else
             {
-                Helpers.log("7");
                 c.Send(Helpers.packArguments("joinLobby", "success", lobby.toJSON()));
             }
         }
 
         public static void removeFromLobby(Lobby lobby, Player player, UserContext c)
         {
-            Helpers.log("remove from lobby start");
             foreach (Team team in lobby.Teams.getTeams())
             {
-                Helpers.log("team 1");
                 Player toRemove = team.Players.getPlayers().Find(item => item.SteamID == player.SteamID);
                 if (toRemove != null)
                 {
-                    Helpers.log(team.Players.toJSON());
                     team.Players.removePlayer(toRemove);
-                    Helpers.log(team.Players.toJSON());
+                    lobby.CurrentPlayers--;
+                    return;
                 }
             }
         }
@@ -318,7 +432,17 @@ namespace DotaHostLobbyManager
                         player.ProfileURL = player.ProfileURL;
 
                         playerCache.Add(new KeyValuePair<string, string>(token, steamid), player);
-                        playersIPs.Add(steamid, ip);
+                        try
+                        {
+                            steamIDToIP.Add(steamid, ip);
+                        }
+                        catch { }
+                        try
+                        {
+                            ipToSteamID.Add(ip, steamid);
+                        }
+                        catch { }
+
 
                         callback(player);
 

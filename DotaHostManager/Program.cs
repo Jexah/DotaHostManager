@@ -499,10 +499,7 @@ namespace DotaHostManager
                     var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + Global.BASE_PATH + "DotaHostManager.exe" + "\"");
                     info.WindowStyle = ProcessWindowStyle.Hidden;
                     Process.Start(info).Dispose();
-
-                    info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + Global.BASE_PATH + "log.txt" + "\"");
-                    info.WindowStyle = ProcessWindowStyle.Hidden;
-                    Process.Start(info).Dispose();
+                    File.Delete(Global.BASE_PATH + "log.txt");
                 }
                 Timers.setTimeout(1, Timers.SECONDS, () => { Environment.Exit(0); });
             }

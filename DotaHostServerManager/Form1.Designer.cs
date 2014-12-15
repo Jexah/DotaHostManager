@@ -82,7 +82,7 @@
             this.boxNameLabel.Location = new System.Drawing.Point(231, 36);
             this.boxNameLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxNameLabel.Name = "boxNameLabel";
-            this.boxNameLabel.Size = new System.Drawing.Size(136, 26);
+            this.boxNameLabel.Size = new System.Drawing.Size(148, 26);
             this.boxNameLabel.TabIndex = 2;
             this.boxNameLabel.Text = "333.333.333:33333";
             this.boxNameLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -115,7 +115,7 @@
             this.boxStatusLabel.Location = new System.Drawing.Point(231, 62);
             this.boxStatusLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxStatusLabel.Name = "boxStatusLabel";
-            this.boxStatusLabel.Size = new System.Drawing.Size(136, 26);
+            this.boxStatusLabel.Size = new System.Drawing.Size(148, 26);
             this.boxStatusLabel.TabIndex = 6;
             this.boxStatusLabel.Text = "Active!";
             this.boxStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -270,7 +270,7 @@
             this.boxVerifiedLabel.Location = new System.Drawing.Point(231, 88);
             this.boxVerifiedLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxVerifiedLabel.Name = "boxVerifiedLabel";
-            this.boxVerifiedLabel.Size = new System.Drawing.Size(136, 26);
+            this.boxVerifiedLabel.Size = new System.Drawing.Size(148, 26);
             this.boxVerifiedLabel.TabIndex = 23;
             this.boxVerifiedLabel.Text = "False";
             this.boxVerifiedLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -303,7 +303,7 @@
             this.boxRegionLabel.Location = new System.Drawing.Point(231, 114);
             this.boxRegionLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.boxRegionLabel.Name = "boxRegionLabel";
-            this.boxRegionLabel.Size = new System.Drawing.Size(136, 26);
+            this.boxRegionLabel.Size = new System.Drawing.Size(148, 26);
             this.boxRegionLabel.TabIndex = 25;
             this.boxRegionLabel.Text = "None";
             this.boxRegionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
