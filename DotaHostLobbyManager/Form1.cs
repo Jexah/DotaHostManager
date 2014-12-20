@@ -174,7 +174,6 @@ namespace DotaHostLobbyManager
                     }
                     else
                     {
-                        Helpers.log("2");
                         c.Send(Helpers.packArguments("createLobby", "failed"));
                     }
                 });
@@ -237,7 +236,6 @@ namespace DotaHostLobbyManager
                     }
                 }
                 c.Send(Helpers.packArguments("swapTeam", "failure"));
-
             });
             #endregion
 
@@ -250,6 +248,7 @@ namespace DotaHostLobbyManager
                 }
             });
             #endregion
+
 
 
             #region wsClient.addHook(CONNECTED);
@@ -342,17 +341,14 @@ namespace DotaHostLobbyManager
                         lobby.Teams.addTeam(team);
                     }
                 }
-                Helpers.log(lobby.Teams.toJSON());
+                foreach (Lobby l in lobbies.getLobbies())
+                {
+                    removeFromLobby(l, player);
+                }
                 Team unallocated = lobby.Teams.getTeam("2");
-                Helpers.log(unallocated.toJSON());
                 if (unallocated.Players == null)
                 {
                     unallocated.Players = new Players();
-                }
-                if (unallocated.Players.getPlayers().Find(item => item.SteamID == player.SteamID) != null)
-                {
-                    Helpers.log("Player duplicate");
-                    removeFromLobby(lobby, player, c);
                 }
                 if (unallocated.Players.getKeys().Count < unallocated.MaxPlayers)
                 {
@@ -360,27 +356,6 @@ namespace DotaHostLobbyManager
                     joined = true;
                     lobby.CurrentPlayers++;
                 }
-
-                /* Loop through teams and ad to first found with space
-                foreach (Team team in lobby.Teams.getTeams())
-                {
-                    if (team.Players == null)
-                    {
-                        team.Players = new Players();
-                    }
-                    if (team.Players.getPlayers().Find(item => item.SteamID == player.SteamID) != null)
-                    {
-                        Helpers.log("Player duplicate");
-                        removeFromLobby(lobby, player, c);
-                    }
-                    if (team.Players.getKeys().Count < team.MaxPlayers)
-                    {
-                        team.Players.addPlayer(player);
-                        joined = true;
-                        lobby.CurrentPlayers++;
-                        break;
-                    }
-                }*/
             }
             if (!joined)
             {
@@ -392,18 +367,30 @@ namespace DotaHostLobbyManager
             }
         }
 
-        public static void removeFromLobby(Lobby lobby, Player player, UserContext c)
+        public static void removeFromLobby(Lobby lobby, Player player)
         {
             foreach (Team team in lobby.Teams.getTeams())
             {
-                Player toRemove = team.Players.getPlayers().Find(item => item.SteamID == player.SteamID);
-                if (toRemove != null)
+                if (removeFromTeam(team, player))
                 {
-                    team.Players.removePlayer(toRemove);
                     lobby.CurrentPlayers--;
-                    return;
                 }
             }
+            if (lobby.CurrentPlayers == 0)
+            {
+                lobbies.removeLobby(lobby);
+            }
+        }
+
+        public static bool removeFromTeam(Team team, Player player)
+        {
+            Player toRemove = team.Players.getPlayers().Find(item => item.SteamID == player.SteamID);
+            if (toRemove != null)
+            {
+                team.Players.removePlayer(toRemove);
+                return true;
+            }
+            return false;
         }
 
         private static void validate(string token, string steamid, string ip, Action<Player> callback)
