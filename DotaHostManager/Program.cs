@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Reflection;
 using System.Timers;
 using System.Windows.Forms;
 
@@ -15,7 +14,7 @@ namespace DotaHostManager
     class Program
     {
         // Program version
-        private const string VERSION = "0.1.1";
+        private const string VERSION = "v0.1.0";
 
         // Addon status consts
         private const byte ADDON_STATUS_ERROR = 0;
@@ -50,6 +49,16 @@ namespace DotaHostManager
 
         private static void Main(string[] i)
         {
+            Console.WriteLine(Helpers.BASE_PATH);
+            Console.WriteLine(Helpers.FULL_EXE_PATH);
+
+            if (i.Length > 1 && i[0] == "crc")
+            {
+                Console.WriteLine(Helpers.calculateCRC(i[1]));
+                Console.ReadLine();
+                return;
+            }
+
             // Reset log file
             File.Delete(Global.BASE_PATH + "log.txt");
 
@@ -73,7 +82,13 @@ namespace DotaHostManager
             Helpers.log("[DotaHost] Version " + VERSION);
 
             // Sets up uri protocol args if launched from browser
-            if (i.Length > 0) { Helpers.log("Requested: " + i[0]); }
+            for (var x = 0; x < i.Length; ++x)
+            {
+                Console.Write(x + ": '");
+                Console.Write(i[x]);
+                Console.WriteLine("'");
+            }
+            if (i.Length > 0) { }
             string[] args = new string[0];
             if (i.Length > 0)
             {
@@ -87,6 +102,7 @@ namespace DotaHostManager
             hookWSocketEvents();
 
             // If first-run or requested autorun, attempt to register the uri protocol
+            Console.WriteLine(Properties.Settings.Default.autorun);
             if (Properties.Settings.Default.autorun)
             {
                 registerProtocol();
@@ -115,7 +131,7 @@ namespace DotaHostManager
         private static void copyAndDeleteSelf()
         {
             using (var inputFile = new FileStream(
-                        Global.BASE_PATH + "DotaHostManager.exe",
+                        Helpers.FULL_EXE_PATH,
                         FileMode.Open,
                         FileAccess.Read,
                         FileShare.ReadWrite
@@ -224,14 +240,15 @@ namespace DotaHostManager
         // Generates a json structure of installed addon information, sends it to client
         private static void checkAddons(UserContext c)
         {
+            dlManager.downloadSync(Global.ROOT + "addons/addons.txt", Global.TEMP + "addons.txt");
+            string[] addonsList = File.ReadAllLines(Global.TEMP + "addons.txt");
+            Helpers.deleteSafe(Global.TEMP + "addons.txt");
             string[] fileList = Directory.GetFiles(dotaPath + @"dota\addons_dotahost");
-            for (int i = 0; i < fileList.Length; ++i)
+            for (int i = 0; i < addonsList.Length; ++i)
             {
                 try
                 {
-                    string[] arr = fileList[i].Split('\\');
-                    string addonID = arr[arr.Length - 1].Split('.')[0];
-                    Helpers.log(addonID);
+                    string addonID = addonsList[i];
                     string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, addonID);
                     dlManager.downloadSync(downloadPath, Global.TEMP + addonID);
                     string[] info = File.ReadAllLines(Global.TEMP + addonID);
@@ -239,7 +256,7 @@ namespace DotaHostManager
                     if (info.Length != 2)
                     {
                         Helpers.log("ERROR: Infopacket for " + addonID + " is corrupted! Got " + info.Length + " lines instead of 2.");
-                        c.Send(Helpers.packArguments("addon", ADDON_STATUS_ERROR.ToString(), addonID));
+                        c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_ERROR.ToString(), addonID));
                         continue;
                     }
 
@@ -256,24 +273,22 @@ namespace DotaHostManager
                         // If it matches, we're already upto date
                         if (actualCRC == correctCRC)
                         {
-                            c.Send(Helpers.packArguments("addon", ADDON_STATUS_READY.ToString(), addonID));
+                            c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_READY.ToString(), addonID));
                             continue;
                         }
                         else
                         {
-                            c.Send(Helpers.packArguments("addon", ADDON_STATUS_UPDATE.ToString(), addonID));
+                            c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_UPDATE.ToString(), addonID));
+                            continue;
                         }
                     }
                     else
                     {
-                        c.Send(Helpers.packArguments("addon", ADDON_STATUS_MISSING.ToString(), addonID));
+                        c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_MISSING.ToString(), addonID));
                         continue;
                     }
                 }
-                catch
-                {
-
-                }
+                catch { }
             }
         }
 
@@ -349,7 +364,7 @@ namespace DotaHostManager
             wsServer.addHook("setDotaPath", (c, x) => { updateDotaPath(x[1]); });
             wsServer.addHook("exit", (c, x) => { requestClose = true; });
             wsServer.addHook(WebSocketServer.CONNECTED, (c) => { wsServer.send(Helpers.packArguments("dotaPath", dotaPath)); });
-            wsServer.addHook("autorun", (c, x) => { registerProtocol(); });
+            wsServer.addHook("autorun", (c, x) => { Properties.Settings.Default.autorun = true; Properties.Settings.Default.Save(); registerProtocol(); });
             wsServer.addHook("update", (c, x) =>
             {
                 c.Send("startInstall");
@@ -359,16 +374,16 @@ namespace DotaHostManager
                     if (success)
                     {
                         // Installation was successful, send formatted string to most recent connection
-                        wsServer.send(Helpers.packArguments("installationComplete", "addon", addonID));
+                        wsServer.send(Helpers.packArguments("installationComplete"));
                     }
                     else
                     {
-                        wsServer.send(Helpers.packArguments("installationFailed", "addon", addonID));
+                        wsServer.send(Helpers.packArguments("installationFailed"));
                     }
                 }, (addonID, e) =>
                 {
                     // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                    wsServer.send(Helpers.packArguments("addon", addonID, "percent", e.ProgressPercentage.ToString()));
+                    wsServer.send(Helpers.packArguments("addon", addonID, e.ProgressPercentage.ToString()));
                 });
             });
             wsServer.addHook("getAddonStatus", (c, x) =>
@@ -408,10 +423,10 @@ namespace DotaHostManager
             zeroCanClose++;
 
             // Stores the full executable path of this application, file name included
-            string applicationPath = Assembly.GetEntryAssembly().Location;
+            string applicationPath = Helpers.FULL_EXE_PATH;
 
             // Opens the key "DotaHost" and stores it in key
-            RegistryKey key = Registry.ClassesRoot.OpenSubKey("DotaHost");
+            RegistryKey key = Registry.ClassesRoot.OpenSubKey("dotahost");
 
             // If the protocol is not registered yet, we register it
             if (key == null)
@@ -419,7 +434,7 @@ namespace DotaHostManager
                 try
                 {
                     // Creates the subkey in the registry
-                    key = Registry.ClassesRoot.CreateSubKey("DotaHost");
+                    key = Registry.ClassesRoot.CreateSubKey("dotahost");
 
                     // Register the URI protocol in registry
                     key.SetValue(string.Empty, "URL:DotaHost Protocol");
@@ -439,12 +454,13 @@ namespace DotaHostManager
                         const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
 
                         // Start a new instance of this executable as administrator
-                        ProcessStartInfo info = new ProcessStartInfo("DotaHostManager.exe");
+                        ProcessStartInfo info = new ProcessStartInfo(Global.BASE_PATH + "DotaHostManager.exe");
                         info.UseShellExecute = true;
                         info.Verb = "runas";
                         try
                         {
                             Process.Start(info);
+                            exit();
                         }
                         catch (Win32Exception ex)
                         {

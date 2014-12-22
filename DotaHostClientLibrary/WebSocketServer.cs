@@ -91,18 +91,21 @@ namespace DotaHostClientLibrary
 
                 // Assign userid
                 string ip = c.ClientAddress.ToString();
-                if (!userIdToContext.ContainsKey(ip))
+                if (userIdToContext.ContainsKey(ip))
                 {
-                    // Send client uid
                     c.Send(Helpers.packArguments("id", ip));
-
-                    // Add connected user
-                    try { userIdToContext.Add(ip, c); }
-                    catch { }
-                    try { userContextToId.Add(c, ip); }
-                    catch { }
-
+                    userIdToContext[ip] = c;
+                    userContextToId[c] = ip;
+                    return;
                 }
+                // Send client uid
+                c.Send(Helpers.packArguments("id", ip));
+
+                // Add connected user
+                try { userIdToContext.Add(ip, c); }
+                catch { }
+                try { userContextToId.Add(c, ip); }
+                catch { }
             });
             #endregion
 

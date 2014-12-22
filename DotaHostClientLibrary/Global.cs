@@ -13,16 +13,16 @@ namespace DotaHostClientLibrary
         public static readonly string TEMP = System.IO.Path.GetTempPath() + @"dotahost\";
 
         // URL to download the app from
-        public const string DOWNLOAD_PATH_APP = "https://github.com/ash47/DotaHostAddons/releases/download/{0}/DotaHostManager.exe";
+        public const string DOWNLOAD_PATH_APP = "https://github.com/Jexah/DotaHostReleases/releases/download/{0}-mm/DotaHostManager.exe";
 
         // URL to download the updater from
-        public const string DOWNLOAD_PATH_UPDATER = ROOT + "DotaHostManagerUpdater.exe";
+        public const string DOWNLOAD_PATH_UPDATER = "https://github.com/Jexah/DotaHostReleases/releases/download/updater/DotaHostManagerUpdater.exe";
 
         // URL to download version.txt from
         public const string DOWNLOAD_PATH_VERSION = ROOT + "version.txt";
 
         // URL to download addon updates from ({0} = addonID, {1} = version)
-        public const string DOWNLOAD_PATH_ADDONS = "https://github.com/ash47/DotaHostAddons/releases/download/{1}/{0}.zip";
+        public const string DOWNLOAD_PATH_ADDONS = "https://github.com/Jexah/DotaHostReleases/releases/download/{1}-{0}/{0}.zip";
 
         // URL to get addon info from ({0} = addonID)
         public const string DOWNLOAD_PATH_ADDON_INFO = ROOT + "addons/{0}.txt";

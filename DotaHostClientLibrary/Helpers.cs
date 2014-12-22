@@ -8,7 +8,11 @@ namespace DotaHostClientLibrary
 {
     public static class Helpers
     {
-        public static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
+        // Full path and exe name of execuing assembly
+        public static readonly string FULL_EXE_PATH = String.Join("\\", Helpers.RemoveIndex(Helpers.RemoveIndex(Helpers.RemoveIndex(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase.Split('/'), 0), 0), 0));
+
+        // Directory of executing assembly
+        public static readonly string BASE_PATH = System.IO.Path.GetDirectoryName(FULL_EXE_PATH) + "\\";
 
         // Used to generate random numbers
         private static Random random = new Random((int)DateTime.Now.Ticks);
@@ -124,7 +128,7 @@ namespace DotaHostClientLibrary
                     }
                 }
             }
-            catch {}
+            catch { }
         }
 
         // Packs arguments nicely for you

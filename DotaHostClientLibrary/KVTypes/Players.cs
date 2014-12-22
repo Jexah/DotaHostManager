@@ -17,6 +17,11 @@ namespace DotaHostClientLibrary
             }
         }
 
+        public void addPlayer(Player player, string slot)
+        {
+            setKey(slot, player);
+        }
+
         public void removePlayer(Player player)
         {
             foreach (KeyValuePair<string, KV> kvp in getKeys())

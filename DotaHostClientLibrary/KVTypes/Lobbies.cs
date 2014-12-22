@@ -17,7 +17,7 @@ namespace DotaHostClientLibrary
 
         public void removeLobby(Lobby lobby)
         {
-            removeKey(lobby);
+            removeKey(lobby.Name);
         }
 
         public void removeLobby(string key)
