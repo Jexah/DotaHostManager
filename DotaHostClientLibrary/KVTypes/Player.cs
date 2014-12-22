@@ -1,4 +1,5 @@
 ﻿
+using System;
 namespace DotaHostClientLibrary
 {
     public class Player : KV
@@ -51,11 +52,35 @@ namespace DotaHostClientLibrary
             }
         }
 
+        public byte Badges
+        {
+            get
+            {
+                return Convert.ToByte(getValue("4"));
+            }
+            set
+            {
+                setValue("4", value.ToString());
+            }
+        }
+
+        public byte Cosmetics
+        {
+            get
+            {
+                return Convert.ToByte(getValue("5"));
+            }
+            set
+            {
+                setValue("5", value.ToString());
+            }
+        }
+
+
         public Player()
         {
             initObject();
         }
-
 
 
         public Player(KV source)

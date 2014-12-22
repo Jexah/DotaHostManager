@@ -556,10 +556,6 @@ namespace DotaHostLobbyManager
                         // Do stuff with r (response) to get it into 4 variables, rest is complete
 
                         Player player = new Player(KV.parse(r, true));
-                        player.SteamID = player.SteamID;
-                        player.PersonaName = player.PersonaName;
-                        player.Avatar = player.Avatar;
-                        player.ProfileURL = player.ProfileURL;
 
                         playerCache.Add(ip, player);
                         try
