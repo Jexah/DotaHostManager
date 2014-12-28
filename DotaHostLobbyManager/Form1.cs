@@ -252,6 +252,10 @@ namespace DotaHostLobbyManager
                 Helpers.log("swapTeamHook: 5");
                 Lobby lobby = playersInLobbies[steamID];
                 Helpers.log("swapTeamHook: 6");
+                if (!lobby.Teams.containsKey(teamID))
+                {
+                    return;
+                }
                 if (swapTeam(lobby.Teams.getTeam(teamID), slotID, playerCache[ip]))
                 {
                     Helpers.log("swapTeamHook: 7");
@@ -292,13 +296,16 @@ namespace DotaHostLobbyManager
             wsServer.addHook("getPage", (c, x) =>
             {
                 string ip = c.ClientAddress.ToString();
-                if (ipToSteamID.ContainsKey(ip) || !playersInLobbies.ContainsKey(ipToSteamID[ip]))
+                if (!ipToSteamID.ContainsKey(ip) || !playersInLobbies.ContainsKey(ipToSteamID[ip]))
                 {
                     sendHomePage(c);
                     return;
                 }
-                Lobby l = playersInLobbies[ipToSteamID[ip]];
-                c.Send(Helpers.packArguments("page", "lobby", l.toJSON()));
+                if (playersInLobbies.ContainsKey(ipToSteamID[ip]))
+                {
+                    Lobby l = playersInLobbies[ipToSteamID[ip]];
+                    c.Send(Helpers.packArguments("page", "lobby", l.toJSON()));
+                }
             });
             #endregion
 
@@ -542,50 +549,48 @@ namespace DotaHostLobbyManager
             if (playerCache.ContainsKey(ip))
             {
                 callback(playerCache[ip]);
+                return;
             }
-            else
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data.Add("token", token);
+            data.Add("steamID", steamid);
+
+            HTTPRequestManager.startRequest("http://127.0.0.1/validate.php", "GET", (r) =>
             {
-                Dictionary<string, string> data = new Dictionary<string, string>();
-                data.Add("token", token);
-                data.Add("steamID", steamid);
-
-                HTTPRequestManager.startRequest("http://127.0.0.1/validate.php", "GET", (r) =>
+                if (r != "get the fuck out of here")
                 {
-                    if (r != "get the fuck out of here")
+                    // Do stuff with r (response) to get it into 4 variables, rest is complete
+
+                    Player player = new Player(KV.parse(r, true));
+
+                    playerCache.Add(ip, player);
+                    try
                     {
-                        // Do stuff with r (response) to get it into 4 variables, rest is complete
-
-                        Player player = new Player(KV.parse(r, true));
-
-                        playerCache.Add(ip, player);
-                        try
+                        if (steamIDToIP.ContainsKey(steamid))
                         {
-                            if (steamIDToIP.ContainsKey(steamid))
+                            if (ipToSteamID.ContainsKey(steamIDToIP[steamid]))
                             {
-                                if (ipToSteamID.ContainsKey(steamIDToIP[steamid]))
-                                {
-                                    ipToSteamID.Remove(steamIDToIP[steamid]);
-                                }
-                                steamIDToIP[steamid] = ip;
+                                ipToSteamID.Remove(steamIDToIP[steamid]);
                             }
-                            else
-                            {
-                                steamIDToIP.Add(steamid, ip);
-                            }
+                            steamIDToIP[steamid] = ip;
                         }
-                        catch { }
-                        try
+                        else
                         {
-                            ipToSteamID.Add(ip, steamid);
+                            steamIDToIP.Add(steamid, ip);
                         }
-                        catch { }
-
-
-                        callback(player);
-
                     }
-                }, data);
-            }
+                    catch { }
+                    try
+                    {
+                        ipToSteamID.Add(ip, steamid);
+                    }
+                    catch { }
+
+
+                    callback(player);
+
+                }
+            }, data);
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
