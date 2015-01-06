@@ -69,4 +69,3 @@ NOTE: If you want to change this layout, you NEED to change the layout in the Do
 ###Needs testing###
  - Test the AddonDownloader on the client
  - Test the addon compiler on the client
- - Test logout.php on the website -- make sure it redirects correctly
