@@ -529,7 +529,7 @@ namespace DotaHostManager
                                 "GameBin |gameinfo_path|addons/metamod/bin" + Environment.NewLine +
                                 "Game |gameinfo_path|." + Environment.NewLine +
                                 "Game platform" + Environment.NewLine +
-                                "Game " + dotaPath + @"dota\addons_dotahost\active" + Environment.NewLine +
+                                "Game |gameinfo_path|addons_dotahost/active" + Environment.NewLine +
                             "}" + Environment.NewLine +
                         "}" + Environment.NewLine +
                     "}";

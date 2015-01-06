@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Text;
 
 namespace DotaHostClientLibrary
 {
@@ -99,9 +98,6 @@ namespace DotaHostClientLibrary
                 // Extract the archive
                 Helpers.log("17");
                 ZipFile.ExtractToDirectory(zipName, TEMP_DIR);
-
-                string kkkkk = File.ReadAllText(TEMP_DIR + "manifest.kv", Encoding.UTF8);
-                Helpers.log(kkkkk);
 
                 // Read the manifest file
                 Helpers.log("18");
@@ -280,7 +276,7 @@ namespace DotaHostClientLibrary
             {
                 // Cleanup temp folder
                 Helpers.log("49");
-                //Helpers.deleteFolder(TEMP_DIR, true);
+                Helpers.deleteFolder(TEMP_DIR, true);
 
                 // Extract the archive
                 Helpers.log("50");
@@ -328,7 +324,7 @@ namespace DotaHostClientLibrary
 
             // Cleanup temp folder
             Helpers.log("58");
-            //Helpers.deleteFolder(TEMP_DIR, true);
+            Helpers.deleteFolder(TEMP_DIR, true);
 
             // Return the path to the compiled addons
             Helpers.log("59");
