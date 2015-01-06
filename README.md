@@ -66,6 +66,9 @@ NOTE: If you want to change this layout, you NEED to change the layout in the Do
  - Implement method to find the next free port
  - FILTER THE LOBBY -- THE STUFF SENT FROM THE CLIENT'S CREATE LOBBY COMMAND NEEDS TO BE FILTERED!
 
+###Before Release###
+ - Make the profile validation service check for a banned flag, incase we get faggots
+
 ###Needs testing###
  - Test the AddonDownloader on the client
  - Test the addon compiler on the client
