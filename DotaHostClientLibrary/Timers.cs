@@ -2,7 +2,7 @@
 
 namespace DotaHostClientLibrary
 {
-    public delegate void TimerCallback(); 
+    public delegate void TimerCallback();
 
     public static class Timers
     {
@@ -12,8 +12,10 @@ namespace DotaHostClientLibrary
         public const byte MINUTES = 2;
         public const byte HOURS = 3;
 
+        public delegate void endTimer();
+
         // Create new timeout
-        public static void setTimeout(int duration, byte type, TimerCallback func)
+        public static endTimer setTimeout(int duration, byte type, TimerCallback func)
         {
             int properDuration;
             switch (type)
@@ -35,18 +37,20 @@ namespace DotaHostClientLibrary
             Timer timer = new System.Timers.Timer(properDuration);
 
             // Sets the elapsed function
-            timer.Elapsed += (sender, e) => 
+            timer.Elapsed += (sender, e) =>
             {
                 // Call the function given from the function argument
                 func();
 
                 // Dispose of the timer when we're finished
-                timer.Dispose(); 
+                timer.Dispose();
             };
 
             // Enables the timer
             timer.Enabled = true;
+
+            return timer.Dispose;
         }
-   
+
     }
 }

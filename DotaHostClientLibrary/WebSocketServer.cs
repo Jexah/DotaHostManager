@@ -35,7 +35,7 @@ namespace DotaHostClientLibrary
         public const byte DISCONNECTED = 4;
 
 
-        public WebSocketServer(IPAddress ip, int port)
+        public WebSocketServer(int port)
         {
             // Initialize wsHooks
             for (byte i = 0; i < wsHooks.Length; ++i)

@@ -40,7 +40,21 @@ namespace DotaHostClientLibrary
             this.sort = SORT_OBJECT;
 
             // Create store for keys
-            keys = new Dictionary<string, KV>();
+            this.keys = new Dictionary<string, KV>();
+        }
+
+        protected void inheritSource(KV source)
+        {
+            if (source == null)
+            {
+                this.sort = 1;
+                this.keys = new Dictionary<string, KV>();
+                this.values = new List<string>();
+                return;
+            }
+            this.sort = source.getSort() == 0 ? (byte)SORT_OBJECT : source.getSort();
+            this.keys = source.getKeys() != null ? source.getKeys() : new Dictionary<string, KV>();
+            this.values = source.getValues() != null ? source.getValues() : new List<string>();
         }
 
         // Create a new KV that can store objects
@@ -110,7 +124,11 @@ namespace DotaHostClientLibrary
         // Clears the a given key, then recreates it with the given KV
         protected bool setKey(string key, KV kv)
         {
-            return (removeKey(key) && addKey(key, kv));
+            if (this.containsKey(key))
+            {
+                this.removeKey(key);
+            }
+            return this.addKey(key, kv);
         }
 
         // Clears the a given value at key, then recreates that key with the given value

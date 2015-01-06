@@ -5,7 +5,6 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Timers;
 using System.Windows.Forms;
 
@@ -45,10 +44,11 @@ namespace DotaHostManager
         private static bool exiting = false;
 
         // Our websocket server
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Any, 2074);
+        private static WebSocketServer wsServer = new WebSocketServer(2074);
 
         private static void Main(string[] i)
         {
+
             Console.WriteLine(Helpers.BASE_PATH);
             Console.WriteLine(Helpers.FULL_EXE_PATH);
 
@@ -101,13 +101,6 @@ namespace DotaHostManager
             // Hook the dotaHostManager socket events
             hookWSocketEvents();
 
-            // If first-run or requested autorun, attempt to register the uri protocol
-            Console.WriteLine(Properties.Settings.Default.autorun);
-            if (Properties.Settings.Default.autorun)
-            {
-                registerProtocol();
-            }
-
             // Download the version file from website
             downloadAppVersion();
 
@@ -117,8 +110,20 @@ namespace DotaHostManager
                 Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
                 exit();
             }
+
             // Start websocket server
             Timers.setTimeout(500, Timers.MILLISECONDS, wsServer.start);
+
+            // If first-run or requested autorun, attempt to register the uri protocol
+            Console.WriteLine(Properties.Settings.Default.autorun);
+            if (Properties.Settings.Default.shouldRegister)
+            {
+                registerProtocol();
+            }
+            if (Properties.Settings.Default.shouldDeregister)
+            {
+                deregisterProtocol();
+            }
 
             // Begin exit timer
             appKeepAlive();
@@ -349,6 +354,8 @@ namespace DotaHostManager
 
                     // Update the addon downloads
                     AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
+
+                    wsServer.send(Helpers.packArguments("dotaPath", newPath));
                 }
                 catch
                 {
@@ -361,10 +368,55 @@ namespace DotaHostManager
         // Create and bind the functions for web socket events
         private static void hookWSocketEvents()
         {
+            #region wsServer.addHook("setDotaPath");
             wsServer.addHook("setDotaPath", (c, x) => { updateDotaPath(x[1]); });
+            #endregion
+
+            #region wsServer.addHook("exit");
             wsServer.addHook("exit", (c, x) => { requestClose = true; });
-            wsServer.addHook(WebSocketServer.CONNECTED, (c) => { wsServer.send(Helpers.packArguments("dotaPath", dotaPath)); });
-            wsServer.addHook("autorun", (c, x) => { Properties.Settings.Default.autorun = true; Properties.Settings.Default.Save(); registerProtocol(); });
+            #endregion
+
+            #region wsServer.addHook("CONNECTED");
+            wsServer.addHook(WebSocketServer.CONNECTED, (c) =>
+            {
+                c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                c.Send(Helpers.packArguments("dotaPath", Properties.Settings.Default.dotaPath));
+            });
+            #endregion
+
+            #region wsServer.addHook("autorun");
+            wsServer.addHook("autorun", (c, x) =>
+            {
+                Console.WriteLine("autorun receive");
+                Properties.Settings.Default.shouldRegister = true;
+                Properties.Settings.Default.Save();
+                registerProtocol();
+            });
+            #endregion
+
+            #region wsServer.addHook("getAutorun");
+            wsServer.addHook("getAutorun", (c, x) =>
+            {
+                c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+            });
+            #endregion
+
+            #region wsServer.addHook("getDotapath");
+            wsServer.addHook("getDotapath", (c, x) =>
+            {
+                c.Send(Helpers.packArguments("dotaPath", dotaPath));
+            });
+            #endregion
+
+            #region wsServer.addHook("uninstall");
+            wsServer.addHook("uninstall", (c, x) =>
+            {
+                deregisterProtocol();
+                Helpers.log("Uninstall received");
+            });
+            #endregion
+
+            #region wsServer.addHook("update");
             wsServer.addHook("update", (c, x) =>
             {
                 c.Send("startInstall");
@@ -386,11 +438,18 @@ namespace DotaHostManager
                     wsServer.send(Helpers.packArguments("addon", addonID, e.ProgressPercentage.ToString()));
                 });
             });
+            #endregion
+
+            #region wsServer.addHook("getAddonStatus");
             wsServer.addHook("getAddonStatus", (c, x) =>
             {
                 checkAddons(c);
             });
+            #endregion
+
+            #region wsServer.addHook("RECEIVE");
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
+            #endregion
         }
 
         // Removes the old timer, and ccreates and binds another one
@@ -419,20 +478,36 @@ namespace DotaHostManager
         // Function to request registration of the dotahost uri protocol
         private static void registerProtocol()
         {
+
             // Begin task
             zeroCanClose++;
+
+            Helpers.log("[Protocol] Begin register...");
 
             // Stores the full executable path of this application, file name included
             string applicationPath = Helpers.FULL_EXE_PATH;
 
-            // Opens the key "DotaHost" and stores it in key
+            // Opens the key "dotahost" and stores it in key
+            bool found = false;
             RegistryKey key = Registry.ClassesRoot.OpenSubKey("dotahost");
 
+            string[] subkeys = Registry.ClassesRoot.GetSubKeyNames();
+            for (var i = 0; i < subkeys.Length; ++i)
+            {
+                if (subkeys[i] == "dotahost")
+                {
+                    found = true;
+                    break;
+                }
+            }
+
             // If the protocol is not registered yet, we register it
-            if (key == null)
+            if (!found)
             {
                 try
                 {
+                    Helpers.log("[Protocol] Key not found, attempting create...");
+
                     // Creates the subkey in the registry
                     key = Registry.ClassesRoot.CreateSubKey("dotahost");
 
@@ -444,21 +519,29 @@ namespace DotaHostManager
                     key = key.CreateSubKey(@"shell\open\command");
                     key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
 
-                    Helpers.log("Registry added.");
+                    Properties.Settings.Default.shouldRegister = false;
+                    Properties.Settings.Default.autorun = true;
+                    Properties.Settings.Default.Save();
+
+                    wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+
+                    Helpers.log("[Protocol] Registry added.");
                 }
                 catch
                 {
-                    if (MessageBox.Show("Would you like DotaHostManager to launch itself automatically when you visit the DotaHost.net website? (Requires Administrator Privillages)", "Autorun", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    Helpers.log("[Protocol] Failed to add registry. Requesting launch as admin...");
+                    if (MessageBox.Show("Would you like DotaHostManager to launch itself automatically when you visit the DotaHost.net website? (Requires Administrator Privillages)", "Enable Autorun", MessageBoxButtons.YesNo, MessageBoxIcon.None, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly) == DialogResult.Yes)
                     {
-                        Helpers.log("Failed to add registry. Launching as admin...");
                         const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
 
                         // Start a new instance of this executable as administrator
-                        ProcessStartInfo info = new ProcessStartInfo(Global.BASE_PATH + "DotaHostManager.exe");
+                        ProcessStartInfo info = new ProcessStartInfo(Helpers.FULL_EXE_PATH);
                         info.UseShellExecute = true;
                         info.Verb = "runas";
                         try
                         {
+                            Properties.Settings.Default.shouldRegister = true;
+                            Properties.Settings.Default.Save();
                             Process.Start(info);
                             exit();
                         }
@@ -466,32 +549,37 @@ namespace DotaHostManager
                         {
                             if (ex.NativeErrorCode == ERROR_CANCELLED)
                             {
-                                Helpers.log("Admin request denied.");
+                                Properties.Settings.Default.shouldRegister = false;
+                                Properties.Settings.Default.Save();
+                                Helpers.log("[Protocol] Admin request denied.");
+
+                                wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                             }
                         }
                     }
                     else
                     {
                         // Save user preference
-                        Properties.Settings.Default.autorun = false;
+                        Properties.Settings.Default.shouldRegister = false;
                         Properties.Settings.Default.Save();
+                        Helpers.log("[Protocol] User declined autorun option.");
+
+                        wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                     }
                 }
             }
-            // Check if the current executing path does not match the one in the registry
-            else if (key.OpenSubKey(@"shell\open\command").GetValue(string.Empty).ToString().ToLower() != ("\"" + applicationPath + "\" " + "%1").ToLower())
-            {
-                // Open the subkey
-                key = key.OpenSubKey(@"shell\open\command", true);
-
-                // Change the path to the current executing path
-                key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
-
-                Helpers.log("Registry updated.");
-            }
             else
             {
-                Helpers.log("No registry action taken.");
+                try
+                {
+                    key = key.CreateSubKey(@"shell\open\command");
+                    key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
+                    Helpers.log("[Protocol] Registry updated.");
+                }
+                catch
+                {
+                    Helpers.log("[Protocol] No registry action taken: Not running as Admin.");
+                }
             }
 
             // We're done with the registry, close the key
@@ -499,6 +587,95 @@ namespace DotaHostManager
             {
                 key.Close();
             }
+
+            Helpers.log("[Protocol] Done.");
+
+            // End task
+            zeroCanClose--;
+        }
+
+        // Function to request registration of the dotahost uri protocol
+        private static void deregisterProtocol()
+        {
+
+            // Begin task
+            zeroCanClose++;
+
+            bool found = false;
+            RegistryKey key = Registry.ClassesRoot.OpenSubKey("dotahost");
+            string[] subkeys = Registry.ClassesRoot.GetSubKeyNames();
+            for (var i = 0; i < subkeys.Length; ++i)
+            {
+                if (subkeys[i] == "dotahost")
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+            {
+                try
+                {
+                    Registry.ClassesRoot.DeleteSubKeyTree("dotahost");
+                    Properties.Settings.Default.shouldDeregister = false;
+                    Properties.Settings.Default.autorun = false;
+                    Properties.Settings.Default.Save();
+
+
+
+                    wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                }
+                catch
+                {
+                    if (MessageBox.Show("Would you like to remove Autorun functionality from the DotaHost ModManager? (Requires Administrator Privillages)", "Disable Autorun", MessageBoxButtons.YesNo, MessageBoxIcon.None, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly) == DialogResult.Yes)
+                    {
+                        Helpers.log("[Protocol] Failed to remove registry. Launching as admin...");
+                        const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
+
+                        // Start a new instance of this executable as administrator
+                        ProcessStartInfo info = new ProcessStartInfo(Helpers.FULL_EXE_PATH);
+                        info.UseShellExecute = true;
+                        info.Verb = "runas";
+                        try
+                        {
+                            Properties.Settings.Default.shouldDeregister = true;
+                            Properties.Settings.Default.Save();
+                            Process.Start(info);
+                            exit();
+                        }
+                        catch (Win32Exception ex)
+                        {
+                            if (ex.NativeErrorCode == ERROR_CANCELLED)
+                            {
+                                Properties.Settings.Default.shouldDeregister = false;
+                                Properties.Settings.Default.Save();
+                                Helpers.log("[Protocol] Admin request denied.");
+
+                                wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Helpers.log("[Protocol] User declined disable autorun option.");
+
+                        Properties.Settings.Default.shouldDeregister = false;
+                        Properties.Settings.Default.Save();
+
+                        wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                    }
+                }
+            }
+            else
+            {
+                Helpers.log("[Protocol] Key not found.");
+
+                Properties.Settings.Default.shouldDeregister = false;
+                Properties.Settings.Default.Save();
+
+                wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+            }
+
 
             // End task
             zeroCanClose--;
@@ -512,12 +689,12 @@ namespace DotaHostManager
                 exiting = true;
                 if (!Properties.Settings.Default.autorun)
                 {
-                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del \"" + Global.BASE_PATH + "DotaHostManager.exe" + "\"");
+                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 1000 > Nul & Del \"" + Helpers.FULL_EXE_PATH + "\"");
                     info.WindowStyle = ProcessWindowStyle.Hidden;
                     Process.Start(info).Dispose();
                     File.Delete(Global.BASE_PATH + "log.txt");
                 }
-                Timers.setTimeout(1, Timers.SECONDS, () => { Environment.Exit(0); });
+                Timers.setTimeout(500, Timers.MILLISECONDS, () => { Environment.Exit(0); });
             }
         }
 

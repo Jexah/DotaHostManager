@@ -249,10 +249,10 @@ namespace DotaHostBoxManager
         private static void hookWSocketEvents()
         {
             // Log everything that is sent, for debugging
-            #region wsClient.addHook(WebSocketClient.RECEIVE);
+            #region wsClient.addHook(WebSocketClient.SEND);
             wsClient.addHook(WebSocketClient.SEND, (c) =>
             {
-                //Helpers.log("SENT SOMETHING");
+                Helpers.log("SENT SOMETHING");
             });
             #endregion
 
@@ -260,7 +260,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook(WebSocketClient.RECEIVE);
             wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
             {
-                //Helpers.log("RECEIVE: " + c.DataFrame.ToString());
+                Helpers.log("RECEIVE: " + c.DataFrame.ToString());
             });
             #endregion
 

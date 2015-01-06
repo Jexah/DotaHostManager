@@ -84,16 +84,7 @@ namespace DotaHostClientLibrary
 
         public Lobby(KV source)
         {
-            if (source == null)
-            {
-                this.sort = 1;
-                this.keys = null;
-                this.values = null;
-                return;
-            }
-            this.sort = source.getSort();
-            this.keys = source.getKeys();
-            this.values = source.getValues();
+            inheritSource(source);
         }
 
     }

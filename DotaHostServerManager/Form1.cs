@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Net;
 using System.Windows.Forms;
 
 namespace DotaHostServerManager
@@ -24,7 +23,7 @@ namespace DotaHostServerManager
         private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string, AddonRequirements>();
 
         // Create WebSocketServer
-        private static WebSocketServer wsServer = new WebSocketServer(IPAddress.Loopback, Vultr.SERVER_MANAGER_PORT);
+        private static WebSocketServer wsServer = new WebSocketServer(Vultr.SERVER_MANAGER_PORT);
 
         // This is our lobby manager 
         private static UserContext lobbyManager;
@@ -713,13 +712,7 @@ namespace DotaHostServerManager
                     foreach (KeyValuePair<string, KV> kvp in boxManager.GameServers.getKeys())
                     {
                         GameServer gameServer = new GameServer(kvp.Value);
-                        Lobby lobby = gameServer.Lobby;
-                        Teams teams = lobby.Teams;
-                        Team team = teams.getTeam("0");
-                        Players players = team.Players;
-                        Player player = players.getPlayer("0");
-                        string name = player.PersonaName;
-                        boxGameServerList.Items.Add(name);
+                        boxGameServerList.Items.Add(gameServer.Ip);
                     }
                 });
             }
