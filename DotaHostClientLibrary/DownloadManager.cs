@@ -27,7 +27,9 @@ namespace DotaHostClientLibrary
         public void downloadSync(string sourceFile, string targetFile)
         {
             Helpers.log("[Download] Begin: " + sourceFile + " -> " + targetFile);
-            dlManager.DownloadFile(sourceFile, targetFile);
+            WebClient dlManagerTemp = new WebClient();
+            dlManagerTemp.DownloadFile(sourceFile, targetFile);
+            dlManagerTemp.Dispose();
             Helpers.log("[Download] Complete: " + sourceFile + " -> " + targetFile);
         }
 

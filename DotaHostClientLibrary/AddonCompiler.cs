@@ -14,7 +14,7 @@ namespace DotaHostClientLibrary
         // if generateRandomPath is true, it will append a random folder to the end
         // NOTE: Path NEEDS to lead in a slash
         // ASSUMPTION: This function CAN NOT be run in parrellel! Wait for it to finish before running again!
-        public static string compileAddons(KV lobbyKV, string outputPath, bool generateRandomPath = false, string serverSettings = null)
+        public static string compileAddons(KV lobbyKV, string outputPath, bool generateRandomPath = false)
         {
             // Validate input
             if (lobbyKV == null) return null;

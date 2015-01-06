@@ -49,9 +49,6 @@ namespace DotaHostManager
         private static void Main(string[] i)
         {
 
-            Console.WriteLine(Helpers.BASE_PATH);
-            Console.WriteLine(Helpers.FULL_EXE_PATH);
-
             if (i.Length > 1 && i[0] == "crc")
             {
                 Console.WriteLine(Helpers.calculateCRC(i[1]));
@@ -109,6 +106,12 @@ namespace DotaHostManager
             {
                 Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
                 exit();
+            }
+
+            // Try to patch gameinfo
+            if (!Properties.Settings.Default.gameinfoPatched)
+            {
+                patchGameInfo();
             }
 
             // Start websocket server
@@ -245,6 +248,10 @@ namespace DotaHostManager
         // Generates a json structure of installed addon information, sends it to client
         private static void checkAddons(UserContext c)
         {
+            if (!Directory.Exists(dotaPath + @"dota\addons_dotahost"))
+            {
+                Directory.CreateDirectory(dotaPath + @"dota\addons_dotahost");
+            }
             dlManager.downloadSync(Global.ROOT + "addons/addons.txt", Global.TEMP + "addons.txt");
             string[] addonsList = File.ReadAllLines(Global.TEMP + "addons.txt");
             Helpers.deleteSafe(Global.TEMP + "addons.txt");
@@ -450,6 +457,94 @@ namespace DotaHostManager
             #region wsServer.addHook("RECEIVE");
             wsServer.addHook(WebSocketServer.RECEIVE, (c) => { appKeepAlive(); });
             #endregion
+
+            #region wsServer.addHook("gameServerInfo");
+            wsServer.addHook("gameServerInfo", (c, x) =>
+            {
+                Lobby lobby = new Lobby(KV.parse(x[2], true));
+                AddonCompiler.compileAddons(lobby, dotaPath + @"dota\dotahost_addons\active\");
+                c.Send(Helpers.packArguments("conectToServer", x[1]));
+            });
+            #endregion
+
+            #region wsServer.addHook("getPatchGameInfo");
+            wsServer.addHook("getPatchGameInfo", (c, x) =>
+            {
+                c.Send(Helpers.packArguments("patchGameInfo", Properties.Settings.Default.gameinfoPatched ? "1" : "0"));
+            });
+            #endregion
+
+            #region wsServer.addHook("patchGameInfo");
+            wsServer.addHook("patchGameInfo", (c, x) =>
+            {
+                c.Send(Helpers.packArguments("tryPatchGameInfo", patchGameInfo() ? "1" : "0"));
+            });
+            #endregion
+        }
+
+        // Attempt to patch gameinfo.txt
+        private static bool patchGameInfo()
+        {
+            Helpers.log("Patching gameinfo.txt...");
+            if (!processIsRunning("dota"))
+            {
+                source1GameInfoPatch();
+                Properties.Settings.Default.gameinfoPatched = true;
+                Properties.Settings.Default.Save();
+                wsServer.send(Helpers.packArguments("gameinfo", "1"));
+                Helpers.log("Patching gameinfo.txt success!");
+                return true;
+            }
+            Helpers.log("Patching gameinfo.txt failure: dota.exe running");
+            return false;
+        }
+
+        // Check if a process name is running.
+        private static bool processIsRunning(string process)
+        {
+            return (System.Diagnostics.Process.GetProcessesByName(process).Length != 0);
+        }
+
+        // Updates gameinfo.txt to match DotaHost
+        private static bool source1GameInfoPatch()
+        {
+            // Gameinfo to load metamod
+            string gameinfo =
+                "\"GameInfo\"" + Environment.NewLine +
+                    "{" + Environment.NewLine +
+                        "game \"DOTA 2\"" + Environment.NewLine +
+                        "gamelogo 1" + Environment.NewLine +
+                        "type multiplayer_only" + Environment.NewLine +
+                        "nomodels 1" + Environment.NewLine +
+                        "nohimodel 1" + Environment.NewLine +
+                        "nocrosshair 0" + Environment.NewLine + "GameData \"dota.fgd\"" + Environment.NewLine +
+                        "SupportsDX8 0" + Environment.NewLine +
+                        "FileSystem" + Environment.NewLine +
+                        "{" + Environment.NewLine +
+                            "SteamAppId 816" + Environment.NewLine +
+                            "ToolsAppId 211" + Environment.NewLine +
+                            "SearchPaths" + Environment.NewLine +
+                            "{" + Environment.NewLine +
+                                "GameBin |gameinfo_path|addons/metamod/bin" + Environment.NewLine +
+                                "Game |gameinfo_path|." + Environment.NewLine +
+                                "Game platform" + Environment.NewLine +
+                                "Game " + dotaPath + @"dota\addons_dotahost" + Environment.NewLine +
+                            "}" + Environment.NewLine +
+                        "}" + Environment.NewLine +
+                    "}";
+
+            // May need to add addon mounting here eventually
+
+            // Write the metamod loader
+            try
+            {
+                File.WriteAllText(dotaPath + @"dota\gameinfo.txt", gameinfo);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // Removes the old timer, and ccreates and binds another one
