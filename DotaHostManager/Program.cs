@@ -461,9 +461,10 @@ namespace DotaHostManager
             #region wsServer.addHook("gameServerInfo");
             wsServer.addHook("gameServerInfo", (c, x) =>
             {
+                Helpers.log(x[2]);
                 Lobby lobby = new Lobby(KV.parse(x[2], true));
-                AddonCompiler.compileAddons(lobby, dotaPath + @"dota\dotahost_addons\active\");
-                c.Send(Helpers.packArguments("conectToServer", x[1]));
+                AddonCompiler.compileAddons(lobby, dotaPath + @"dota\addons_dotahost\", dotaPath + @"dota\addons_dotahost\active\");
+                c.Send(Helpers.packArguments("connectToServer", x[1]));
             });
             #endregion
 
@@ -528,7 +529,7 @@ namespace DotaHostManager
                                 "GameBin |gameinfo_path|addons/metamod/bin" + Environment.NewLine +
                                 "Game |gameinfo_path|." + Environment.NewLine +
                                 "Game platform" + Environment.NewLine +
-                                "Game " + dotaPath + @"dota\addons_dotahost" + Environment.NewLine +
+                                "Game " + dotaPath + @"dota\addons_dotahost\active" + Environment.NewLine +
                             "}" + Environment.NewLine +
                         "}" + Environment.NewLine +
                     "}";

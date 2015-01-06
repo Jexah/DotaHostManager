@@ -133,6 +133,9 @@ namespace DotaHostLobbyManager
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     c.Send(Helpers.packArguments("validate", "success"));
+                }, () =>
+                {
+                    c.Send(Helpers.packArguments("validate", "failure"));
                 });
             });
             #endregion
@@ -147,6 +150,7 @@ namespace DotaHostLobbyManager
                 }
                 if (!playerCache.ContainsKey(c.ClientAddress.ToString()))
                 {
+                    Helpers.log("2:" + c.ClientAddress.ToString());
                     Helpers.log("createLobby: playerCache key not found.");
                     return;
                 }
@@ -584,11 +588,11 @@ namespace DotaHostLobbyManager
             return false;
         }
 
-        private static void validate(string token, string steamid, string ip, Action<Player> callback)
+        private static void validate(string token, string steamid, string ip, Action<Player> successCallback, Action failureCallback)
         {
             if (playerCache.ContainsKey(ip))
             {
-                callback(playerCache[ip]);
+                successCallback(playerCache[ip]);
                 return;
             }
             Dictionary<string, string> data = new Dictionary<string, string>();
@@ -603,6 +607,7 @@ namespace DotaHostLobbyManager
 
                     Player player = new Player(KV.parse(r, true));
 
+                    Helpers.log("1: " + ip);
                     playerCache.Add(ip, player);
                     try
                     {
@@ -627,8 +632,12 @@ namespace DotaHostLobbyManager
                     catch { }
 
 
-                    callback(player);
+                    successCallback(player);
 
+                }
+                else
+                {
+                    failureCallback();
                 }
             }, data);
         }
