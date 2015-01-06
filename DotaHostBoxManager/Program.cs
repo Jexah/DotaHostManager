@@ -551,6 +551,9 @@ namespace DotaHostBoxManager
                     wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
 
                 }
+
+                // Cleanup the addon folder
+                Helpers.deleteFolder(mountPath, true);
             }, null);
 
             // Woot, success
