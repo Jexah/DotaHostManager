@@ -513,14 +513,20 @@ namespace DotaHostClientLibrary
                             while (++i < kvString.Length)
                             {
                                 chr = kvString[i];
-                                if (chr == '\n' || chr == '\r') break;
+                                if (chr == '\n')
+                                {
+                                    if (kvString[i + 1] == '\r') ++i;
+                                    break;
+                                }
+                                else if (chr == '\r')
+                                {
+                                    if (kvString[i + 1] == '\n') ++i;
+                                    break;
+                                }
                             }
 
                             // We are on a new line
                             ++line;
-
-                            // Move onto the next char
-                            ++i;
                         }
                     }
                     else if (chr == '"')
