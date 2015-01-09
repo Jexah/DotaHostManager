@@ -31,13 +31,13 @@ namespace DotaHostClientLibrary
         }
 
         // Begins download of addonInfo for given addon
-        public static void updateAddon(string addonID, DelegateOnComplete onComplete, DelegateOnProgress onProgress = null)
+        public static void updateAddon(string addonID, DelegateOnComplete onComplete, DelegateOnProgress onProgress = null, string altPath = "")
         {
             // The path to the info file
             string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, addonID);
 
             Helpers.log("[Downloading] " + downloadPath);
-            dlManager.download(downloadPath, Global.TEMP + addonID, (e) =>
+            dlManager.download(downloadPath, (altPath == "" ? Global.TEMP + addonID : altPath), (e) =>
             {
                 // Check if we have a callback
                 if (onProgress != null)
@@ -88,7 +88,7 @@ namespace DotaHostClientLibrary
             string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDONS, addonID, version);
 
             // Directory or file does not exist, or version does not match most recent
-            Helpers.log("[Addon] " + addonID + " out of date. New version: " + version + " [" + actualCRC + "] VS " + correctCRC);
+            Helpers.log("[Addon] " + addonID + " out of date. New version: " + version + " " + actualCRC + " VS " + correctCRC);
             Helpers.log("[Downloading] " + downloadPath);
 
             // Begins downloading addon from GitHub

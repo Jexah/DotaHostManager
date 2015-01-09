@@ -108,33 +108,60 @@ namespace DotaHostBoxManager
             // Cleanup addons folder
             Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
 
-            // Attempt to install Legends of Dota
-            AddonDownloader.updateAddon("lod", (addonID, success) =>
+            dlManager.downloadSync(Global.ROOT + "addons/addons.txt", "addons.txt");
+            string[] addons = File.ReadAllLines(Global.BASE_PATH + "addons.txt");
+
+            for (byte i = 0; i < addons.Length; ++i)
             {
-                // Check if it worked!
-                if (success)
+                // Attempt to install addon
+                AddonDownloader.updateAddon(addons[i], (addonID, success) =>
                 {
-                    Helpers.log(addonID + " was successfully installed!");
-                }
-                else
-                {
-                    Helpers.log(addonID + " failed to install!");
-                }
-            });
+                    // Check if it worked!
+                    if (success)
+                    {
+                        Helpers.log(addonID + " was successfully installed!");
+                    }
+                    else
+                    {
+                        Helpers.log(addonID + " failed to install!");
+                    }
+                });
+            }
 
             // Attempt to install serverinit (server scripts)
-            /* AddonDownloader.updateAddon("serverinit", (addonID, success) =>
-             {
-                 // Check if it worked!
-                 if (success)
-                 {
-                     Helpers.log(addonID + " was successfully installed!");
-                 }
-                 else
-                 {
-                     Helpers.log(addonID + " failed to install!");
-                 }
-             });*/
+            dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "serverinit"), Global.TEMP + "serverinit.txt");
+
+            string[] CRC_CommitID = File.ReadAllLines(Global.TEMP + "serverinit.txt");
+
+            dlManager.downloadSync(Global.SERVERINIT_DOWNLOAD, Global.TEMP + "serverinit.zip");
+
+            string downloadedCRC = Helpers.calculateCRC(Global.TEMP + "serverinit.zip");
+
+            if (downloadedCRC == CRC_CommitID[0])
+            {
+                // They match
+                Helpers.log("[ServerInit] Latest version aquired, installing...");
+
+                Directory.Delete(Global.TEMP + "serverinit", true);
+
+                ZipFile.ExtractToDirectory(Global.TEMP + "serverinit.zip", Global.TEMP + "serverinit");
+
+                File.Delete(Global.TEMP + "serverinit.zip");
+
+                ZipFile.CreateFromDirectory(Global.TEMP + @"serverinit\Jexah-DotaHostServerInit-" + CRC_CommitID[1], Global.TEMP + "serverinit.zip");
+
+                File.Move(Global.TEMP + "serverinit.zip", string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH));
+
+                Helpers.deleteFolder(Global.TEMP + "serverinit", true);
+
+                Helpers.log("[ServerInit] Successfully updated!");
+            }
+            else
+            {
+                Helpers.log(string.Format("[ServerInit] Download failed, CRC mismatch: {0} : {1}", downloadedCRC, CRC_CommitID[0]));
+            }
+            //Jexah-DotaHostServerInit-3b02853e8592931dcca5c7a927956b6f21040989
+
 
             status = Vultr.BOX_IDLE;
 
@@ -233,7 +260,7 @@ namespace DotaHostBoxManager
 
 
             // Update the dota install
-            //updateDotaSource1();
+            updateServers();
         }
 
         // Iterates through the network cards, adding them to the static readonlys dataSendCounter, and dataReceivedCounter

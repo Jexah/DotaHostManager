@@ -6,6 +6,7 @@ namespace DotaHostLibrary
 {
     public static class Vultr
     {
+
         // Server Manager IP
         //public const string SERVER_MANAGER_IP = "110.175.72.12";
         //public const string SERVER_MANAGER_IP = "127.0.0.1";
@@ -27,6 +28,7 @@ namespace DotaHostLibrary
 
         // Vultr API key
         public const string VULTR_API_KEY = "***REMOVED***";
+        // Runabove api key: ***REMOVED***
 
         // Vultr $15 plan
         public const byte AMERICA_PLAN_ID = 3;      // 3TB
