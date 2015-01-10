@@ -138,6 +138,9 @@ namespace DotaHostClientLibrary
                 // Ensure the path exists
                 Directory.CreateDirectory(addonInstallLocation);
 
+                // Delete the old addon_name.zip
+                File.Delete(addonInstallLocation + addonID + ".zip");
+
                 // Copy the file to the addons folder
                 File.Move(Global.TEMP + addonID + ".zip", addonInstallLocation + addonID + ".zip");
 
