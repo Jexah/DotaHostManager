@@ -117,7 +117,7 @@ namespace DotaHostBoxManager
             wsClient.start();
 
             // Update the dota install
-            updateServers();
+            //updateServers();
         }
 
         // Updates serverinit.zip
@@ -600,14 +600,14 @@ namespace DotaHostBoxManager
             else
             {
                 // Destroy server
-                Runabove.destroyServer(instanceID);
+                //Runabove.destroyServer(instanceID);
             }
         }
 
         // Destroy server instantly
         private static void destroy()
         {
-            Runabove.destroyServer(instanceID);
+            //Runabove.destroyServer(instanceID);
         }
 
         // Set up system diagnostics
