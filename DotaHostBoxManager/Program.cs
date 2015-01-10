@@ -71,7 +71,7 @@ namespace DotaHostBoxManager
         private static DownloadManager dlManager = new DownloadManager();
 
         // Web socket client
-        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Vultr.SERVER_MANAGER_IP + ":" + Vultr.SERVER_MANAGER_PORT + "/");
+        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Runabove.SERVER_MANAGER_IP + ":" + Runabove.SERVER_MANAGER_PORT + "/");
 
         // Unique websocket client ID
         private static string websocketUserID;
@@ -85,8 +85,8 @@ namespace DotaHostBoxManager
         // Box Server status
         private static byte status;
 
-        // Box Server subID
-        private static int subID;
+        // Box Server instanceID
+        private static string instanceID;
 
         #endregion
 
@@ -107,7 +107,7 @@ namespace DotaHostBoxManager
 
             updateAddons(true);
 
-            status = Vultr.BOX_IDLE;
+            status = Runabove.BOX_IDLE;
 
             setupSystemDiagnostics();
 
@@ -166,6 +166,9 @@ namespace DotaHostBoxManager
 
                     Console.WriteLine(Global.TEMP + "serverinit.zip");
                     Console.WriteLine(AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
+
+                    // Delete the serverinit.zip
+                    File.Delete(AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
 
                     // Move the zip into the addon install location
                     File.Move(Global.TEMP + "serverinit.zip", AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
@@ -273,7 +276,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("reboot");
             wsClient.addHook("reboot", (c, x) =>
             {
-                status = Vultr.BOX_DEACTIVATED;
+                status = Runabove.BOX_DEACTIVATED;
                 rebootLoop();
             });
             #endregion
@@ -290,7 +293,7 @@ namespace DotaHostBoxManager
                 else
                 {
                     // Soft destroy, waits for games to finish, polls every minute
-                    status = Vultr.BOX_DEACTIVATED;
+                    status = Runabove.BOX_DEACTIVATED;
                     destroyLoop();
                 }
             });
@@ -298,9 +301,9 @@ namespace DotaHostBoxManager
 
             // Receive subid from server manager
             #region wsClient.addHook("subid");
-            wsClient.addHook("subid", (c, x) =>
+            wsClient.addHook("instanceid", (c, x) =>
             {
-                subID = Convert.ToInt32(x[1]);
+                instanceID = x[1];
             });
             #endregion
 
@@ -326,15 +329,15 @@ namespace DotaHostBoxManager
             wsClient.addHook("system", (c, x) =>
             {
                 refreshSystemDiagnostics();
-                if (status != Vultr.BOX_DEACTIVATED)
+                if (status != Runabove.BOX_DEACTIVATED)
                 {
                     if (gameServers.getKeys() != null && gameServers.getKeys().Count == 0)
                     {
-                        status = Vultr.BOX_IDLE;
+                        status = Runabove.BOX_IDLE;
                     }
                     else
                     {
-                        status = Vultr.BOX_ACTIVE;
+                        status = Runabove.BOX_ACTIVE;
                     }
                     Helpers.log(boxManager.toString());
                     c.Send(Helpers.packArguments("system", boxManager.toString()));
@@ -597,14 +600,14 @@ namespace DotaHostBoxManager
             else
             {
                 // Destroy server
-                Vultr.destroyServer(subID);
+                Runabove.destroyServer(instanceID);
             }
         }
 
         // Destroy server instantly
         private static void destroy()
         {
-            Vultr.destroyServer(subID);
+            Runabove.destroyServer(instanceID);
         }
 
         // Set up system diagnostics
