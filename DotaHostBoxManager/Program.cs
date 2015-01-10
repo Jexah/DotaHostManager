@@ -105,31 +105,7 @@ namespace DotaHostBoxManager
             AddonCompiler.compileAddons(l, Global.BASE_PATH + @"addons\", true);
             return;//*/
 
-            // Cleanup addons folder
-            Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
-
-            dlManager.downloadSync(Global.ROOT + "addons/addons.txt", "addons.txt");
-            string[] addons = File.ReadAllLines(Global.BASE_PATH + "addons.txt");
-
-            for (byte i = 0; i < addons.Length; ++i)
-            {
-                // Attempt to install addon
-                AddonDownloader.updateAddon(addons[i], (addonID, success) =>
-                {
-                    // Check if it worked!
-                    if (success)
-                    {
-                        Helpers.log(addonID + " was successfully installed!");
-                    }
-                    else
-                    {
-                        Helpers.log(addonID + " failed to install!");
-                    }
-                });
-            }
-
-
-
+            updateAddons(true);
 
             status = Vultr.BOX_IDLE;
 
@@ -139,93 +115,6 @@ namespace DotaHostBoxManager
 
 
             wsClient.start();
-
-
-
-
-
-
-
-
-
-
-
-
-            /*GameServer gs = new GameServer();
-            gs.Ip = "yolo";
-            gs.Port = 27015;
-            Lobby l = new Lobby();
-            Addons ads = new Addons();
-            Addon ad = new Addon();
-            ad.Id = "lod";
-            ad.Options = new Options();
-            ad.Options.setOption("pickingMode", "All Pick");
-            ads.addAddon(ad);
-            l.Addons = ads;
-            l.CurrentPlayers = 3;
-            l.MaxPlayers = 5;
-            l.Name = "trolol";
-            Teams ts = new Teams();
-
-            // First team, with us on it		
-            Team t = new Team();
-            t.MaxPlayers = 5;
-            Players ps = new Players();
-            Player p = new Player();
-            p.Avatar = "avatar URL here";
-            p.PersonaName = "some personan name";
-            p.ProfileURL = "http://steamcommunity.com/jexah";
-            p.SteamID = "45686503";
-            //p.SteamID = "41686503";		
-            ps.addPlayer(p);
-            Player p2 = new Player();
-            p2.Avatar = "avatar URL here";
-            p2.PersonaName = "some personan name";
-            p2.ProfileURL = "http://steamcommunity.com/jexah";
-            //p.SteamID = "45686503";		
-            p2.SteamID = "28090256";
-            ps.addPlayer(p2);
-            t.Players = ps;
-            t.TeamName = "teamMeowingtons";
-
-            // Second team, dummy player		
-            Team t2 = new Team();
-            t2.MaxPlayers = 5;
-            t2.TeamName = "teamMeowingtons";
-            Players ps2 = new Players();
-            Player p3 = new Player();
-            p3.Avatar = "avatar URL here";
-            p3.PersonaName = "some personan name";
-            p3.ProfileURL = "http://steamcommunity.com/jexah";
-            p3.SteamID = "28123256";
-            ps2.addPlayer(p3);
-            t2.Players = ps2;
-
-            // Add second team first		
-            ts.addTeam(t2);
-            ts.addTeam(t);
-            l.Teams = ts;
-            gs.Lobby = l;
-
-            launchGameServer(gs);*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
             // Update the dota install
             updateServers();
@@ -305,6 +194,42 @@ namespace DotaHostBoxManager
                 return false;
             }
 
+        }
+
+        // Updates all addons in DotaHost library
+        private static void updateAddons(bool serverinit)
+        {
+            Helpers.log("[Addons] Starting update of all addons.");
+
+            // Cleanup addons folder
+            Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
+
+            dlManager.downloadSync(Global.ROOT + "addons/addons.txt", "addons.txt");
+            string[] addons = File.ReadAllLines(Global.BASE_PATH + "addons.txt");
+
+            for (byte i = 0; i < addons.Length; ++i)
+            {
+                // Attempt to install addon
+                AddonDownloader.updateAddon(addons[i], (addonID, success) =>
+                {
+                    // Check if it worked!
+                    if (success)
+                    {
+                        Helpers.log(addonID + " was successfully installed!");
+                    }
+                    else
+                    {
+                        Helpers.log(addonID + " failed to install!");
+                    }
+                });
+            }
+
+            if (serverinit)
+            {
+                updateServerInit();
+            }
+
+            Helpers.log("[Addons] Update complete.");
         }
 
         // Iterates through the network cards, adding them to dataSendCounter and dataReceivedCounter
@@ -457,6 +382,9 @@ namespace DotaHostBoxManager
             // We probably want to report that the server failed, if it did infact fail
 
             Helpers.log("Here we go...");
+
+            // Update addons
+            updateAddons(true);
 
 
             // BEGIN OPTIONS: SHOULD AUTO FILL THESE
