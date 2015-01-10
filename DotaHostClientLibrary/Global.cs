@@ -30,7 +30,7 @@ namespace DotaHostClientLibrary
         public const string DOWNLOAD_PATH_ADDON_INFO = ROOT + "addons/{0}.txt";
 
         // Client addon install location ({0} = dotaPath)
-        public const string CLIENT_ADDON_INSTALL_LOCATION = @"{0}\dota\addons_dotahost\";
+        public const string CLIENT_ADDON_INSTALL_LOCATION = @"{0}dota\addons_dotahost\";
 
         // Lobby Manager Port
         public const int LOBBY_MANAGER_PORT = 2075;

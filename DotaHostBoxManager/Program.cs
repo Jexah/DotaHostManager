@@ -131,27 +131,49 @@ namespace DotaHostBoxManager
             // Attempt to install serverinit (server scripts)
             dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "serverinit"), Global.TEMP + "serverinit.txt");
 
+            // Read the file to a variable
             string[] CRC_CommitID = File.ReadAllLines(Global.TEMP + "serverinit.txt");
 
+            // Delete the serverinit.txt
+            File.Delete(Global.TEMP + "serverinit.txt");
+
+            // Download the serverinit.zip
             dlManager.downloadSync(Global.SERVERINIT_DOWNLOAD, Global.TEMP + "serverinit.zip");
 
+            // Calculate the CRC of the downloaded zip file.
             string downloadedCRC = Helpers.calculateCRC(Global.TEMP + "serverinit.zip");
 
+            // Check if the downloaded zip file CRC matches the CRC found in the serverinit.txt file
             if (downloadedCRC == CRC_CommitID[0])
             {
                 // They match
                 Helpers.log("[ServerInit] Latest version aquired, installing...");
 
-                Directory.Delete(Global.TEMP + "serverinit", true);
+                // Delete old folder if still here for some reason
+                Helpers.deleteFolder(Global.TEMP + "serverinit", true);
 
+                // Extract the new serverinit.zip to serverinit
                 ZipFile.ExtractToDirectory(Global.TEMP + "serverinit.zip", Global.TEMP + "serverinit");
 
+                // Delete the downloaded serverinit.zip
                 File.Delete(Global.TEMP + "serverinit.zip");
 
+                // Zip up the second level folder in the extracted zip, to serverinit.zip so it matches the compileAddons function.
                 ZipFile.CreateFromDirectory(Global.TEMP + @"serverinit\Jexah-DotaHostServerInit-" + CRC_CommitID[1], Global.TEMP + "serverinit.zip");
 
-                File.Move(Global.TEMP + "serverinit.zip", string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH));
+                // If the addon install location exists, delete serverinit.zip from it.
+                if (Directory.Exists(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH)))
+                {
+                    File.Delete(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH) + "serverinit.zip");
+                }
 
+                Console.WriteLine(Global.TEMP + "serverinit.zip");
+                Console.WriteLine(AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
+
+                // Move the zip into the addon install location
+                File.Move(Global.TEMP + "serverinit.zip", AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
+
+                // Delete the temp serverinit folder
                 Helpers.deleteFolder(Global.TEMP + "serverinit", true);
 
                 Helpers.log("[ServerInit] Successfully updated!");
@@ -263,7 +285,7 @@ namespace DotaHostBoxManager
             updateServers();
         }
 
-        // Iterates through the network cards, adding them to the static readonlys dataSendCounter, and dataReceivedCounter
+        // Iterates through the network cards, adding them to dataSendCounter and dataReceivedCounter
         private static void setupNetworkCards()
         {
             for (int i = 0; i < NETWORK_CARDS.Length; ++i)

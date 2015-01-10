@@ -139,7 +139,7 @@ namespace DotaHostClientLibrary
                 Directory.CreateDirectory(addonInstallLocation);
 
                 // Copy the file to the addons folder
-                File.Copy(Global.TEMP + addonID + ".zip", addonInstallLocation + addonID + ".zip");
+                File.Move(Global.TEMP + addonID + ".zip", addonInstallLocation + addonID + ".zip");
 
                 // Attempt to run the callback
                 if (onComplete != null)
@@ -150,7 +150,6 @@ namespace DotaHostClientLibrary
 
             // Deletes the downloaded zip file
             Helpers.log("[Cleaning] Cleaning up...");
-            Helpers.deleteSafe(Global.TEMP + addonID + ".zip");
             Helpers.log("[Cleaning] Done!");
             Helpers.log("[Socket] Sending confirmation update!");
         }
