@@ -11,41 +11,53 @@ namespace DotaHostLobbyManager
 {
     public partial class Form1 : Form
     {
-
+        // Lobbies list
         private static Lobbies lobbies = new Lobbies();
 
+        // Websocket server for connecting to clients using browsers
         private static WebSocketServer wsServer = new WebSocketServer(Global.LOBBY_MANAGER_PORT);
 
+        // Websocket client for connecting to the server manager
         private static WebSocketClient wsClient = new WebSocketClient("ws://127.0.0.1:" + Runabove.SERVER_MANAGER_PORT + "/");
 
+        // A dictionary of steamid:player
         private static Dictionary<string, Player> playerCache = new Dictionary<string, Player>();
 
+        // Lookup tables for players
         private static Dictionary<string, string> steamIDToIP = new Dictionary<string, string>();
         private static Dictionary<string, string> ipToSteamID = new Dictionary<string, string>();
 
+        // A dictionary of steamid:lobby
         private static Dictionary<string, Lobby> playersInLobbies = new Dictionary<string, Lobby>();
+
+        // Each lobby has its own timer stored under its name in this dictionary. Simply call the value to dispose the timer.
         private static Dictionary<string, Timers.endTimer> lobbyNameToTimer = new Dictionary<string, Timers.endTimer>();
 
+        // Temp lobby
         private static Lobby l = new Lobby();
         private static bool lobbiesChanged = false;
 
+        // Sets the timer in which lobby info is checked.
         private static System.Timers.Timer lobbySendInterval = new System.Timers.Timer();
 
 
         public Form1()
         {
-
+            // Delete the log file if it exists.
             File.Delete("log.txt");
 
+            // Generate the form.
             InitializeComponent();
 
+            // Hook websocket events.
             hookWSocketEvents();
 
+            // Set lobby timer interval, hook the function, and start the timer.
             lobbySendInterval.Interval = 2000;
             lobbySendInterval.Elapsed += lobbySendTick;
             lobbySendInterval.Start();
 
-
+            // Temp lobby
             Addons ads = new Addons();
             Addon ad = new Addon();
             ad.Id = "lod";
@@ -98,68 +110,91 @@ namespace DotaHostLobbyManager
             ts.addTeam(t);
             l.Teams = ts;
 
+            // Start the websocket client and server
             wsServer.start();
             wsClient.start();
         }
 
         public static void hookWSocketEvents()
         {
+            // Log all incoming streams.
+            #region wsServer.addHook(RECEIVE);
             wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
             {
                 Helpers.log("Received: " + c.DataFrame.ToString());
             });
+            #endregion
 
+            // This is a request for the lobbies from a browser, send lobbies back.
             #region wsServer.addHook("getLobbies");
             wsServer.addHook("getLobbies", (c, x) =>
             {
+                // Generate a json string of the lobbies.
                 string lobbiesJson = lobbies.toJSON();
                 byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
                 Console.WriteLine("Original is: " + data.Length.ToString());
                 //byte[] compressed = SevenZip.Compression.LZMA.SevenZipHelper.Compress(data);
                 //Console.WriteLine("Compressed is: " + compressed.Length.ToString());
                 //c.Send(Helpers.packArguments("getLobbies", System.Text.Encoding.Default.GetString(compressed)));
+
+                // Send it
                 c.Send(Helpers.packArguments("getLobbies", lobbiesJson));
+
                 //c.Send(compressed);
             });
             #endregion
 
+            // A request from the browser to validate their account
             #region wsServer.addHook("validate");
             wsServer.addHook("validate", (c, x) =>
             {
+                // Check args length
                 if (x.Length != 3)
                 {
                     return;
                 }
+
+                // Attempt validation
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
+                    // Success
                     c.Send(Helpers.packArguments("validate", "success"));
                 }, () =>
                 {
+                    // Failure
                     c.Send(Helpers.packArguments("validate", "failure"));
                 });
             });
             #endregion
 
+            // A request from the browser to create a lobby
             #region wsServer.addHook("createLobby");
             wsServer.addHook("createLobby", (c, x) =>
             {
+                // Check args length
                 if (x.Length != 2)
                 {
                     Helpers.log("createLobby: args too short.");
                     return;
                 }
+
+                // If the player is recorded as being validated
                 if (!playerCache.ContainsKey(c.ClientAddress.ToString()))
                 {
+                    // Woah there, player is not validated
                     Helpers.log("2:" + c.ClientAddress.ToString());
                     Helpers.log("createLobby: playerCache key not found.");
                     return;
                 }
+
+                // Player is validated, let's use them
                 Player player = playerCache[c.ClientAddress.ToString()];
 
+                // Create a lobby using the data the user gave us.
                 Lobby lobby = new Lobby(KV.parse(x[1], true));
                 //Lobby lobby = new Lobby();
 
-                // Temp stuff to limit to LoD
+                // And then override most of it :DDD
                 Team radiant = new Team();
                 radiant.TeamName = "Radiant";
                 radiant.MaxPlayers = 5;
@@ -185,86 +220,119 @@ namespace DotaHostLobbyManager
                 lobby.CurrentPlayers = 0;
                 // End temp stuff
 
+                // If the lobby name isn't null, and the name isn't taken
                 if (lobby.Name != null && lobbies.addLobby(lobby))
                 {
+                    // Create that sucka
                     Helpers.log("createLobby: send to join lobby.");
                     joinLobby(lobbies.getLobby(lobby.Name), player, c);
                 }
                 else
                 {
+                    // Lobby name was taken or ==null
                     c.Send(Helpers.packArguments("createLobby", "failed"));
                 }
             });
             #endregion
 
+            // Request from user to join lobby
             #region wsServer.addHook("joinLobby");
             wsServer.addHook("joinLobby", (c, x) =>
             {
+                // Check valid request
                 if (x.Length != 2)
                 {
                     return;
                 }
+                // Get client IP
                 string ip = c.ClientAddress.ToString();
+
+                // If user is validated
                 if (x[1] != null && playerCache.ContainsKey(ip))
                 {
+                    // Get user
                     Player player = playerCache[ip];
+
+                    // Check if lobby exists
                     if (x[1] != null && lobbies.containsKey(x[1]))
                     {
+                        // Lobby exists, attempt to join the lobby.
                         joinLobby(lobbies.getLobby(x[1]), player, c);
                     }
                     else
                     {
+                        // Lobby does not exist
                         c.Send(Helpers.packArguments("joinLobby", "failed", "notFound"));
                     }
                 }
             });
             #endregion
 
+            // Get lobby info for a specific lobby.
             #region wsServer.addHook("getLobby");
             wsServer.addHook("getLobby", (c, x) =>
             {
+                // Check args length
                 if (x.Length != 2)
                 {
                     return;
                 }
+
+                // Get lobby (should check it exists)
                 Lobby lobby = new Lobby(lobbies.getLobby(x[1]));
+
+                // Send lobby info
                 c.Send(Helpers.packArguments("getLobby", lobby.toString()));
             });
             #endregion
 
+            // Request from a user to swap teams
             #region wsServer.addHook("swapTeam");
             wsServer.addHook("swapTeam", (c, x) =>
             {
+                // Get their IP
                 string ip = c.ClientAddress.ToString();
+
+                // Check args length and that the player is validated
                 if (x.Length != 3 || !ipToSteamID.ContainsKey(ip))
                 {
                     return;
                 }
+
+                // Assign args
                 string slotID = x[1];
                 string teamID = x[2];
                 string steamID = ipToSteamID[ip];
+
+                // If this player is not in a lobby
                 if (!playersInLobbies.ContainsKey(steamID))
                 {
-                    foreach (string s in playersInLobbies.Keys)
-                    {
-                        Helpers.log(s);
-                    }
+                    // gtfo
                     return;
                 }
+
+                // Get the lobby that the player is in.
                 Lobby lobby = playersInLobbies[steamID];
                 if (!lobby.Teams.containsKey(teamID))
                 {
+                    // Trying to join an invalid team, gtfo
                     return;
                 }
+
+                // If swapping teams was successful
                 if (swapTeam(lobby.Teams.getTeam(teamID), slotID, playerCache[ip]))
                 {
+                    // For each player in the server
                     foreach (Team team in lobby.Teams.getTeams())
                     {
                         foreach (Player p2 in team.Players.getPlayers())
                         {
                             if (p2 != null && steamIDToIP.ContainsKey(p2.SteamID))
                             {
+                                // Let them know the swap occured
                                 wsServer.send(Helpers.packArguments("swapTeam", teamID, slotID, steamID), steamIDToIP[p2.SteamID]);
+
+                                // Also let them know if the game is starting...
                                 if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)
                                 {
                                     wsServer.send("lobbyFull", steamIDToIP[p2.SteamID]);
@@ -273,6 +341,7 @@ namespace DotaHostLobbyManager
                         }
                     }
 
+                    // Begin the timeout for requestGameServer
                     if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)
                     {
                         lobbyNameToTimer[lobby.Name] = Timers.setTimeout(5, Timers.SECONDS, () =>
@@ -285,6 +354,7 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            // Temp request to start game
             #region wsServer.addHook("startGames");
             wsServer.addHook("startGames", (c, x) =>
             {
@@ -295,37 +365,59 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            // Gets the current page that the user should be at
             #region wsServer.addHook("getPage");
             wsServer.addHook("getPage", (c, x) =>
             {
+                // Gets user IP
                 string ip = c.ClientAddress.ToString();
+
+                // Checks if they're verified
                 if (!ipToSteamID.ContainsKey(ip) || !playersInLobbies.ContainsKey(ipToSteamID[ip]))
                 {
+                    // No? Say hello to the home page.
                     sendHomePage(c);
                     return;
                 }
+
+                // Check if they're in a lobby
                 if (playersInLobbies.ContainsKey(ipToSteamID[ip]))
                 {
+                    // If so, get the lobby info and send it to them.
                     Lobby l = playersInLobbies[ipToSteamID[ip]];
                     c.Send(Helpers.packArguments("page", "lobby", l.toJSON()));
                 }
             });
             #endregion
 
+            // User says something in chat
             #region wsServer.addHook("chat");
             wsServer.addHook("chat", (c, x) =>
             {
+                // Get ip
                 string ip = c.ClientAddress.ToString();
+
+                // Not verified?
                 if (!playerCache.ContainsKey(ip))
                 {
+                    // gtfo
                     return;
                 }
+
+                // Get player
                 Player player = playerCache[ip];
+
+                // Not loitering in a lobby?
                 if (!playersInLobbies.ContainsKey(player.SteamID))
                 {
+                    // gtfo
                     return;
                 }
+
+                // Get the lobby that the player is in.
                 Lobby lobby = playersInLobbies[player.SteamID];
+
+                // For each player in the server
                 foreach (Team t in lobby.Teams.getTeams())
                 {
                     foreach (Player p in t.Players.getPlayers())
@@ -334,6 +426,7 @@ namespace DotaHostLobbyManager
                         {
                             if (steamIDToIP.ContainsKey(p.SteamID))
                             {
+                                // Send them the chat update
                                 wsServer.send(Helpers.packArguments("chat", player.SteamID, x[1]), steamIDToIP[p.SteamID]);
                             }
                         }
@@ -342,21 +435,33 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            // User requests to leave lobby
             #region wsServer.addHook("leaveLobby");
             wsServer.addHook("leaveLobby", (c, x) =>
             {
+                // Check args length
                 if (x.Length != 1)
                 {
                     return;
                 }
+
+                // Get player ip
                 string ip = c.ClientAddress.ToString();
+
+                // Is user validated?
                 if (playerCache.ContainsKey(ip))
                 {
+                    // Okay let's get their player object
                     Player player = playerCache[c.ClientAddress.ToString()];
+
+                    // Check if they're in a lobby
                     if (playersInLobbies.ContainsKey(player.SteamID))
                     {
+                        // Yeah they're in a lobby, get their object and remove them from the lobby
                         Lobby lobby = playersInLobbies[player.SteamID];
                         removeFromLobby(lobby, player, true);
+
+                        // Tell them it was successful
                         c.Send(Helpers.packArguments("leaveLobby"));
                     }
                 }
@@ -374,13 +479,17 @@ namespace DotaHostLobbyManager
             });
             #endregion
 
+            // We got some game server info from the server manager
             #region wsClient.addHook("gameServerInfo");
             wsClient.addHook("gameServerInfo", (c, x) =>
             {
+                // Lets generate a game server based on the info they gave us.
                 GameServer gameServer = new GameServer(KV.parse(x[2]));
-                Helpers.log(gameServer.toString());
+
+                // Are there teams in the game server?
                 if (gameServer.Lobby.Teams != null)
                 {
+                    // Great, for each of them, set the LoD defaults.
                     foreach (KeyValuePair<string, KV> kvp in gameServer.Lobby.Teams.getKeys())
                     {
                         if (kvp.Value == null)
@@ -392,6 +501,8 @@ namespace DotaHostLobbyManager
                             gameServer.Lobby.Teams.addTeam(team);
                         }
                     }
+
+                    // For each player in each team...
                     foreach (Team team in gameServer.Lobby.Teams.getTeams())
                     {
                         foreach (KeyValuePair<string, string> kvp in steamIDToIP)
@@ -405,10 +516,12 @@ namespace DotaHostLobbyManager
                             Helpers.log((player.SteamID == player.SteamID).ToString());
                             if (x[1] == "success")
                             {
+                                // Tell them the game server is ready
                                 wsServer.send(Helpers.packArguments("gameServerInfo", "success", gameServer.Ip.Split(':')[0] + ":" + gameServer.Port), steamIDToIP[player.SteamID]);
                             }
                             else
                             {
+                                // Tell them sumphing fukt up
                                 wsServer.send(Helpers.packArguments("gameServerInfo", "failed", steamIDToIP[player.SteamID]));
                             }
                         }
@@ -419,24 +532,34 @@ namespace DotaHostLobbyManager
 
         }
 
+        // This gets called on each tick of the lobby timer interval
         private static void lobbySendTick(Object myObject, EventArgs myEventArgs)
         {
+            // Have the lobbies not changed yet?
             if (!lobbiesChanged)
             {
+                // gtfo
                 return;
             }
+
+            // Lobbies have changed, for each player validated...
             foreach (KeyValuePair<string, Player> kvp in playerCache)
             {
+                // Check if they're not in a lobby...
                 if (!playersInLobbies.ContainsKey(kvp.Value.SteamID))
                 {
+                    // And if so, send them the latest lobbies list.
                     string lobbiesJson = lobbies.toJSON();
                     byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
                     wsServer.send(Helpers.packArguments("getLobbies", lobbiesJson), steamIDToIP[kvp.Value.SteamID]);
                 }
             }
+
+            // Set lobbies changed to false, so we don't send the same info again.
             lobbiesChanged = false;
         }
 
+        // Send the player their homepage
         private static void sendHomePage(UserContext c)
         {
             string lobbiesJson = lobbies.toJSON();
@@ -448,6 +571,7 @@ namespace DotaHostLobbyManager
         {
 
         }
+
 
         private static bool swapTeam(Team newTeam, string newSlot, Player player)
         {
