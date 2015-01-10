@@ -11,9 +11,9 @@ namespace DotaHostLibrary
         // Server Manager IP
         //public const string SERVER_MANAGER_IP = "127.0.0.1";
         // Vultr Texas
-        //public const string SERVER_MANAGER_IP = "***REMOVED***";
+        public const string SERVER_MANAGER_IP = "***REMOVED***";
         // Runabove Canada
-        public const string SERVER_MANAGER_IP = "192.99.64.198";
+        //public const string SERVER_MANAGER_IP = "192.99.64.198";
 
         // Server Manager Port
         public const int SERVER_MANAGER_PORT = 3875;
@@ -35,7 +35,7 @@ namespace DotaHostLibrary
         public static readonly Dictionary<string, string> REGION_ID_TO_NAME;
 
         // Vultr API key
-        //public const string VULTR_API_KEY = "***REMOVED***";
+        public const string VULTR_API_KEY = "***REMOVED***";
 
         // Runabove api key:
         public const string RUNABOVE_API_KEY = "***REMOVED***";
@@ -156,7 +156,7 @@ namespace DotaHostLibrary
                     func(data);
                 }, new Dictionary<string, string>(){
                     { "api_key", VULTR_API_KEY }
-                },
+                }
             );*/
 
             /*
