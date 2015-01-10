@@ -105,15 +105,19 @@ namespace DotaHostBoxManager
             AddonCompiler.compileAddons(l, Global.BASE_PATH + @"addons\", true);
             return;//*/
 
+            // Update addons (and serverinit)
             updateAddons(true);
 
+            // Set box status to idle.
             status = Runabove.BOX_IDLE;
 
+            // Prepare to calculate + send system diagnostics.
             setupSystemDiagnostics();
 
+            // Hook the websocket events/
             hookWSocketEvents();
 
-
+            // Start the websocket client.
             wsClient.start();
 
             // Update the dota install
@@ -164,9 +168,6 @@ namespace DotaHostBoxManager
                         File.Delete(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH) + "serverinit.zip");
                     }
 
-                    Console.WriteLine(Global.TEMP + "serverinit.zip");
-                    Console.WriteLine(AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
-
                     // Delete the serverinit.zip
                     File.Delete(AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
 
@@ -207,9 +208,13 @@ namespace DotaHostBoxManager
             // Cleanup addons folder
             Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
 
+            // Download list of addons.
             dlManager.downloadSync(Global.ROOT + "addons/addons.txt", "addons.txt");
+
+            // Store list in array
             string[] addons = File.ReadAllLines(Global.BASE_PATH + "addons.txt");
 
+            // For each addon
             for (byte i = 0; i < addons.Length; ++i)
             {
                 // Attempt to install addon
@@ -227,8 +232,10 @@ namespace DotaHostBoxManager
                 });
             }
 
+            // If serverinit should be updated too...
             if (serverinit)
             {
+                // Update it.
                 updateServerInit();
             }
 
@@ -238,9 +245,13 @@ namespace DotaHostBoxManager
         // Iterates through the network cards, adding them to dataSendCounter and dataReceivedCounter
         private static void setupNetworkCards()
         {
+            // For each network card
             for (int i = 0; i < NETWORK_CARDS.Length; ++i)
             {
+                // Add a performance counter to dataSent
                 dataSentCounter.Add(new PerformanceCounter("Network Interface", "Bytes Sent/sec", NETWORK_CARDS[i]));
+
+                // And received
                 dataReceivedCounter.Add(new PerformanceCounter("Network Interface", "Bytes Received/sec", NETWORK_CARDS[i]));
             }
         }
@@ -276,7 +287,10 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("reboot");
             wsClient.addHook("reboot", (c, x) =>
             {
+                // Set status to deactivated
                 status = Runabove.BOX_DEACTIVATED;
+
+                // Begin reboot loop.
                 rebootLoop();
             });
             #endregion
@@ -285,6 +299,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("destroy");
             wsClient.addHook("destroy", (c, x) =>
             {
+                // If requested hard destroy
                 if (x.Length > 1 && x[1] == "hard")
                 {
                     // Hard destroy, no waiting, no timeout
@@ -300,9 +315,10 @@ namespace DotaHostBoxManager
             #endregion
 
             // Receive subid from server manager
-            #region wsClient.addHook("subid");
+            #region wsClient.addHook("instanceid");
             wsClient.addHook("instanceid", (c, x) =>
             {
+                // Update instanceID
                 instanceID = x[1];
             });
             #endregion
@@ -311,6 +327,7 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("id");
             wsClient.addHook("id", (c, x) =>
             {
+                // Update ip
                 boxManager.Ip = x[1];
             });
             #endregion
@@ -328,18 +345,25 @@ namespace DotaHostBoxManager
             #region wsClient.addHook("system");
             wsClient.addHook("system", (c, x) =>
             {
+                // Update system diagnostics
                 refreshSystemDiagnostics();
+
+                // If this server isn't deactivated
                 if (status != Runabove.BOX_DEACTIVATED)
                 {
+                    // If there are no game servers running
                     if (gameServers.getKeys() != null && gameServers.getKeys().Count == 0)
                     {
+                        // Set box status to idle.
                         status = Runabove.BOX_IDLE;
                     }
                     else
                     {
+                        // There are game servers running, we are active.
                         status = Runabove.BOX_ACTIVE;
                     }
-                    Helpers.log(boxManager.toString());
+
+                    // Send updated box manager info to server manager.
                     c.Send(Helpers.packArguments("system", boxManager.toString()));
                 }
 
@@ -354,8 +378,7 @@ namespace DotaHostBoxManager
                 // Create server object to handle game server info
                 GameServer gameServer = new GameServer(KV.parse(x[1]));
 
-                Helpers.log("YOLO:" + x[1]);
-
+                // Adds game server to game server list.
                 gameServers.addGameServer(gameServer);
 
                 // Launch the server using the string options
@@ -364,10 +387,11 @@ namespace DotaHostBoxManager
             });
             #endregion
 
-
+            // Updates server
             #region wsClient.addHook("updateServer");
             wsClient.addHook("updateServer", (c, x) =>
             {
+                // Updates server
                 updateServers();
             });
             #endregion
