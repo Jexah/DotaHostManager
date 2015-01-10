@@ -64,15 +64,15 @@ namespace DotaHostClientLibrary
             }
         }
 
-        public byte Region
+        public string Region
         {
             get
             {
-                return Convert.ToByte(getValue("5"));
+                return getValue("5");
             }
             set
             {
-                setValue("5", value.ToString());
+                setValue("5", value);
             }
         }
 
