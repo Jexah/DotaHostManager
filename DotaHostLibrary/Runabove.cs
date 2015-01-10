@@ -13,7 +13,7 @@ namespace DotaHostLibrary
         // Vultr Texas
         //public const string SERVER_MANAGER_IP = "***REMOVED***";
         // Runabove Canada
-        public const string SERVER_MANAGER_IP = "***REMOVED***192.99.64.198";
+        public const string SERVER_MANAGER_IP = "192.99.64.198";
 
         // Server Manager Port
         public const int SERVER_MANAGER_PORT = 3875;
