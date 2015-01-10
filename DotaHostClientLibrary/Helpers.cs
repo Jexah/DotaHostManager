@@ -61,11 +61,13 @@ namespace DotaHostClientLibrary
         {
             Crc32 crc32 = new Crc32();
             String hash = String.Empty;
-            using (FileStream fs = File.Open(fileName, FileMode.Open))
+            using (FileStream fs = File.Open(fileName, FileMode.Open, FileAccess.Read))
+            {
                 foreach (byte b in crc32.ComputeHash(fs))
                 {
                     hash += b.ToString("x2").ToLower();
                 }
+            }
             return hash;
         }
 
