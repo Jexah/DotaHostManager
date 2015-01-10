@@ -92,7 +92,7 @@ namespace DotaHostLibrary
             }
         }
 
-        public string SubID
+        public string InstanceID
         {
             get
             {
@@ -104,15 +104,15 @@ namespace DotaHostLibrary
             }
         }
 
-        public byte Region
+        public string Region
         {
             get
             {
-                return Convert.ToByte(getValue("8"));
+                return getValue("8");
             }
             set
             {
-                setValue("8", value.ToString());
+                setValue("8", value);
             }
         }
 
