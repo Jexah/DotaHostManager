@@ -1,6 +1,7 @@
 ﻿using DotaHostClientLibrary;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -9,7 +10,7 @@ namespace DotaHostLibrary
 {
     public static class HTTPRequestManager
     {
-        public static void startRequest(string url, string method, Action<string> responseAction, Dictionary<string, string> sendData)
+        public static void startRequest(string url, string method, Action<string> responseAction, Dictionary<string, string> sendData = null, Dictionary<string, string> headers = null)
         {
             // Initialize request object
             HttpWebRequest request = null;
@@ -20,16 +21,19 @@ namespace DotaHostLibrary
             // If method is GET
             if (method == "GET")
             {
-                // Loob through the kkey value pairs in the data, and append them to the url
-                foreach (KeyValuePair<string, string> kvp in sendData)
+                if (sendData != null)
                 {
-                    url += kvp.Key + "=" + kvp.Value + "&";
-                }
+                    // Loop through the kkey value pairs in the data, and append them to the url
+                    foreach (KeyValuePair<string, string> kvp in sendData)
+                    {
+                        url += kvp.Key + "=" + kvp.Value + "&";
+                    }
 
-                // Remove the trailing & at the end
-                if (sendData.Count > 0)
-                {
-                    url = url.Substring(0, url.Length - 1);
+                    // Remove the trailing & at the end
+                    if (sendData.Count > 0)
+                    {
+                        url = url.Substring(0, url.Length - 1);
+                    }
                 }
 
                 // Redefine the request using the new URL
@@ -42,25 +46,28 @@ namespace DotaHostLibrary
                 // Define the post data
                 string postData = "";
 
-                // Loop through the key value pairs in the data, append them to postData, except in the case of api_key, append to URL
-                foreach (KeyValuePair<string, string> kvp in sendData)
+                if (sendData != null)
                 {
-                    if (kvp.Key == "api_key")
+                    // Loop through the key value pairs in the data, append them to postData, except in the case of api_key, append to URL
+                    foreach (KeyValuePair<string, string> kvp in sendData)
                     {
-                        url += "api_key=" + kvp.Value;
+                        if (kvp.Key == "api_key")
+                        {
+                            url += "api_key=" + kvp.Value;
+                        }
+                        else
+                        {
+                            postData += kvp.Key + "=" + kvp.Value + "&";
+                        }
                     }
-                    else
-                    {
-                        postData += kvp.Key + "=" + kvp.Value + "&";
-                    }
-                }
 
-                // Remove trailing &
-                if (sendData.Count > 1)
-                {
-                    postData = postData.Substring(0, postData.Length - 1);
+                    // Remove trailing &
+                    if (sendData.Count > 1)
+                    {
+                        postData = postData.Substring(0, postData.Length - 1);
+                    }
+                    Helpers.log(url);
                 }
-                Helpers.log(url);
 
                 // Refine the request using the new URL
                 request = (HttpWebRequest)WebRequest.Create(url);
@@ -88,6 +95,21 @@ namespace DotaHostLibrary
                 }
             }
 
+            if (headers != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in headers)
+                {
+                    if (kvp.Key == "Content-Type")
+                    {
+                        request.ContentType = kvp.Value;
+                    }
+                    else
+                    {
+                        request.Headers[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+
             // Create the function to get called asynchronously
             Action wrapperAction = () =>
             {
@@ -99,6 +121,14 @@ namespace DotaHostLibrary
 
                     // Read response stream and store data
                     var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                    NameValueCollection headers2 = response.Headers;
+                    for (int i = 0; i < headers.Count; i++)
+                    {
+                        string key = headers2.GetKey(i);
+                        string value = headers2.Get(i);
+                        Console.WriteLine(key + " = " + value);
+                    }
 
                     // Call the given function taking the raw JSON as the parameter
                     responseAction(body);
