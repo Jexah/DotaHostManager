@@ -49,6 +49,7 @@ namespace DotaHostClientLibrary
             // Enables the timer
             timer.Enabled = true;
 
+            // Returns dispose function, call this to delete the timer.
             return timer.Dispose;
         }
 
