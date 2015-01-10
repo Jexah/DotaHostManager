@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Windows.Forms;
 
 namespace DotaHostServerManager
@@ -23,7 +24,7 @@ namespace DotaHostServerManager
         private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string, AddonRequirements>();
 
         // Create WebSocketServer
-        private static WebSocketServer wsServer = new WebSocketServer(Vultr.SERVER_MANAGER_PORT);
+        private static WebSocketServer wsServer = new WebSocketServer(Runabove.SERVER_MANAGER_PORT);
 
         // This is our lobby manager 
         private static UserContext lobbyManager;
@@ -50,6 +51,33 @@ namespace DotaHostServerManager
 
             // Start the websocket server, wait for incomming connections
             wsServer.start();
+
+            try
+            {
+
+                Runabove.getServers((jsonObj) =>
+                {
+                    Console.WriteLine(jsonObj);
+                    foreach (RunaboveServerProperties runaboveServer in jsonObj)
+                    {
+                        Console.WriteLine(runaboveServer.ip);
+                    }
+                });
+            }
+            catch (WebException wex)
+            {
+                if (wex.Response != null)
+                {
+                    using (var errorResponse = (HttpWebResponse)wex.Response)
+                    {
+                        using (var reader = new StreamReader(errorResponse.GetResponseStream()))
+                        {
+                            string error = reader.ReadToEnd();
+                            Console.WriteLine(error);
+                        }
+                    }
+                }
+            }
         }
 
         private void updateCurrentBoxGameServers()
@@ -103,15 +131,15 @@ namespace DotaHostServerManager
                 BoxManager boxManager = new BoxManager();
 
                 // Get a list of servers
-                Vultr.getServers((jsonObj) =>
+                Runabove.getServers((jsonObj) =>
                 {
                     // Used to contain the info generated from the API
-                    VultrServerProperties serverInfo = new VultrServerProperties();
+                    RunaboveServerProperties serverInfo = new RunaboveServerProperties();
 
                     // Finds the box manager in the list of servers by matching the IPs
-                    foreach (KeyValuePair<string, VultrServerProperties> kvp in jsonObj)
+                    foreach (KeyValuePair<string, RunaboveServerProperties> kvp in jsonObj)
                     {
-                        string serverIP = kvp.Value.main_ip;
+                        string serverIP = kvp.Value.ip;
                         string boxIP = c.ClientAddress.ToString().Split(':')[0];
 
                         Helpers.log("ServerIP: " + serverIP);
@@ -126,10 +154,10 @@ namespace DotaHostServerManager
                     if (!boxManager.ThirdParty)
                     {
                         // Sets the subID so it can be destroyed later
-                        boxManager.SubID = serverInfo.SUBID;
+                        boxManager.InstanceID = serverInfo.instanceId;
 
                         // Sets the region so we know where it is hosted
-                        boxManager.Region = Vultr.NAME_TO_REGION_ID[serverInfo.location];
+                        boxManager.Region = Runabove.NAME_TO_REGION_ID[serverInfo.region];
 
                     }
 
@@ -290,9 +318,9 @@ namespace DotaHostServerManager
         #region BoxManager/GameServer related events
 
         // Create a new box instance using snapshot
-        private static void addBoxManager(byte region)
+        private static void addBoxManager(string region)
         {
-            Vultr.getServers((jsonObj) =>
+            Runabove.getServers((jsonObj) =>
             {
                 if (jsonObj.Count >= SERVER_HARD_CAP)
                 {
@@ -304,7 +332,7 @@ namespace DotaHostServerManager
                 }
                 else
                 {
-                    Vultr.createServer(region);
+                    Runabove.createServer(region);
                 }
             });
         }
@@ -460,7 +488,7 @@ namespace DotaHostServerManager
         // Temporary button, creates a new server in Australia
         private void button1_Click(object sender, EventArgs e)
         {
-            addBoxManager(Vultr.AUSTRALIA);
+            addBoxManager(Runabove.CANADA);
         }
 
         // Temporary button, destroys the selected server
@@ -478,7 +506,7 @@ namespace DotaHostServerManager
         private void setBoxDefaultGUI()
         {
             setBoxNameGUI("None");
-            setBoxStatusGUI(Vultr.BOX_INACTIVE);
+            setBoxStatusGUI(Runabove.BOX_INACTIVE);
             setBoxRAMGUI(0, 0);
             setBoxCPUGUI(0);
             setBoxNetworkGUI(0, 0);
@@ -527,23 +555,23 @@ namespace DotaHostServerManager
             {
                 switch (status)
                 {
-                    case Vultr.BOX_ACTIVE:
+                    case Runabove.BOX_ACTIVE:
                         boxStatusLabel.Text = "Active";
                         boxStatusLabel.ForeColor = success;
                         break;
-                    case Vultr.BOX_MIA:
+                    case Runabove.BOX_MIA:
                         boxStatusLabel.Text = "MIA";
                         boxStatusLabel.ForeColor = warning;
                         break;
-                    case Vultr.BOX_IDLE:
+                    case Runabove.BOX_IDLE:
                         boxStatusLabel.Text = "Idle";
                         boxStatusLabel.ForeColor = success;
                         break;
-                    case Vultr.BOX_INACTIVE:
+                    case Runabove.BOX_INACTIVE:
                         boxStatusLabel.Text = "Inactive";
                         boxStatusLabel.ForeColor = danger;
                         break;
-                    case Vultr.BOX_DEACTIVATED:
+                    case Runabove.BOX_DEACTIVATED:
                         boxStatusLabel.Text = "Deactivated";
                         boxStatusLabel.ForeColor = warning;
                         break;
@@ -684,13 +712,13 @@ namespace DotaHostServerManager
         {
             setBoxRegionGUI(boxManager.Region);
         }
-        private void setBoxRegionGUI(byte region)
+        private void setBoxRegionGUI(string region)
         {
             modGUI(boxRegionLabel, () =>
             {
-                if (Vultr.REGION_ID_TO_NAME.ContainsKey(region))
+                if (Runabove.REGION_ID_TO_NAME.ContainsKey(region))
                 {
-                    boxRegionLabel.Text = Vultr.REGION_ID_TO_NAME[region];
+                    boxRegionLabel.Text = Runabove.REGION_ID_TO_NAME[region];
                     boxRegionLabel.ForeColor = success;
                 }
                 else
