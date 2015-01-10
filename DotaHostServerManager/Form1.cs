@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Net;
 using System.Windows.Forms;
 
 namespace DotaHostServerManager
@@ -52,6 +51,7 @@ namespace DotaHostServerManager
             // Start the websocket server, wait for incomming connections
             wsServer.start();
 
+            /*
             try
             {
 
@@ -77,7 +77,7 @@ namespace DotaHostServerManager
                         }
                     }
                 }
-            }
+            }*/
         }
 
         private void updateCurrentBoxGameServers()
