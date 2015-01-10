@@ -1,22 +1,21 @@
 ﻿using DotaHostClientLibrary;
 using System;
 using System.Diagnostics;
-using System.Net;
+using System.IO;
 
 namespace DotaHostManagerUpdater
 {
     class Program
     {
         // Download manager
-        private static WebClient dlManager = new WebClient();
+        private static DownloadManager dlManager = new DownloadManager();
 
-        private static string basePath;
         private static string version;
 
         static void Main(string[] args)
         {
-            basePath = args[0];
-            version = args[1];
+            Console.WriteLine(string.Join(" ", args));
+            version = args[0];
             update();
         }
 
@@ -24,12 +23,18 @@ namespace DotaHostManagerUpdater
         {
             try
             {
-                Console.WriteLine(basePath + "DotaHostManager.exe");
-                Console.WriteLine(Global.DOWNLOAD_PATH_APP);
-                dlManager.DownloadFile(new Uri(Global.DOWNLOAD_PATH_APP.Replace("{0}", version)), basePath + @"\DotaHostManager.exe");
+                // Download version info
+                dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManager"), Global.TEMP + "DotaHostManager.txt");
+
+                // Store version info
+                string[] versionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManager.txt");
+
+                // Download manager
+                dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_APP, versionCRC[0]), Global.BASE_PATH + @"DotaHostManager.exe");
+
                 ProcessStartInfo proc = new ProcessStartInfo();
                 proc.UseShellExecute = true;
-                proc.WorkingDirectory = basePath;
+                proc.WorkingDirectory = Global.BASE_PATH;
                 proc.FileName = "DotaHostManager.exe";
                 try
                 {
