@@ -12,15 +12,14 @@ namespace DotaHostManager
 {
     class Program
     {
-        // Program version
-        private const string VERSION = "v0.1.0";
-
         // Addon status consts
         private const byte ADDON_STATUS_ERROR = 0;
         private const byte ADDON_STATUS_MISSING = 1;
         private const byte ADDON_STATUS_UPDATE = 2;
         private const byte ADDON_STATUS_READY = 3;
 
+        // CRC of this exe
+        private static string CRC = "";
 
         // Keep-alive timer
         private static System.Timers.Timer keepAlive;
@@ -74,25 +73,6 @@ namespace DotaHostManager
                     copyAndDeleteSelf();
                 }
                 return;
-            }
-
-            Helpers.log("[DotaHost] Version " + VERSION);
-
-            // Sets up uri protocol args if launched from browser
-            for (var x = 0; x < i.Length; ++x)
-            {
-                Console.Write(x + ": '");
-                Console.Write(i[x]);
-                Console.WriteLine("'");
-            }
-            if (i.Length > 0) { }
-            string[] args = new string[0];
-            if (i.Length > 0)
-            {
-                args = i[0].Split('/');
-                args = Helpers.RemoveIndex(args, 0);
-                args = Helpers.RemoveIndex(args, 0);
-                args = Helpers.RemoveIndex(args, args.Length - 1);
             }
 
             // Hook the dotaHostManager socket events
@@ -163,52 +143,70 @@ namespace DotaHostManager
         // Download the most up-to-date version file of the app
         private static void downloadAppVersion()
         {
-            dlManager.download(Global.DOWNLOAD_PATH_VERSION, Global.TEMP + "version", (e) => { }, (e) =>
+            Helpers.log(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManager"));
+            Helpers.log(Global.TEMP + "DotaHostManager.txt");
+            dlManager.download(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManager"), Global.TEMP + "DotaHostManager.txt", (e) => { }, (e) =>
             {
                 Helpers.log("[Update] Checking for updates...");
-                string version;
-                try
+                //try
+                //{
+                Console.WriteLine("1");
+                // Reads the version file from temp
+                string[] updaterVersionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManager.txt");
+                Console.WriteLine("2");
+                // Clean up file
+                File.Delete(Global.TEMP + "DotaHostManager.txt");
+
+                Console.WriteLine("3");
+                // Checks if the read version matches the const version
+                if (updaterVersionCRC[1] != getCRC())
                 {
-                    // Reads the version file from temp
-                    version = File.ReadAllText(Global.TEMP + "version");
-                    File.Delete(Global.TEMP + "version");
+                    // They do not match, download new version
+                    Helpers.log("[Update] New version detected!");
 
-                    // Checks if the read version matches the const version
-                    if (version != VERSION)
+                    // If the downloader does not exist, download it
+                    if (!File.Exists(Global.TEMP + "DotaHostManagerUpdater.exe"))
                     {
-                        // They do not match, download new version
-                        Helpers.log("[Update] New version detected!");
+                        Helpers.log("[Update] Downloading updater...");
 
-                        // If the downloader does not exist, download it
-                        if (!File.Exists(Global.TEMP + "DotaHostManagerUpdater.exe"))
+                        dlManager.download(Global.DOWNLOAD_PATH_UPDATER, Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
                         {
-                            Helpers.log("[Update] Downloading updater...");
-
-                            dlManager.download(Global.DOWNLOAD_PATH_UPDATER, Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
-                            {
-                                appUpdaterDownloadProgress(e2.ProgressPercentage);
-                            }, (e2) =>
-                            {
-                                // Begin the updater
-                                startUpdater(version);
-                            });
-                        }
-                        else
+                            appUpdaterDownloadProgress(e2.ProgressPercentage);
+                        }, (e2) =>
                         {
                             // Begin the updater
-                            startUpdater(version);
-                        }
+                            startUpdater();
+                        });
                     }
                     else
                     {
-                        Helpers.log("[Update] DotaHost up-to-date!");
+                        // Begin the updater
+                        startUpdater();
                     }
                 }
-                catch
+                else
                 {
-                    Helpers.log("[Update] Updating failed.");
+                    Helpers.log("[Update] DotaHost up-to-date!");
                 }
+                //}
+                ///catch
+                //{
+                //    Helpers.log("[Update] Updating failed.");
+                //}
             });
+        }
+
+        // Calculate CRC and store it in CRC variable, if already calculated, just return CRC variable
+        private static string getCRC()
+        {
+            Console.WriteLine("getCRC 1");
+            if (CRC == "")
+            {
+                Console.WriteLine("getCRC 2");
+                CRC = Helpers.calculateCRC(Helpers.FULL_EXE_PATH);
+            }
+            Console.WriteLine("getCRC 3");
+            return CRC;
         }
 
         // Called every time the app updater download progresses
@@ -225,15 +223,13 @@ namespace DotaHostManager
         }
 
         // Starts the updater and closes this program
-        private static void startUpdater(string version)
+        private static void startUpdater()
         {
             Helpers.log("[Update] Starting...");
             ProcessStartInfo proc = new ProcessStartInfo();
             proc.UseShellExecute = true;
             proc.WorkingDirectory = Global.TEMP;
             proc.FileName = "DotaHostManagerUpdater.exe";
-            //proc2.Verb = "runas";
-            proc.Arguments = "\"" + Global.BASE_PATH + "\" " + version;
             try
             {
                 Process.Start(proc);
