@@ -1,7 +1,6 @@
 ﻿using DotaHostClientLibrary;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -122,13 +121,13 @@ namespace DotaHostLibrary
                     // Read response stream and store data
                     var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
-                    NameValueCollection headers2 = response.Headers;
-                    for (int i = 0; i < headers.Count; i++)
-                    {
-                        string key = headers2.GetKey(i);
-                        string value = headers2.Get(i);
-                        Console.WriteLine(key + " = " + value);
-                    }
+                    /* NameValueCollection headers2 = response.Headers;
+                     for (int i = 0; i < headers.Count; i++)
+                     {
+                         string key = headers2.GetKey(i);
+                         string value = headers2.Get(i);
+                         Console.WriteLine(key + " = " + value);
+                     }*/
 
                     // Call the given function taking the raw JSON as the parameter
                     responseAction(body);
