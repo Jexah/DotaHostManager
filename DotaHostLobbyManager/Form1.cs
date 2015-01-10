@@ -16,7 +16,7 @@ namespace DotaHostLobbyManager
 
         private static WebSocketServer wsServer = new WebSocketServer(Global.LOBBY_MANAGER_PORT);
 
-        private static WebSocketClient wsClient = new WebSocketClient("ws://127.0.0.1:" + Vultr.SERVER_MANAGER_PORT + "/");
+        private static WebSocketClient wsClient = new WebSocketClient("ws://127.0.0.1:" + Runabove.SERVER_MANAGER_PORT + "/");
 
         private static Dictionary<string, Player> playerCache = new Dictionary<string, Player>();
 
@@ -56,7 +56,7 @@ namespace DotaHostLobbyManager
             l.CurrentPlayers = 3;
             l.MaxPlayers = 5;
             l.Name = "trolol";
-            l.Region = Vultr.AUSTRALIA;
+            l.Region = Runabove.CANADA;
             Teams ts = new Teams();
 
             // First team, with us on it
