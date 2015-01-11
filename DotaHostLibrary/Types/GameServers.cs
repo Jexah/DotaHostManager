@@ -22,7 +22,7 @@ namespace DotaHostLibrary
             removeKey(gameServer);
         }
 
-        public void removeGamreServe(byte id)
+        public void removeGameServer(byte id)
         {
             removeKey(id.ToString());
         }
