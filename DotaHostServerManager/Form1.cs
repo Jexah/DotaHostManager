@@ -268,14 +268,14 @@ namespace DotaHostServerManager
             {
                 if (x[2] == "good")
                 {
-                    //GameServer gameServer = new GameServer(KV.parse(x[3]));
 
-                    // The game server has exited properly, match was good
                 }
                 else if (x[2] == "error")
                 {
-                    // The game serer had an error, doh!
+
                 }
+                Helpers.log("gameServerExit received (and sent)");
+                lobbyManager.Send(Helpers.packArguments("gameServerExit", x[2]));
             });
             #endregion
 
