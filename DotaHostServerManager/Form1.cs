@@ -127,9 +127,35 @@ namespace DotaHostServerManager
                     return;
                 }
 
+
+                // Temporary while we don't have Runabove API working
+
                 // Initialize the new BoxManager
                 BoxManager boxManager = new BoxManager();
 
+
+                string boxIP = c.ClientAddress.ToString().Split(':')[0];
+
+                boxManager.ThirdParty = false;
+
+                if (!boxManager.ThirdParty)
+                {
+                    // Sets the subID so it can be destroyed later
+                    boxManager.InstanceID = "unknown";
+
+                    // Sets the region so we know where it is hosted
+                    boxManager.Region = Runabove.CANADA;
+
+                }
+
+                // Sets the IP of the box manager
+                boxManager.Ip = c.ClientAddress.ToString();
+
+
+                // Send BoxManager object so it knows what's up
+                c.Send(Helpers.packArguments("box", boxManager.toString()));
+
+                /*
                 // Get a list of servers
                 Runabove.getServers((jsonObj) =>
                 {
@@ -165,9 +191,7 @@ namespace DotaHostServerManager
                     // Send SUBID to server so it knows its place
                     c.Send(Helpers.packArguments("box", boxManager.toString()));
                 });
-
-                // Sets the IP of the box manager
-                boxManager.Ip = c.ClientAddress.ToString();
+                */
 
                 // Add the box manager to the list
                 boxManagers.addBoxManager(boxManager);
@@ -242,15 +266,17 @@ namespace DotaHostServerManager
             #region wsServer.addHook("createGameServer");
             wsServer.addHook("createGameServer", (c, x) =>
             {
+                Helpers.log("Received createGameServer from lobby");
                 Lobby lobby = new Lobby(KV.parse(x[1]));
 
                 BoxManager boxManager = findBoxManager(lobby);
 
                 if (boxManager != null)
                 {
+                    Helpers.log("Found game server");
                     GameServer gameServer = createGameServer(boxManager, lobby);
-                    /*
-                    if (gameServer != null)
+
+                    /*if (gameServer != null)
                     {
                         c.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                     }
@@ -259,7 +285,10 @@ namespace DotaHostServerManager
                         Helpers.log("Could not find server");
                     }*/
                 }
-                //c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
+                else
+                {
+                    c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
+                }
             });
             #endregion
 
@@ -395,6 +424,8 @@ namespace DotaHostServerManager
         // Creates a game server
         private GameServer createGameServer(BoxManager boxManager, Lobby lobby)
         {
+            Helpers.log("createGameServer");
+
             List<ushort> ports = new List<ushort>();
             foreach (GameServer gs in boxManager.GameServers.getGameServers())
             {
@@ -405,13 +436,14 @@ namespace DotaHostServerManager
             {
                 if (!ports.Contains(i))
                 {
-                    Helpers.log("BoxManager Found");
+                    Helpers.log("Port Found");
 
                     gameServer = new GameServer();
                     gameServer.Port = i;
                     gameServer.Lobby = lobby;
                     gameServer.Ip = boxManager.Ip;
 
+                    Helpers.log("sent create gameserver to boxmanager");
                     wsServer.send(Helpers.packArguments("create", gameServer.toString()), boxManager.Ip);
 
                     break;
