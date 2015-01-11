@@ -1,7 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace DotaHostLibrary
 {
@@ -38,10 +37,11 @@ namespace DotaHostLibrary
         public const string VULTR_API_KEY = "***REMOVED***";
 
         // Runabove api key:
-        public const string RUNABOVE_API_KEY = "***REMOVED***";
-        public const string RUNABOVE_CONSUMER_KEY = "***REMOVED***";
-        public const string RUNABOVE_APP_KEY = "***REMOVED***";
-        public const string RUNABOVE_APP_SECRET = "***REMOVED***";
+        //public const string RUNABOVE_API_KEY = "***REMOVED***";
+        //public const string RUNABOVE_CONSUMER_KEY = "***REMOVED***";
+        //public const string RUNABOVE_APP_KEY = "***REMOVED***";
+        //public const string RUNABOVE_APP_SECRET = "***REMOVED***";
+        public const string OPENSTACK_AUTH_TOKEN = "***REMOVED***";
 
         // Vultr $15 plan
         //public const byte AMERICA_PLAN_ID = 3;      // 3TB
@@ -147,7 +147,7 @@ namespace DotaHostLibrary
         }
 
         // Return an object of the server list
-        public static void getServers(Action<dynamic> func)
+        public static void getServers(Action<OpenStackServerList> func)
         {
             /*HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "POST", (body) =>
                 {
@@ -159,122 +159,19 @@ namespace DotaHostLibrary
                 }
             );*/
 
-            /*
-
-                        HttpWebRequest yolo = (HttpWebRequest)WebRequest.Create("https://api.runabove.com/1.0/auth/time");
-                        yolo.ContentType = "application/json";
-                        yolo.Method = "GET";
-
-                        Stream Answer = yolo.GetResponse().GetResponseStream();
-                        StreamReader _Answer = new StreamReader(Answer);
-                        string secondsSinceEpochRunabove = _Answer.ReadToEnd();
-                        Console.WriteLine(secondsSinceEpochRunabove);
-
-                        HttpWebRequest yolo2 = (HttpWebRequest)WebRequest.Create("https://api.runabove.com/1.0/instance");
-                        yolo2.ContentType = "application/json";
-                        yolo2.Method = "GET";
-                        yolo2.Headers["X-Ovh-Application"] = RUNABOVE_APP_KEY;
-                        yolo2.Headers["X-Ovh-Timestamp"] = secondsSinceEpochRunabove;
-                        yolo2.Headers["X-Ovh-Signature"] = "$1$" + SHA1HashStringForUTF8String(RUNABOVE_APP_SECRET + "+" + RUNABOVE_CONSUMER_KEY + 
-                            "+GET+https://api.runabove.com/1.0/instance/++" + secondsSinceEpochRunabove);
-                        yolo2.Headers["X-Ovh-Consumer"] = RUNABOVE_CONSUMER_KEY;
-
-                        Console.WriteLine(SHA1HashStringForUTF8String(RUNABOVE_APP_SECRET + "+" + RUNABOVE_CONSUMER_KEY + "+GET+https://api.runabove.com/1.0/instance++" + secondsSinceEpochRunabove));
-
-                        Stream Answer2 = yolo2.GetResponse().GetResponseStream();
-                        StreamReader _Answer2 = new StreamReader(Answer2);
-
-                        Console.WriteLine(_Answer2.ReadToEnd());
-                        */
-            /*HTTPRequestManager.startRequest("https://api.runabove.com/1.0/auth/time", "GET", (body) =>
-            {
-                string secondsSinceEpochRunabove = body;
-
-                /*HTTPRequestManager.startRequest("https://api.runabove.com/1.0/instance", "GET", (body2) =>
-                    {
-                        Console.WriteLine(body);
-                        // Take the raw JSON body and convert it into a dictionary of server properties
-                        //Dictionary<string, RunaboveServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, RunaboveServerProperties>>(body);
-                        //func(data);
-                    }, null,
-                    new Dictionary<string, string>()
-                    {
-                        {"Content-Type", "application/json"},
-                        {"X-Ovh-Application", RUNABOVE_APP_KEY},
-                        {"X-Ovh-Timestamp", secondsSinceEpochRunabove},
-                        {"X-Ovh-Signature", "$1$" + sha1(RUNABOVE_APP_SECRET + "+" + RUNABOVE_CONSUMER_KEY + "+GET+https://api.runabove.com/1.0/instance++" + secondsSinceEpochRunabove)},
-                        {"X-Ra-Consumer", RUNABOVE_CONSUMER_KEY}
-                    }
-                );*/
-
-            /*HttpWebRequest yolo = (HttpWebRequest)WebRequest.Create("https://api.runabove.com/1.0/instance");
-            yolo.ContentType = "application/json";
-            yolo.Method = "GET";
-            yolo.Headers["X-Ovh-Application"] = RUNABOVE_APP_KEY;
-            yolo.Headers["X-Ovh-Timestampn"] = secondsSinceEpochRunabove;
-            yolo.Headers["X-Ovh-Signature"] = "$1$" + sha1(RUNABOVE_APP_SECRET + "+" + RUNABOVE_CONSUMER_KEY + "+GET+https://api.runabove.com/1.0/instance++" + secondsSinceEpochRunabove);
-            yolo.Headers["X-Ovh-Signature"] = RUNABOVE_CONSUMER_KEY;
-
-            Console.WriteLine(yolo.GetResponse());
-
-        }, null,
-            new Dictionary<string, string>()
-            {
-            }
-        );*/
-            /*
-            string now = DateTime.Now.ToString();
-
-            HTTPRequestManager.startRequest("https://api.runabove.com/1.0/instance", "GET", (body) =>
+            HTTPRequestManager.startRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body) =>
                 {
                     // Take the raw JSON body and convert it into a dictionary of server properties
-                    Dictionary<string, RunaboveServerProperties> data = JsonConvert.DeserializeObject<Dictionary<string, RunaboveServerProperties>>(body);
-                    func(data);
+                    dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
+                    OpenStackServerList serverList = new OpenStackServerList(data);
+                    func(serverList);
                 }, null,
                 new Dictionary<string, string>()
                 {
                     {"Content-Type", "application/json"},
-                    {"X-Ra-Application", RUNABOVE_APP_KEY},
-                    {"X-Ra-Timestamp", now},
-                    {"X-Ra-Signature", "$1$" + sha1(RUNABOVE_APP_KEY + "+GET+https://api.runabove.com/1.0/instance++" + now)},
-                    {"X-Ra-Consumer", RUNABOVE_API_KEY}
+                    {"X-Auth-Token", OPENSTACK_AUTH_TOKEN}
                 }
-            );*/
-        }
-
-        public static string sha1(string input)
-        {
-            byte[] temp = Encoding.UTF8.GetBytes(input);
-            using (SHA1Managed sha1 = new SHA1Managed())
-            {
-                var hash = sha1.ComputeHash(temp);
-                return Convert.ToBase64String(hash);
-            }
-        }
-        public static string SHA1HashStringForUTF8String(string s)
-        {
-            byte[] bytes = Encoding.UTF8.GetBytes(s);
-
-            var sha1 = SHA1.Create();
-            byte[] hashBytes = sha1.ComputeHash(bytes);
-
-            return HexStringFromBytes(hashBytes);
-        }
-
-        /// <summary>
-        /// Convert an array of bytes to a string of hex digits
-        /// </summary>
-        /// <param name="bytes">array of bytes</param>
-        /// <returns>String of hex digits</returns>
-        public static string HexStringFromBytes(byte[] bytes)
-        {
-            var sb = new StringBuilder();
-            foreach (byte b in bytes)
-            {
-                var hex = b.ToString("x2");
-                sb.Append(hex);
-            }
-            return sb.ToString();
+            );
         }
     }
 }
