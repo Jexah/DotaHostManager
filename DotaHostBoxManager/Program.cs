@@ -566,8 +566,13 @@ namespace DotaHostBoxManager
                 // Check if we got an error
                 if (stderrx == null)
                 {
+                    // Log the error
+                    Helpers.log("Game server exited normally");
+
                     // No error, server exited, report to master server
                     wsClient.send(Helpers.packArguments("gameServerExit", "good", gameServer.toString()));
+
+
                 }
                 else
                 {
@@ -578,6 +583,8 @@ namespace DotaHostBoxManager
                     wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
 
                 }
+
+                gameServers.removeGameServer(gameServer);
 
                 // Cleanup the addon folder
                 Helpers.deleteFolder(mountPath, true);
