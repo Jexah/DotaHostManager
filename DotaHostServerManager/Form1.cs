@@ -50,34 +50,6 @@ namespace DotaHostServerManager
 
             // Start the websocket server, wait for incomming connections
             wsServer.start();
-
-            /*
-            try
-            {
-
-                Runabove.getServers((jsonObj) =>
-                {
-                    Console.WriteLine(jsonObj);
-                    foreach (RunaboveServerProperties runaboveServer in jsonObj)
-                    {
-                        Console.WriteLine(runaboveServer.ip);
-                    }
-                });
-            }
-            catch (WebException wex)
-            {
-                if (wex.Response != null)
-                {
-                    using (var errorResponse = (HttpWebResponse)wex.Response)
-                    {
-                        using (var reader = new StreamReader(errorResponse.GetResponseStream()))
-                        {
-                            string error = reader.ReadToEnd();
-                            Console.WriteLine(error);
-                        }
-                    }
-                }
-            }*/
         }
 
         private void updateCurrentBoxGameServers()
@@ -133,39 +105,19 @@ namespace DotaHostServerManager
                 // Initialize the new BoxManager
                 BoxManager boxManager = new BoxManager();
 
-
-                string boxIP = c.ClientAddress.ToString().Split(':')[0];
-
-                boxManager.ThirdParty = false;
-
-                if (!boxManager.ThirdParty)
-                {
-                    // Sets the subID so it can be destroyed later
-                    boxManager.InstanceID = "unknown";
-
-                    // Sets the region so we know where it is hosted
-                    boxManager.Region = Runabove.CANADA;
-
-                }
-
-                // Sets the IP of the box manager
                 boxManager.Ip = c.ClientAddress.ToString();
 
+                boxManager.Region = "None";
+                boxManager.InstanceID = "None";
+                boxManager.ThirdParty = true;
 
-                // Send BoxManager object so it knows what's up
-                c.Send(Helpers.packArguments("box", boxManager.toString()));
-
-                /*
                 // Get a list of servers
-                Runabove.getServers((jsonObj) =>
+                Runabove.getServers((serverList) =>
                 {
-                    // Used to contain the info generated from the API
-                    RunaboveServerProperties serverInfo = new RunaboveServerProperties();
-
                     // Finds the box manager in the list of servers by matching the IPs
-                    foreach (KeyValuePair<string, RunaboveServerProperties> kvp in jsonObj)
+                    serverList.forEach((server, i) =>
                     {
-                        string serverIP = kvp.Value.ip;
+                        string serverIP = server.Ip;
                         string boxIP = c.ClientAddress.ToString().Split(':')[0];
 
                         Helpers.log("ServerIP: " + serverIP);
@@ -173,25 +125,23 @@ namespace DotaHostServerManager
 
                         if (serverIP == boxIP || serverIP.Split(':')[0] == "127.0.0.1")
                         {
-                            serverInfo = kvp.Value;
                             boxManager.ThirdParty = false;
+
+                            // Sets the subID so it can be destroyed later
+                            boxManager.InstanceID = server.InstanceID;
+
+                            // Sets the region so we know where it is hosted
+                            boxManager.Region = server.Region;
+
+                            return true;
                         }
-                    }
-                    if (!boxManager.ThirdParty)
-                    {
-                        // Sets the subID so it can be destroyed later
-                        boxManager.InstanceID = serverInfo.instanceId;
-
-                        // Sets the region so we know where it is hosted
-                        boxManager.Region = Runabove.NAME_TO_REGION_ID[serverInfo.region];
-
-                    }
+                        return false;
+                    });
 
 
-                    // Send SUBID to server so it knows its place
+                    // Send BoxManager object to server so it knows its place
                     c.Send(Helpers.packArguments("box", boxManager.toString()));
                 });
-                */
 
                 // Add the box manager to the list
                 boxManagers.addBoxManager(boxManager);
@@ -203,7 +153,6 @@ namespace DotaHostServerManager
                         setBoxStatsGUI(boxManager);
                     }
                 });
-
 
             });
             #endregion
@@ -349,13 +298,13 @@ namespace DotaHostServerManager
         // Create a new box instance using snapshot
         private static void addBoxManager(string region)
         {
-            Runabove.getServers((jsonObj) =>
+            Runabove.getServers((serverList) =>
             {
-                if (jsonObj.Count >= SERVER_HARD_CAP)
+                if (serverList.Count >= SERVER_HARD_CAP)
                 {
                     Helpers.log("SERVER HARD CAP REACHED: SERVER NOT CREATED");
                 }
-                else if (jsonObj.Count >= serverSoftCap)
+                else if (serverList.Count >= serverSoftCap)
                 {
                     Helpers.log("SERVER SOFT CAP REACHED: SERVER NOT CREATED");
                 }
