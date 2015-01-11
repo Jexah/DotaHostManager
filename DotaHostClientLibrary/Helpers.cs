@@ -17,6 +17,9 @@ namespace DotaHostClientLibrary
         // Used to generate random numbers
         private static Random random = new Random((int)DateTime.Now.Ticks);
 
+        // Used to track the order of logs
+        private static int count = 0;
+
         // Generates a random string of the given size
         public static string randomString(int size)
         {
@@ -34,8 +37,30 @@ namespace DotaHostClientLibrary
         // Helper function to log all outputs
         public static void log(string str)
         {
-            Console.WriteLine(str);
-            File.AppendAllText(BASE_PATH + "log.txt", str + Environment.NewLine);
+            Console.WriteLine(count + ": " + str);
+            try
+            {
+                File.AppendAllText(BASE_PATH + "log.txt", count + ": " + str + Environment.NewLine);
+            }
+            catch
+            {
+                Timers.setTimeout(100, Timers.MILLISECONDS, () => { logRetry(str, count); });
+            }
+            count++;
+        }
+
+        // Helpers.log retry function to log all outputs
+        public static void logRetry(string str, int retryCount)
+        {
+            Console.WriteLine(count + ": " + str);
+            try
+            {
+                File.AppendAllText(BASE_PATH + "log.txt", count + ": " + str + Environment.NewLine);
+            }
+            catch
+            {
+                logRetry(str, retryCount);
+            }
         }
 
         // Another helper function, stolen from somewhere else. StackExchange I believe
