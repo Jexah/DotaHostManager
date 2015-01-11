@@ -218,6 +218,7 @@ namespace DotaHostLobbyManager
                 lobby.Addons.addAddon(lod);
                 lobby.MaxPlayers = 10;
                 lobby.CurrentPlayers = 0;
+                lobby.Region = Runabove.CANADA;
                 // End temp stuff
 
                 // If the lobby name isn't null, and the name isn't taken
@@ -230,6 +231,7 @@ namespace DotaHostLobbyManager
                 else
                 {
                     // Lobby name was taken or ==null
+                    Helpers.log("createLobby: failed");
                     c.Send(Helpers.packArguments("createLobby", "failed"));
                 }
             });
@@ -611,6 +613,7 @@ namespace DotaHostLobbyManager
             bool joined = false;
             if (player.SteamID == null)
             {
+                Helpers.log("Join lobby: Steam ID invalid");
                 return;
             }
             if (lobby.Teams != null)
@@ -646,10 +649,12 @@ namespace DotaHostLobbyManager
             }
             if (!joined)
             {
+                Helpers.log("Join lobby failed: Full");
                 c.Send(Helpers.packArguments("joinLobby", "failed", "full"));
             }
             else
             {
+                Helpers.log("Join lobbysuccess");
                 c.Send(Helpers.packArguments("joinLobby", "success", lobby.toJSON()));
                 foreach (Team t in lobby.Teams.getTeams())
                 {
