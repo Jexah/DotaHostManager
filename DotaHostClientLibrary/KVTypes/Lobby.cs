@@ -76,6 +76,18 @@ namespace DotaHostClientLibrary
             }
         }
 
+        public bool Active
+        {
+            get
+            {
+                return getValue("6") == "1";
+            }
+            set
+            {
+                setValue("6", value ? "1" : "0");
+            }
+        }
+
         public Lobby()
         {
             initObject();
