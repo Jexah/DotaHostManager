@@ -258,6 +258,13 @@ namespace DotaHostLobbyManager
                     // Check if lobby exists
                     if (x[1] != null && lobbies.containsKey(x[1]))
                     {
+                        if (lobbies.getLobby(x[1]).Active)
+                        {
+                            // NOPE
+                            c.Send(Helpers.packArguments("joinLobby", "failed", "active"));
+                            return;
+                        }
+
                         // Lobby exists, attempt to join the lobby.
                         joinLobby(lobbies.getLobby(x[1]), player, c);
                     }
@@ -315,9 +322,10 @@ namespace DotaHostLobbyManager
 
                 // Get the lobby that the player is in.
                 Lobby lobby = playersInLobbies[steamID];
-                if (!lobby.Teams.containsKey(teamID))
+                if (!lobby.Teams.containsKey(teamID) || lobby.Active)
                 {
                     // Trying to join an invalid team, gtfo
+                    // Or lobby is already active, too late sucka
                     return;
                 }
 
@@ -461,6 +469,13 @@ namespace DotaHostLobbyManager
                     {
                         // Yeah they're in a lobby, get their object and remove them from the lobby
                         Lobby lobby = playersInLobbies[player.SteamID];
+
+                        if (lobby.Active)
+                        {
+                            // NOPE
+                            return;
+                        }
+
                         removeFromLobby(lobby, player, true);
 
                         // Tell them it was successful
@@ -471,12 +486,11 @@ namespace DotaHostLobbyManager
             #endregion
 
 
+
             #region wsClient.addHook(CONNECTED);
             wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
             {
                 c.Send("lobbyManager");
-
-                //requestGameServer(l);
 
             });
             #endregion
@@ -513,9 +527,6 @@ namespace DotaHostLobbyManager
                         }
                         foreach (Player player in team.Players.getPlayers())
                         {
-                            Helpers.log(player.SteamID);
-                            Helpers.log("'" + player.SteamID + "' == '" + player.SteamID + "'");
-                            Helpers.log((player.SteamID == player.SteamID).ToString());
                             if (x[1] == "success")
                             {
                                 // Tell them the game server is ready
@@ -526,6 +537,32 @@ namespace DotaHostLobbyManager
                                 // Tell them sumphing fukt up
                                 wsServer.send(Helpers.packArguments("gameServerInfo", "failed", steamIDToIP[player.SteamID]));
                             }
+                        }
+                    }
+                }
+            });
+            #endregion
+
+
+            #region wsClient.addHook("gameServerExit");
+            wsClient.addHook("gameServerExit", (c, x) =>
+            {
+                Helpers.log("gameServerExit received");
+                foreach (Lobby l in lobbies.getLobbies())
+                {
+                    Helpers.log(l.Name);
+                }
+                GameServer gameServer = new GameServer(KV.parse(x[1]));
+                Helpers.log(gameServer.Lobby.Name);
+                deleteLobby(gameServer.Lobby);
+                foreach (Team t in gameServer.Lobby.Teams.getTeams())
+                {
+                    foreach (Player p in t.Players.getPlayers())
+                    {
+                        if (steamIDToIP.ContainsKey(p.SteamID))
+                        {
+                            string playerIP = steamIDToIP[p.SteamID];
+                            sendHomePage(playerIP);
                         }
                     }
                 }
@@ -567,6 +604,32 @@ namespace DotaHostLobbyManager
             string lobbiesJson = lobbies.toJSON();
             byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
             c.Send(Helpers.packArguments("page", "home", lobbiesJson));
+        }
+
+        private static void deleteLobby(Lobby lobby)
+        {
+            deleteLobby(lobby.Name);
+        }
+
+        private static void deleteLobby(string lobbyName)
+        {
+            foreach (Team t in lobbies.getLobby(lobbyName).Teams.getTeams())
+            {
+                foreach (Player p in t.Players.getPlayers())
+                {
+                    playersInLobbies.Remove(p.SteamID);
+                }
+            }
+            lobbies.removeLobby(lobbyName);
+            lobbiesChanged = true;
+        }
+
+        // Send the player their homepage
+        private static void sendHomePage(string ip)
+        {
+            string lobbiesJson = lobbies.toJSON();
+            byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
+            wsServer.send(Helpers.packArguments("page", "home", lobbiesJson), ip);
         }
 
         private static void refreshTeam(Team team)
@@ -693,7 +756,7 @@ namespace DotaHostLobbyManager
                         lobby.CurrentPlayers--;
                         if (lobby.CurrentPlayers == 0)
                         {
-                            lobbies.removeLobby(lobby);
+                            deleteLobby(lobby);
                         }
                     }
                     if (lobbyNameToTimer.ContainsKey(lobby.Name))
@@ -778,6 +841,7 @@ namespace DotaHostLobbyManager
 
         private static void requestGameServer(Lobby lobby)
         {
+            lobby.Active = true;
             wsClient.send(Helpers.packArguments("createGameServer", lobby.toString()));
         }
 
