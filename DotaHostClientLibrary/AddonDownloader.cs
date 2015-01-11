@@ -65,7 +65,7 @@ namespace DotaHostClientLibrary
                 return;
             }
 
-            string version = info[0];
+            string downloadLink = info[0];
             string correctCRC = info[1];
             string actualCRC = "";
 
@@ -84,15 +84,12 @@ namespace DotaHostClientLibrary
                 }
             }
 
-            // The path to te download
-            string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDONS, addonID, version);
-
             // Directory or file does not exist, or version does not match most recent
-            Helpers.log("[Addon] " + addonID + " out of date. New version: " + version + " " + actualCRC + " VS " + correctCRC);
-            Helpers.log("[Downloading] " + downloadPath);
+            Helpers.log("[Addon] " + addonID + " out of date. New version: " + correctCRC);
+            Helpers.log("[Downloading] " + downloadLink);
 
             // Begins downloading addon from GitHub
-            dlManager.download(downloadPath, Global.TEMP + addonID + ".zip", (e) =>
+            dlManager.download(downloadLink, Global.TEMP + addonID + ".zip", (e) =>
             {
                 // Check if we have a callback
                 if (onProgress != null)
@@ -103,12 +100,12 @@ namespace DotaHostClientLibrary
             }, (e) =>
             {
                 // Run the completion function
-                downloadAddonComplete(addonID, version, correctCRC, onComplete);
+                downloadAddonComplete(addonID, correctCRC, onComplete);
             });
         }
 
         // Function run when an addon finishes getting downloaded
-        private static void downloadAddonComplete(string addonID, string version, string correctCRC, DelegateOnComplete onComplete)
+        private static void downloadAddonComplete(string addonID, string correctCRC, DelegateOnComplete onComplete)
         {
             // Deletes current addon zip (if it exists)
             Helpers.deleteSafe(addonInstallLocation + addonID + ".zip");
