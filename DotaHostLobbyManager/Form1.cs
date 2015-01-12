@@ -638,6 +638,28 @@ namespace DotaHostLobbyManager
         }
 
 
+        private static void cancelLobbyStart(string lobbyName)
+        {
+            if (lobbyNameToTimer.ContainsKey(lobbyName))
+            {
+                lobbyNameToTimer[lobbyName]();
+            }
+            if (lobbies.containsKey(lobbyName))
+            {
+                Lobby lobby = lobbies.getLobby(lobbyName);
+                foreach (Team t in lobby.Teams.getTeams())
+                {
+                    foreach (Player p in t.Players.getPlayers())
+                    {
+                        if (steamIDToIP.ContainsKey(p.SteamID))
+                        {
+                            wsServer.send("cancelBeginGame", steamIDToIP[p.SteamID]);
+                        }
+                    }
+                }
+            }
+        }
+
         private static bool swapTeam(Team newTeam, string newSlot, Player player)
         {
             if (newTeam.Players.getPlayers().Count < newTeam.MaxPlayers)
@@ -648,10 +670,6 @@ namespace DotaHostLobbyManager
                     Helpers.log("something");
                     Helpers.log(newTeam.Players.getKV(newSlot).toString());
                 }
-                /*if (!newTeam.Players.containsKey(newSlot) && newTeam.Players.getKV(newSlot) == null)
-                {
-                    return false;
-                }*/
                 Helpers.log("2");
                 if (!newTeam.Players.containsKey(newSlot) && newTeam.Players.getKV(newSlot) != null)
                 {
@@ -663,8 +681,18 @@ namespace DotaHostLobbyManager
                     return false;
                 }
 
-                removeFromLobby(playersInLobbies[player.SteamID], player, false);
+                Lobby lobby = playersInLobbies[player.SteamID];
+                removeFromLobby(lobby, player, false);
                 newTeam.Players.addPlayer(player, newSlot);
+                cancelLobbyStart(lobby.Name);
+                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
+                {
+                    lobbyNameToTimer[lobby.Name] = Timers.setTimeout(5, Timers.SECONDS, () =>
+                    {
+                        Helpers.log("Requested game server");
+                        requestGameServer(lobby);
+                    });
+                }
                 return true;
             }
             Helpers.log("5");
@@ -719,6 +747,7 @@ namespace DotaHostLobbyManager
             {
                 Helpers.log("Join lobbysuccess");
                 c.Send(Helpers.packArguments("joinLobby", "success", lobby.toJSON()));
+                cancelLobbyStart(lobby.Name);
                 foreach (Team t in lobby.Teams.getTeams())
                 {
                     foreach (Player p in t.Players.getPlayers())
@@ -726,14 +755,14 @@ namespace DotaHostLobbyManager
                         if (player.SteamID != p.SteamID)
                         {
                             wsServer.send(Helpers.packArguments("addPlayerToLobby", player.toJSON(), "2"), steamIDToIP[p.SteamID]);
-                            if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)
+                            if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
                             {
                                 wsServer.send("lobbyFull", steamIDToIP[p.SteamID]);
                             }
                         }
                     }
                 }
-                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)
+                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
                 {
                     lobbyNameToTimer[lobby.Name] = Timers.setTimeout(5, Timers.SECONDS, () =>
                     {
@@ -762,7 +791,6 @@ namespace DotaHostLobbyManager
                     if (lobbyNameToTimer.ContainsKey(lobby.Name))
                     {
                         lobbyNameToTimer[lobby.Name]();
-                        Helpers.log("Shabam");
                     }
                     lobbiesChanged = true;
                 }
