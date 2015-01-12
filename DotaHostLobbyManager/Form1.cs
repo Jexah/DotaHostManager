@@ -777,6 +777,20 @@ namespace DotaHostLobbyManager
 
         public static void removeFromLobby(Lobby lobby, Player player, bool exit)
         {
+            string teamid = "";
+            string slotid = "";
+            foreach (KeyValuePair<string, KV> teamsKVP in lobby.Teams.getKeys())
+            {
+                foreach (KeyValuePair<string, KV> playersKVP in teamsKVP.Value.getKeys())
+                {
+                    Player p = new Player(playersKVP.Value);
+                    if (p.SteamID == player.SteamID)
+                    {
+                        teamid = teamsKVP.Key;
+                        slotid = playersKVP.Key;
+                    }
+                }
+            }
             foreach (Team team in lobby.Teams.getTeams())
             {
                 if (removeFromTeam(team, player))
@@ -793,6 +807,16 @@ namespace DotaHostLobbyManager
                     if (lobbyNameToTimer.ContainsKey(lobby.Name))
                     {
                         lobbyNameToTimer[lobby.Name]();
+                    }
+                    foreach (Player p in team.Players.getPlayers())
+                    {
+                        if (p.SteamID != player.SteamID)
+                        {
+                            if (steamIDToIP.ContainsKey(p.SteamID))
+                            {
+                                wsServer.send(Helpers.packArguments("leaveLobby", slotid, teamid));
+                            }
+                        }
                     }
                     lobbiesChanged = true;
                 }
