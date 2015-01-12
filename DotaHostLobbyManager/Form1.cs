@@ -332,6 +332,8 @@ namespace DotaHostLobbyManager
                 // If swapping teams was successful
                 if (swapTeam(lobby.Teams.getTeam(teamID), slotID, playerCache[ip]))
                 {
+                    cancelLobbyStart(lobby.Name);
+
                     // For each player in the server
                     foreach (Team team in lobby.Teams.getTeams())
                     {
@@ -343,7 +345,7 @@ namespace DotaHostLobbyManager
                                 wsServer.send(Helpers.packArguments("swapTeam", teamID, slotID, steamID), steamIDToIP[p2.SteamID]);
 
                                 // Also let them know if the game is starting...
-                                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)
+                                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
                                 {
                                     wsServer.send("lobbyFull", steamIDToIP[p2.SteamID]);
                                 }
@@ -352,13 +354,17 @@ namespace DotaHostLobbyManager
                     }
 
                     // Begin the timeout for requestGameServer
-                    if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)
+                    if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
                     {
-                        lobbyNameToTimer[lobby.Name] = Timers.setTimeout(5, Timers.SECONDS, () =>
+                        if (lobbyNameToTimer.ContainsKey(lobby.Name))
+                        {
+                            cancelLobbyStart(lobby.Name);
+                        }
+                        lobbyNameToTimer.Add(lobby.Name, Timers.setTimeout(5, Timers.SECONDS, () =>
                         {
                             Helpers.log("Requested game server");
                             requestGameServer(lobby);
-                        });
+                        }));
                     }
                 }
             });
@@ -643,6 +649,7 @@ namespace DotaHostLobbyManager
             if (lobbyNameToTimer.ContainsKey(lobbyName))
             {
                 lobbyNameToTimer[lobbyName]();
+                lobbyNameToTimer.Remove(lobbyName);
             }
             if (lobbies.containsKey(lobbyName))
             {
@@ -684,15 +691,6 @@ namespace DotaHostLobbyManager
                 Lobby lobby = playersInLobbies[player.SteamID];
                 removeFromLobby(lobby, player, false);
                 newTeam.Players.addPlayer(player, newSlot);
-                cancelLobbyStart(lobby.Name);
-                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
-                {
-                    lobbyNameToTimer[lobby.Name] = Timers.setTimeout(5, Timers.SECONDS, () =>
-                    {
-                        Helpers.log("Requested game server");
-                        requestGameServer(lobby);
-                    });
-                }
                 return true;
             }
             Helpers.log("5");
@@ -764,11 +762,15 @@ namespace DotaHostLobbyManager
                 }
                 if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count >= 1)
                 {
-                    lobbyNameToTimer[lobby.Name] = Timers.setTimeout(5, Timers.SECONDS, () =>
+                    if (lobbyNameToTimer.ContainsKey(lobby.Name))
+                    {
+                        cancelLobbyStart(lobby.Name);
+                    }
+                    lobbyNameToTimer.Add(lobby.Name, Timers.setTimeout(5, Timers.SECONDS, () =>
                     {
                         Helpers.log("Requested game server");
                         requestGameServer(lobby);
-                    });
+                    }));
                 }
             }
         }
@@ -869,7 +871,6 @@ namespace DotaHostLobbyManager
 
         private static void requestGameServer(Lobby lobby)
         {
-            lobby.Active = true;
             wsClient.send(Helpers.packArguments("createGameServer", lobby.toString()));
         }
 
