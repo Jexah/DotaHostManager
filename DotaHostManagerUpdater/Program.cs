@@ -10,12 +10,8 @@ namespace DotaHostManagerUpdater
         // Download manager
         private static DownloadManager dlManager = new DownloadManager();
 
-        private static string version;
-
         static void Main(string[] args)
         {
-            Console.WriteLine(string.Join(" ", args));
-            version = args[0];
             update();
         }
 

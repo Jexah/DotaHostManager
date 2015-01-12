@@ -58,6 +58,8 @@ namespace DotaHostManager
             // Reset log file
             File.Delete(Global.BASE_PATH + "log.txt");
 
+            File.Delete(Global.BASE_PATH + "DotaHostManagerUpdater.exe");
+
             // Create temp directory if it doesn't exist
             Directory.CreateDirectory(Global.TEMP);
 
@@ -152,37 +154,33 @@ namespace DotaHostManager
                 //{
                 Console.WriteLine("1");
                 // Reads the version file from temp
-                string[] updaterVersionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManager.txt");
+                string[] managerVersionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManager.txt");
                 Console.WriteLine("2");
                 // Clean up file
                 File.Delete(Global.TEMP + "DotaHostManager.txt");
 
                 Console.WriteLine("3");
+                Console.WriteLine(getCRC());
                 // Checks if the read version matches the const version
-                if (updaterVersionCRC[1] != getCRC())
+                if (managerVersionCRC[1] != getCRC())
                 {
                     // They do not match, download new version
                     Helpers.log("[Update] New version detected!");
 
-                    // If the downloader does not exist, download it
-                    if (!File.Exists(Global.TEMP + "DotaHostManagerUpdater.exe"))
-                    {
-                        Helpers.log("[Update] Downloading updater...");
+                    dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManagerUpdater"), Global.TEMP + "DotaHostManagerUpdater.txt");
 
-                        dlManager.download(Global.DOWNLOAD_PATH_UPDATER, Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
-                        {
-                            appUpdaterDownloadProgress(e2.ProgressPercentage);
-                        }, (e2) =>
-                        {
-                            // Begin the updater
-                            startUpdater();
-                        });
-                    }
-                    else
+                    string[] updaterVersionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManagerUpdater.txt");
+
+                    Helpers.log("[Update] Downloading updater...");
+
+                    dlManager.download(updaterVersionCRC[0], Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
+                    {
+                        appUpdaterDownloadProgress(e2.ProgressPercentage);
+                    }, (e2) =>
                     {
                         // Begin the updater
                         startUpdater();
-                    }
+                    });
                 }
                 else
                 {
@@ -446,6 +444,7 @@ namespace DotaHostManager
             #region wsServer.addHook("getAddonStatus");
             wsServer.addHook("getAddonStatus", (c, x) =>
             {
+
                 checkAddons(c);
             });
             #endregion
