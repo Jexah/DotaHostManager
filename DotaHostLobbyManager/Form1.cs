@@ -811,15 +811,18 @@ namespace DotaHostLobbyManager
                         lobbyNameToTimer[lobby.Name]();
                     }
                     lobbiesChanged = true;
-                    foreach (Team t in lobby.Teams.getTeams())
+                    if (exit)
                     {
-                        foreach (Player p in t.Players.getPlayers())
+                        foreach (Team t in lobby.Teams.getTeams())
                         {
-                            if (p.SteamID != player.SteamID)
+                            foreach (Player p in t.Players.getPlayers())
                             {
-                                if (steamIDToIP.ContainsKey(p.SteamID))
+                                if (p.SteamID != player.SteamID)
                                 {
-                                    wsServer.send(Helpers.packArguments("leaveLobby", slotid, teamid), steamIDToIP[p.SteamID]);
+                                    if (steamIDToIP.ContainsKey(p.SteamID))
+                                    {
+                                        wsServer.send(Helpers.packArguments("leaveLobby", slotid, teamid), steamIDToIP[p.SteamID]);
+                                    }
                                 }
                             }
                         }
