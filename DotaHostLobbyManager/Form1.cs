@@ -781,7 +781,8 @@ namespace DotaHostLobbyManager
             string slotid = "";
             foreach (KeyValuePair<string, KV> teamsKVP in lobby.Teams.getKeys())
             {
-                foreach (KeyValuePair<string, KV> playersKVP in teamsKVP.Value.getKeys())
+                Team t = new Team(teamsKVP.Value);
+                foreach (KeyValuePair<string, KV> playersKVP in t.Players.getKeys())
                 {
                     Player p = new Player(playersKVP.Value);
                     if (p.SteamID == player.SteamID)
@@ -808,17 +809,20 @@ namespace DotaHostLobbyManager
                     {
                         lobbyNameToTimer[lobby.Name]();
                     }
-                    foreach (Player p in team.Players.getPlayers())
+                    lobbiesChanged = true;
+                    foreach (Team t in lobby.Teams.getTeams())
                     {
-                        if (p.SteamID != player.SteamID)
+                        foreach (Player p in t.Players.getPlayers())
                         {
-                            if (steamIDToIP.ContainsKey(p.SteamID))
+                            if (p.SteamID != player.SteamID)
                             {
-                                wsServer.send(Helpers.packArguments("leaveLobby", slotid, teamid));
+                                if (steamIDToIP.ContainsKey(p.SteamID))
+                                {
+                                    wsServer.send(Helpers.packArguments("leaveLobby", slotid, teamid), steamIDToIP[p.SteamID]);
+                                }
                             }
                         }
                     }
-                    lobbiesChanged = true;
                 }
             }
         }
