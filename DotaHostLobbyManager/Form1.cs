@@ -158,6 +158,7 @@ namespace DotaHostLobbyManager
                 validate(x[1], x[2], c.ClientAddress.ToString(), (player) =>
                 {
                     // Success
+
                     c.Send(Helpers.packArguments("validate", "success"));
                 }, () =>
                 {
@@ -851,6 +852,7 @@ namespace DotaHostLobbyManager
 
             HTTPRequestManager.startRequest("http://127.0.0.1/validate.php", "GET", (r) =>
             {
+                Helpers.log(r);
                 if (r != "get the fuck out of here")
                 {
                     // Do stuff with r (response) to get it into 4 variables, rest is complete
