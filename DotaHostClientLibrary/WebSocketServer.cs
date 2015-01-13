@@ -129,6 +129,15 @@ namespace DotaHostClientLibrary
 
         }
 
+        public List<UserContext> getConnections()
+        {
+            return new List<UserContext>(userIdToContext.Values);
+        }
+        public int getConnectionsCount()
+        {
+            return userIdToContext.Count;
+        }
+
         // Loops through generic function calls for the given event type
         private void callEventFunc(UserContext c, List<socketDel> funcList)
         {
