@@ -43,6 +43,9 @@ namespace DotaHostBoxManager
         // The password to download files with
         private const string STEAM_PASSWORD = "***REMOVED***";
 
+        // The minidump error
+        private const string MINIDUMP_ERROR = "Setting breakpad minidump AppID = 580";
+
         #endregion
 
         #region Static Readonlys
@@ -119,6 +122,8 @@ namespace DotaHostBoxManager
 
             // Start the websocket client.
             wsClient.start();
+
+            
 
             // Update the dota install
             //updateServers();
@@ -485,31 +490,79 @@ namespace DotaHostBoxManager
             //{
             // Start the process
             Process process = Process.Start(proc);
+            
+            // Set to true once STDOUT has been fully read.
+            Boolean canStop = false;
 
-            // Server wacher dog
+            // Create diconary to check who has played
+            Dictionary<string, int> connections = new Dictionary<string, int>();
+
+            // Default everyone to not connected yet
+            foreach (Team team in gameServer.Lobby.Teams.getTeams())
+            {
+                foreach (Player player in team.Players.getPlayers())
+                {
+                    connections[player.SteamID] = Global.PLAYER_STATUS_NOT_CONNECTED;
+                }
+            }
+
+            // Did the server even activate?
+            bool activated = false;
+
+            // Error manager
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
                 // Wait for an error (if process exits, this will be null)
                 string stderrx = process.StandardError.ReadLine();
+                
+                // Check for minidump error
+                if (stderrx == MINIDUMP_ERROR) stderrx = null;
 
                 // Ensure the process is dead
                 if (!process.HasExited) process.Kill();
 
-                // Did the server even activate?
-                bool activated = false;
+                // Wait for SRDOUT to be done
+                while (!canStop) System.Threading.Thread.Sleep(100);
 
-                // Create diconary to check who has played
-                Dictionary<string, int> connections = new Dictionary<string, int>();
-
-                // Default everyone to not connected yet
-                foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                // DEBUG: Print who has connected and who hasn't
+                foreach (KeyValuePair<string, int> pair in connections)
                 {
-                    foreach (Player player in team.Players.getPlayers())
-                    {
-                        connections[player.SteamID] = Global.PLAYER_STATUS_NOT_CONNECTED;
-                    }
+                    Helpers.log(port + ": " + pair.Key + " - " + pair.Value);
                 }
 
+                // DEBUG: Log if something went REALLY wrong
+                if (!activated)
+                {
+                    Helpers.log(port + ": The server didnt even activate, we have a SERIOUS problem!");
+                }
+
+                // Check if we got an error
+                if (stderrx == null)
+                {
+                    // Log the error
+                    Helpers.log(port + ": Game server exited normally");
+
+                    // No error, server exited, report to master server
+                    wsClient.send(Helpers.packArguments("gameServerExit", "good", gameServer.toString()));
+                }
+                else
+                {
+                    // Log the error
+                    Helpers.log(port + ": SRCDS Error: " + stderrx);
+
+                    // Report error to master server
+                    wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
+                }
+
+                gameServers.removeGameServer(gameServer);
+
+                // Cleanup the addon folder
+                Helpers.deleteFolder(mountPath, true);
+            }, null);
+
+            // STDOUT watch dog
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
                 while (true)
                 {
                     // Read a line and check if it;s the end of our input
@@ -520,80 +573,49 @@ namespace DotaHostBoxManager
                     string[] message = line.Split('\u0007');
                     if (message.Length > 1)
                     {
-                        Helpers.log(message[0]);
                         switch (message[0])
                         {
                             // The server activated successfully
                             case "activate":
+                                // Log it
+                                Helpers.log(port + ": Activated successfully!");
                                 activated = true;
+
+                                // Report to the master server
+                                wsClient.send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                                 break;
 
+                            // Output from a mod, lets just log for now
                             case "print":
-                                // Output from a mod, lets just log for now
-                                Helpers.log(message[1]);
+                                Helpers.log(port + ": "+message[1]);
                                 break;
 
                             // A user connects successfully
                             case "connect":
+                                Helpers.log(port + ": " + message[1] + " connected.");
                                 connections[message[1]] = Global.PLAYER_STATUS_CONNECTED;
                                 break;
 
                             // A user disconnected
                             case "disconnect":
+                                Helpers.log(port + ": " + message[1] + " disconnected.");
                                 connections[message[1]] = Global.PLAYER_STATUS_DISCONNECTED;
                                 break;
 
                             // Unknown message, doh!
                             default:
-                                Helpers.log(message[0] + " = " + message[1]);
+                                Helpers.log(port + ": " + message[0] + " = " + message[1]);
                                 break;
                         }
                     }
                 }
 
-                // DEBUG: Print who has connected and who hasn't
-                foreach (KeyValuePair<string, int> pair in connections)
-                {
-                    Helpers.log(pair.Key + " - " + pair.Value);
-                }
-
-                // DEBUG: Log if something went REALLY wrong
-                if (!activated)
-                {
-                    Helpers.log("The server didnt even activate, we have a SERIOUS problem!");
-                }
-
-                // Check if we got an error
-                if (stderrx == null)
-                {
-                    // Log the error
-                    Helpers.log("Game server exited normally");
-
-                    // No error, server exited, report to master server
-                    wsClient.send(Helpers.packArguments("gameServerExit", "good", gameServer.toString()));
-
-
-                }
-                else
-                {
-                    // Log the error
-                    Helpers.log("SRCDS Error: " + stderrx);
-
-                    // Report error to master server
-                    wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
-
-                }
-
-                gameServers.removeGameServer(gameServer);
-
-                // Cleanup the addon folder
-                Helpers.deleteFolder(mountPath, true);
+                // STDOUT is done
+                canStop = true;
             }, null);
 
             // Woot, success
-            Helpers.log("Server was launched successfully!");
-
-            wsClient.send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
+            Helpers.log(port + ": Launched successfully!");
 
             // We probably want to store a reference to the process so we can see if it dies
             //}
@@ -770,7 +792,7 @@ namespace DotaHostBoxManager
             }
             else
             {
-                additonalMount = "Game " + additonalMount + Environment.NewLine;
+                additonalMount = "Game " + '"' + additonalMount + '"' + Environment.NewLine;
             }
 
             // Gameinfo to load metamod
