@@ -93,6 +93,16 @@ namespace DotaHostClientLibrary
             initObject();
         }
 
+        public void forEachPlayer(Action<Player> func)
+        {
+            foreach (Team t in this.Teams.getTeams())
+            {
+                foreach (Player p in t.Players.getPlayers())
+                {
+                    func(p);
+                }
+            }
+        }
 
         public Lobby(KV source)
         {
