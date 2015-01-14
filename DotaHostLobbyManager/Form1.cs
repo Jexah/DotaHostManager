@@ -198,15 +198,15 @@ namespace DotaHostLobbyManager
         private static void getLobbiesHook(UserContext c, string[] x)
         {
             // Generate a json string of the lobbies.
-            string lobbiesJson = lobbies.toJSON();
-            byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
-            Console.WriteLine("Original is: " + data.Length.ToString());
+            //string lobbiesJson = lobbies.toJSON();
+            //byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
+            //Console.WriteLine("Original is: " + data.Length.ToString());
             //byte[] compressed = SevenZip.Compression.LZMA.SevenZipHelper.Compress(data);
             //Console.WriteLine("Compressed is: " + compressed.Length.ToString());
             //c.Send(Helpers.packArguments("getLobbies", System.Text.Encoding.Default.GetString(compressed)));
 
             // Send it
-            c.Send(Helpers.packArguments("getLobbies", lobbiesJson));
+            //c.Send(Helpers.packArguments("getLobbies", lobbiesJson));
 
             //c.Send(compressed);
         }
@@ -356,6 +356,7 @@ namespace DotaHostLobbyManager
                     if (lobbyNameToTimer.ContainsKey(lobby.Name))
                     {
                         cancelLobbyStart(lobby.Name);
+                        lobbyNameToTimer.Remove(lobby.Name);
                     }
 
                     // Begin the timeout for requestGameServer
@@ -633,8 +634,16 @@ namespace DotaHostLobbyManager
                 if (!playersInLobbies.ContainsKey(kvp.Value.SteamID))
                 {
                     // And if so, send them the latest lobbies list.
-                    string lobbiesJson = lobbies.toJSON();
-                    byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
+                    Lobbies localLobbies = new Lobbies();
+                    foreach (Lobby lobby in lobbies.getLobbies())
+                    {
+                        if (lobby.Status == Lobby.WAITING)
+                        {
+                            localLobbies.addLobby(lobby);
+                        }
+                    }
+                    string lobbiesJson = localLobbies.toJSON();
+                    //byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
                     wsServer.send(Helpers.packArguments("getLobbies", lobbiesJson), steamIDToIP[kvp.Value.SteamID]);
                 }
             }
