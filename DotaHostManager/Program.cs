@@ -86,7 +86,7 @@ namespace DotaHostManager
             if (!checkDotaPath())
             {
                 Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
-                exit();
+                // exit();
             }
 
             // Try to patch gameinfo
@@ -300,37 +300,36 @@ namespace DotaHostManager
         // Attempts to find the dota path, returns false if not found
         private static bool checkDotaPath()
         {
-            bool failed = false;
-
-            // Checks if the path is already set
-            if (Properties.Settings.Default.dotaPath == String.Empty)
+            try
             {
-                // Gets dota path from registry
-                string path = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 570", "InstallLocation", null).ToString();
-
-                // If path is found, update it in the program
-                if (path != String.Empty)
+                // Checks if the path is already set
+                if (Properties.Settings.Default.dotaPath == String.Empty)
                 {
-                    updateDotaPath(path + @"\");
-                }
-            }
-            else
-            {
-                // Path has already been found, set it to the stored setting
-                dotaPath = Properties.Settings.Default.dotaPath;
+                    // Gets dota path from registry
+                    string path = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 570", "InstallLocation", null).ToString();
 
-                // Update addon downloader
-                AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
-            }
-            if (failed)
-            {
-                Helpers.log("Could not find dota path.");
-                return false;
-            }
-            else
-            {
+                    // If path is found, update it in the program
+                    if (path != String.Empty)
+                    {
+                        updateDotaPath(path + @"\");
+                    }
+                }
+                else
+                {
+                    // Path has already been found, set it to the stored setting
+                    dotaPath = Properties.Settings.Default.dotaPath;
+
+                    // Update addon downloader
+                    AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
+                }
                 Helpers.log("Found dota path: " + dotaPath);
                 return true;
+            }
+            catch
+            {
+                Helpers.log("Could not find dota path. Enter dota path manually on website.");
+                updateDotaPath("unknown");
+                return false;
             }
         }
 
@@ -474,9 +473,8 @@ namespace DotaHostManager
             wsServer.addHook("gameServerInfo", (c, x) =>
             {
                 if (!validateConnection(c)) { return; }
-                Helpers.log(x[2]);
                 Lobby lobby = new Lobby(KV.parse(x[2], true));
-                AddonCompiler.compileAddons(lobby, dotaPath + @"dota\addons_dotahost\", dotaPath + @"dota\addons_dotahost\active\");
+                AddonCompiler.compileAddons(lobby, AddonDownloader.getAddonInstallLocation(), dotaPath + @"dota\addons_dotahost\active\");
                 c.Send(Helpers.packArguments("connectToServer", x[1]));
             });
             #endregion
