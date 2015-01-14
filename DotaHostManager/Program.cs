@@ -37,7 +37,7 @@ namespace DotaHostManager
         private static DownloadManager dlManager = new DownloadManager();
 
         // Path to dota, eg: C:\Program Files (x86)\Steam\steamapps\dota 2 beta\
-        private static string dotaPath;
+        private static string dotaPath = "";
 
         // Prevent running exit code more than once
         private static bool exiting = false;
@@ -82,12 +82,8 @@ namespace DotaHostManager
             // Download the version file from website
             downloadAppVersion();
 
-            // Attempts to find the dota path, if it can't find it, it exits the program
-            if (!checkDotaPath())
-            {
-                Helpers.log("[DotaHost] Dota path could not be found. Exiting...");
-                // exit();
-            }
+            // Attempts to find the dota path, if it can't find it, sets it to 'unknown'
+            checkDotaPath();
 
             // Try to patch gameinfo
             if (!Properties.Settings.Default.gameinfoPatched)
@@ -367,134 +363,146 @@ namespace DotaHostManager
         // Create and bind the functions for web socket events
         private static void hookWSocketEvents()
         {
-            #region wsServer.addHook("setDotaPath");
-            wsServer.addHook("setDotaPath", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                updateDotaPath(x[1]);
-            });
-            #endregion
+            wsServer.addHook("setDotaPath", setDotaPathHook);
 
-            #region wsServer.addHook("exit");
-            wsServer.addHook("exit", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                requestClose = true;
-            });
-            #endregion
+            wsServer.addHook("exit", exitHook);
 
-            #region wsServer.addHook("CONNECTED");
-            wsServer.addHook(WebSocketServer.CONNECTED, (c) =>
-            {
-                if (!validateConnection(c)) { return; }
-                c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
-                c.Send(Helpers.packArguments("dotaPath", Properties.Settings.Default.dotaPath));
-            });
-            #endregion
+            wsServer.addHook(WebSocketServer.CONNECTED, connectedHook);
 
-            #region wsServer.addHook("autorun");
-            wsServer.addHook("autorun", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                Console.WriteLine("autorun receive");
-                Properties.Settings.Default.shouldRegister = true;
-                Properties.Settings.Default.Save();
-                registerProtocol();
-            });
-            #endregion
+            wsServer.addHook("autorun", autorunHook);
 
-            #region wsServer.addHook("getAutorun");
-            wsServer.addHook("getAutorun", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
-            });
-            #endregion
+            wsServer.addHook("getAutorun", getAutorunHook);
 
-            #region wsServer.addHook("getDotapath");
-            wsServer.addHook("getDotapath", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                c.Send(Helpers.packArguments("dotaPath", dotaPath));
-            });
-            #endregion
+            wsServer.addHook("getDotapath", getDotapathHook);
 
-            #region wsServer.addHook("uninstall");
-            wsServer.addHook("uninstall", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                deregisterProtocol();
-                Helpers.log("Uninstall received");
-            });
-            #endregion
+            wsServer.addHook("uninstall", uninstallHook);
 
-            #region wsServer.addHook("update");
-            wsServer.addHook("update", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                c.Send("startInstall");
-                AddonDownloader.updateAddon(x[1], (addonID, success) =>
-                {
-                    // Tell the server what happened
-                    if (success)
-                    {
-                        // Installation was successful, send formatted string to most recent connection
-                        wsServer.send(Helpers.packArguments("installationComplete"));
-                    }
-                    else
-                    {
-                        wsServer.send(Helpers.packArguments("installationFailed"));
-                    }
-                }, (addonID, e) =>
-                {
-                    // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                    wsServer.send(Helpers.packArguments("addon", addonID, e.ProgressPercentage.ToString()));
-                });
-            });
-            #endregion
+            wsServer.addHook("update", updateHook);
 
-            #region wsServer.addHook("getAddonStatus");
-            wsServer.addHook("getAddonStatus", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                checkAddons(c);
-            });
-            #endregion
+            wsServer.addHook("getAddonStatus", getAddonStatusHook);
 
-            #region wsServer.addHook("RECEIVE");
-            wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
-            {
-                if (!validateConnection(c)) { return; }
-                appKeepAlive();
-            });
-            #endregion
+            wsServer.addHook(WebSocketServer.RECEIVE, receiveHook);
 
-            #region wsServer.addHook("gameServerInfo");
-            wsServer.addHook("gameServerInfo", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                Lobby lobby = new Lobby(KV.parse(x[2], true));
-                AddonCompiler.compileAddons(lobby, AddonDownloader.getAddonInstallLocation(), dotaPath + @"dota\addons_dotahost\active\");
-                c.Send(Helpers.packArguments("connectToServer", x[1]));
-            });
-            #endregion
+            wsServer.addHook("gameServerInfo", gameServerInfoHook);
 
-            #region wsServer.addHook("getPatchGameInfo");
-            wsServer.addHook("getPatchGameInfo", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                c.Send(Helpers.packArguments("patchGameInfo", Properties.Settings.Default.gameinfoPatched ? "1" : "0"));
-            });
-            #endregion
+            wsServer.addHook("getPatchGameInfo", getPatchGameInfoHook);
 
-            #region wsServer.addHook("patchGameInfo");
-            wsServer.addHook("patchGameInfo", (c, x) =>
-            {
-                if (!validateConnection(c)) { return; }
-                c.Send(Helpers.packArguments("tryPatchGameInfo", patchGameInfo() ? "1" : "0"));
-            });
-            #endregion
+            wsServer.addHook("patchGameInfo", patchGameInfoHook);
         }
+
+        private static void setDotaPathHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            updateDotaPath(x[1]);
+        }
+
+        private static void exitHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            requestClose = true;
+        }
+
+        private static void connectedHook(UserContext c)
+        {
+
+            if (!validateConnection(c)) { return; }
+            c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+            c.Send(Helpers.packArguments("dotaPath", Properties.Settings.Default.dotaPath));
+        }
+
+        private static void autorunHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            Console.WriteLine("autorun receive");
+            Properties.Settings.Default.shouldRegister = true;
+            Properties.Settings.Default.Save();
+            registerProtocol();
+        }
+
+        private static void getAutorunHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+        }
+
+        private static void getDotapathHook(UserContext c, string[] x)
+        {
+            if (!validateConnection(c)) { return; }
+            c.Send(Helpers.packArguments("dotaPath", dotaPath));
+        }
+
+        private static void uninstallHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            deregisterProtocol();
+            Helpers.log("Uninstall received");
+        }
+
+        private static void updateHook(UserContext c, string[] x)
+        {
+            if (!validateConnection(c)) { return; }
+            c.Send("startInstall");
+            AddonDownloader.updateAddon(x[1], (addonID, success) =>
+            {
+                // Tell the server what happened
+                if (success)
+                {
+                    // Installation was successful, send formatted string to most recent connection
+                    wsServer.send(Helpers.packArguments("installationComplete"));
+                }
+                else
+                {
+                    wsServer.send(Helpers.packArguments("installationFailed"));
+                }
+            }, (addonID, e) =>
+            {
+                // If a socket connection has previously been opened, send the progress percentage in a formatted string
+                wsServer.send(Helpers.packArguments("addon", addonID, e.ProgressPercentage.ToString()));
+            });
+        }
+
+        private static void getAddonStatusHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            checkAddons(c);
+        }
+
+        private static void receiveHook(UserContext c)
+        {
+
+            if (!validateConnection(c)) { return; }
+            appKeepAlive();
+        }
+
+        private static void gameServerInfoHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            Lobby lobby = new Lobby(KV.parse(x[2], true));
+            AddonCompiler.compileAddons(lobby, AddonDownloader.getAddonInstallLocation(), dotaPath + @"dota\addons_dotahost\active\");
+            c.Send(Helpers.packArguments("connectToServer", x[1]));
+        }
+
+        private static void getPatchGameInfoHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            c.Send(Helpers.packArguments("patchGameInfo", Properties.Settings.Default.gameinfoPatched ? "1" : "0"));
+        }
+
+        private static void patchGameInfoHook(UserContext c, string[] x)
+        {
+
+            if (!validateConnection(c)) { return; }
+            c.Send(Helpers.packArguments("tryPatchGameInfo", patchGameInfo() ? "1" : "0"));
+        }
+
 
         private static bool validateConnection(UserContext c)
         {
