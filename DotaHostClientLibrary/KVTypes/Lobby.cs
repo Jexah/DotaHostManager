@@ -4,6 +4,11 @@ namespace DotaHostClientLibrary
 {
     public class Lobby : KV
     {
+
+        public const byte WAITING = 0;
+        public const byte READY = 1;
+        public const byte ACTIVE = 2;
+
         public string Name
         {
             get
@@ -76,15 +81,15 @@ namespace DotaHostClientLibrary
             }
         }
 
-        public bool Active
+        public byte Status
         {
             get
             {
-                return getValue("6") == "1";
+                return Convert.ToByte(getValue("6"));
             }
             set
             {
-                setValue("6", value ? "1" : "0");
+                setValue("6", value.ToString());
             }
         }
 
@@ -99,7 +104,11 @@ namespace DotaHostClientLibrary
             {
                 foreach (Player p in t.Players.getPlayers())
                 {
-                    func(p);
+                    try
+                    {
+                        func(p);
+                    }
+                    catch { }
                 }
             }
         }
