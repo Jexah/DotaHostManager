@@ -100,8 +100,6 @@ namespace DotaHostServerManager
                 }
 
 
-                // Temporary while we don't have Runabove API working
-
                 // Initialize the new BoxManager
                 BoxManager boxManager = new BoxManager();
 
