@@ -67,12 +67,7 @@ namespace DotaHostLobbyManager
         public static void hookWSocketEvents()
         {
             // Log all incoming streams.
-            #region wsServer.addHook(RECEIVE);
-            wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
-            {
-                Helpers.log("Received: " + c.DataFrame.ToString());
-            });
-            #endregion
+            wsServer.addHook(WebSocketServer.RECEIVE, receiveHook);
 
             // This is a request for the lobbies from a browser, send lobbies back.
             wsServer.addHook("getLobbies", getLobbiesHook);
@@ -112,12 +107,7 @@ namespace DotaHostLobbyManager
 
 
 
-            #region wsClient.addHook(CONNECTED);
-            wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
-            {
-                c.Send("lobbyManager");
-            });
-            #endregion
+            wsClient.addHook(WebSocketClient.CONNECTED, connectedHook);
 
             // We got some game server info from the server manager
             wsClient.addHook("gameServerInfo", gameServerInfoHook);
@@ -335,7 +325,7 @@ namespace DotaHostLobbyManager
                         wsServer.send(Helpers.packArguments("swapTeam", teamID, slotID, steamID), steamIDToIP[player.SteamID]);
 
                         // If the game is full
-                        if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)//lobby.MaxPlayers)
+                        if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 2)//lobby.MaxPlayers)
                         {
                             // Let them know if the game is starting...
                             wsServer.send("lobbyFull", steamIDToIP[player.SteamID]);
@@ -363,7 +353,7 @@ namespace DotaHostLobbyManager
                     lobbyNameToTimer.Add(lobby.Name, Timers.setTimeout(20, Timers.SECONDS, () =>
                     {
                         // If the number of players ready is full at end of time out
-                        if (playersReady[lobby.Name].Count == 1)//lobby.MaxPlayers)
+                        if (playersReady[lobby.Name].Count == 2)//lobby.MaxPlayers)
                         {
                             // Get game server
                             requestGameServer(lobby);
@@ -529,7 +519,7 @@ namespace DotaHostLobbyManager
                 playersReady[lobby.Name].Add(steamid);
 
                 // If all players are ready
-                if (playersReady.Count == 1)//lobby.MaxPlayers)
+                if (playersReady.Count == 2)//lobby.MaxPlayers)
                 {
                     // Request game server
                     requestGameServer(lobby);
@@ -616,6 +606,19 @@ namespace DotaHostLobbyManager
                 }
             });
         }
+
+        private static void connectedHook(UserContext c)
+        {
+
+            c.Send("lobbyManager");
+        }
+
+        private static void receiveHook(UserContext c)
+        {
+
+            Helpers.log("Received: " + c.DataFrame.ToString());
+        }
+
 
         // This gets called on each tick of the lobby timer interval
         private static void lobbySendTick(Object myObject, EventArgs myEventArgs)
@@ -793,14 +796,14 @@ namespace DotaHostLobbyManager
                     if (player.SteamID != p.SteamID)
                     {
                         wsServer.send(Helpers.packArguments("addPlayerToLobby", player.toJSON(), "2"), steamIDToIP[p.SteamID]);
-                        if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)//lobby.MaxPlayers)
+                        if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 2)//lobby.MaxPlayers)
                         {
 
                             wsServer.send("lobbyFull", steamIDToIP[p.SteamID]);
                         }
                     }
                 });
-                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 1)//lobby.MaxPlayers)
+                if (lobby.Teams.getTeam("0").Players.getPlayers().Count + lobby.Teams.getTeam("1").Players.getPlayers().Count == 2)//lobby.MaxPlayers)
                 {
                     if (lobbyNameToTimer.ContainsKey(lobby.Name))
                     {
