@@ -69,65 +69,66 @@ namespace DotaHostClientLibrary
         private void hookDefaultFunctions()
         {
             // Log on connect begin
-            #region addHook(CONNECT);
-            addHook(CONNECT, (c) =>
-            {
-                Helpers.log("[Socket] Connecting...");
-            });
-            #endregion
+            addHook(CONNECT, connectHook);
 
             // Log on connected, send all waiting messages, and store client ID
-            #region addHook(CONNECTED);
-            addHook(CONNECTED, (c) =>
-            {
-                Helpers.log("[Socket] Connected!");
-
-                // Loop through queue and send all waiting packets
-                for (byte i = 0; i < wsQueue.Count; ++i)
-                {
-                    c.Send(wsQueue[i]);
-                }
-                wsQueue.Clear();
-
-                // Assign userid
-                string ip = c.ClientAddress.ToString();
-                if (userIdToContext.ContainsKey(ip))
-                {
-                    c.Send(Helpers.packArguments("id", ip));
-                    userIdToContext[ip] = c;
-                    userContextToId[c] = ip;
-                    return;
-                }
-                // Send client uid
-                c.Send(Helpers.packArguments("id", ip));
-
-                // Add connected user
-                try { userIdToContext.Add(ip, c); }
-                catch { }
-                try { userContextToId.Add(c, ip); }
-                catch { }
-            });
-            #endregion
+            addHook(CONNECTED, connectedHook);
 
             // Remove log disconnected, delete userID
-            #region addHook(DISCONNECETED);
-            addHook(DISCONNECTED, (c) =>
-            {
-                // Remove userid
-                Helpers.log("[Socket] Disconnected!");
-                userIdToContext.Remove(userContextToId[c]);
-                userContextToId.Remove(c);
-            });
-            #endregion
-
-
-            addHook("yolo", (c, x) =>
-            {
-                // Remove userid
-                Helpers.log("[Socket] yolo!");
-            });
+            addHook(DISCONNECTED, disconnectedHook);
 
         }
+
+        private void connectHook(UserContext c)
+        {
+
+            Helpers.log("[Socket] Connecting...");
+        }
+
+        private void connectedHook(UserContext c)
+        {
+            Helpers.log("[Socket] Connected!");
+
+            // Loop through queue and send all waiting packets
+            for (byte i = 0; i < wsQueue.Count; ++i)
+            {
+                c.Send(wsQueue[i]);
+            }
+            wsQueue.Clear();
+
+            // Assign userid
+            string ip = c.ClientAddress.ToString();
+            if (userIdToContext.ContainsKey(ip))
+            {
+                c.Send(Helpers.packArguments("id", ip));
+                userIdToContext[ip] = c;
+                userContextToId[c] = ip;
+                return;
+            }
+            // Send client uid
+            c.Send(Helpers.packArguments("id", ip));
+
+            // Add connected user
+            try { userIdToContext.Add(ip, c); }
+            catch { }
+            try { userContextToId.Add(c, ip); }
+            catch { }
+        }
+
+        private void disconnectedHook(UserContext c)
+        {
+            // Remove userid
+            Helpers.log("[Socket] Disconnected!");
+            if (userContextToId.ContainsKey(c))
+            {
+                if (userIdToContext.ContainsKey(userContextToId[c]))
+                {
+                    userIdToContext.Remove(userContextToId[c]);
+                }
+                userContextToId.Remove(c);
+            }
+        }
+
 
         public List<UserContext> getConnections()
         {
