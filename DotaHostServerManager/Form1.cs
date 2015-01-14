@@ -19,9 +19,6 @@ namespace DotaHostServerManager
         // Initialize boxManagers dictionary
         private static BoxManagers boxManagers = new BoxManagers();
 
-        // Initialize addonRequirements dictionary
-        private static Dictionary<string, AddonRequirements> addonRequirements = new Dictionary<string, AddonRequirements>();
-
         // Create WebSocketServer
         private static WebSocketServer wsServer = new WebSocketServer(Runabove.SERVER_MANAGER_PORT);
 
@@ -38,8 +35,6 @@ namespace DotaHostServerManager
         public Form1()
         {
             File.Delete("log.txt");
-
-            setAddonRequirements();
 
             serverSoftCap = 2;
 
@@ -69,226 +64,208 @@ namespace DotaHostServerManager
 
         }
 
-        // Set hardcoded benchmarks here
-        private void setAddonRequirements()
-        {
-            AddonRequirements lod = new AddonRequirements(350, 15);
-            addonRequirements.Add("lod", lod);
-            AddonRequirements csp = new AddonRequirements(350, 15);
-            addonRequirements.Add("csp", csp);
-        }
-
         // Socket hooks go here
         private void hookWSocketServerEvents()
         {
-            // Print received messages to console for debugging
-            #region wsServer.addHook(WebSocketServer.RECEIVE);
-            wsServer.addHook(WebSocketServer.RECEIVE, (c) =>
-            {
-                //Helpers.log("Receive: " + c.DataFrame.ToString());
-            });
-            #endregion
-
             // When a server is started, it sends box function, so this tells the servermanager "Hey, there's a new box in town" and the server manager does it's things to accomodate
-            #region wsServer.addHook("box");
-            wsServer.addHook("box", (c, x) =>
-            {
-
-                if (boxManagers.containsKey(c.ClientAddress.ToString()))
-                {
-                    return;
-                }
-
-
-                // Initialize the new BoxManager
-                BoxManager boxManager = new BoxManager();
-
-                boxManager.Ip = c.ClientAddress.ToString();
-
-                boxManager.Region = "None";
-                boxManager.InstanceID = "None";
-                boxManager.ThirdParty = true;
-
-                // Get a list of servers
-                Runabove.getServers((serverList) =>
-                {
-                    // Finds the box manager in the list of servers by matching the IPs
-                    serverList.forEach((server, i) =>
-                    {
-                        string serverIP = server.Ip;
-                        string boxIP = c.ClientAddress.ToString().Split(':')[0];
-
-                        Helpers.log("ServerIP: " + serverIP);
-                        Helpers.log("Box IP  " + boxIP);
-
-                        if (serverIP == boxIP || serverIP.Split(':')[0] == "127.0.0.1")
-                        {
-                            boxManager.ThirdParty = false;
-
-                            // Sets the subID so it can be destroyed later
-                            boxManager.InstanceID = server.InstanceID;
-
-                            // Sets the region so we know where it is hosted
-                            boxManager.Region = server.Region;
-
-                            return true;
-                        }
-                        return false;
-                    });
-
-
-                    // Send BoxManager object to server so it knows its place
-                    c.Send(Helpers.packArguments("box", boxManager.toString()));
-                });
-
-                // Add the box manager to the list
-                boxManagers.addBoxManager(boxManager);
-
-                modGUI(boxesList, () =>
-                {
-                    if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == boxManager.Ip)
-                    {
-                        setBoxStatsGUI(boxManager);
-                    }
-                });
-
-            });
-            #endregion
+            wsServer.addHook("box", boxHook);
 
             // Receives the system status from the box manager, loops
-            #region wsServer.addhook("system");
-            wsServer.addHook("system", (c, x) =>
-            {
-
-                if (!boxManagers.containsKey(c.ClientAddress.ToString()))
-                {
-                    return;
-                }
-
-                // Create pointer to box manager
-                BoxManager boxManager = boxManagers.getBoxManager(c.ClientAddress.ToString());
-
-                boxManager = new BoxManager(KV.parse(x[1]));
-
-                boxManagers.addBoxManager(boxManager);
-
-                BoxManager k = boxManagers.getBoxManager(c.ClientAddress.ToString());
-
-                // Request GUI-safe thread
-                modGUI(boxesList, () =>
-                {
-                    // Add BoxManager to the GUI List if it's not there
-                    if (!boxesList.Items.Contains(c.ClientAddress.ToString()))
-                    {
-                        boxesList.Items.Add(c.ClientAddress.ToString());
-                    }
-
-                    // If the box manager is in the list and is selected, update the stats
-                    if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == c.ClientAddress.ToString())
-                    {
-                        setBoxStatsGUI(boxManager);
-                    }
-                });
-
-                // Set timeout to request the system info again
-                Timers.setTimeout(1, Timers.SECONDS, () => { c.Send("system"); });
-            });
-            #endregion
+            wsServer.addHook("system", systemHook);
 
             // Adds disconnect hook, removes box manager from list, refreshes server browser listbox
-            #region wsServer.addHook(WebSocketServer.DISCONNECTED);
-            wsServer.addHook(WebSocketServer.DISCONNECTED, (c) =>
-            {
-
-                // Remove boxmanager from the list
-                boxManagers.removeBoxManager(c.ClientAddress.ToString());
-
-                // Update listbox
-                modGUI(boxesList, () => { boxesList.Items.Remove(c.ClientAddress.ToString()); });
-
-            });
-            #endregion
+            wsServer.addHook(WebSocketServer.DISCONNECTED, disconnectedHook);
 
             // Receive game server request from webserver
-            #region wsServer.addHook("createGameServer");
-            wsServer.addHook("createGameServer", (c, x) =>
+            wsServer.addHook("createGameServer", createGameServerHook);
+
+            // Receive confirmation of createGameServer from BoxManager
+            wsServer.addHook("gameServerInfo", gameServerInfoHook);
+
+            // A game server has exited
+            wsServer.addHook("gameServerExit", gameServerExitHook);
+
+            wsServer.addHook("lobbyManager", lobbyManagerHook);
+
+        }
+
+        private void boxHook(UserContext c, string[] x)
+        {
+            if (boxManagers.containsKey(c.ClientAddress.ToString()))
             {
-                Helpers.log("Received createGameServer from lobby");
-                Lobby lobby = new Lobby(KV.parse(x[1]));
+                return;
+            }
 
-                BoxManager boxManager = findBoxManager(lobby);
 
-                if (boxManager != null)
+            // Initialize the new BoxManager
+            BoxManager boxManager = new BoxManager();
+
+            boxManager.Ip = c.ClientAddress.ToString();
+
+            boxManager.Region = "None";
+            boxManager.InstanceID = "None";
+            boxManager.ThirdParty = true;
+
+            // Get a list of servers
+            Runabove.getServers((serverList) =>
+            {
+                // Finds the box manager in the list of servers by matching the IPs
+                serverList.forEach((server, i) =>
                 {
-                    Helpers.log("Found game server");
-                    GameServer gameServer = createGameServer(boxManager, lobby);
+                    string serverIP = server.Ip;
+                    string boxIP = c.ClientAddress.ToString().Split(':')[0];
 
-                    /*if (gameServer != null)
+                    Helpers.log("ServerIP: " + serverIP);
+                    Helpers.log("Box IP  " + boxIP);
+
+                    if (serverIP == boxIP || serverIP.Split(':')[0] == "127.0.0.1")
                     {
-                        c.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
+                        boxManager.ThirdParty = false;
+
+                        // Sets the subID so it can be destroyed later
+                        boxManager.InstanceID = server.InstanceID;
+
+                        // Sets the region so we know where it is hosted
+                        boxManager.Region = server.Region;
+
+                        return true;
                     }
-                    else
-                    {
-                        Helpers.log("Could not find server");
-                    }*/
+                    return false;
+                });
+
+
+                // Send BoxManager object to server so it knows its place
+                c.Send(Helpers.packArguments("box", boxManager.toString()));
+            });
+
+            // Add the box manager to the list
+            boxManagers.addBoxManager(boxManager);
+
+            modGUI(boxesList, () =>
+            {
+                if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == boxManager.Ip)
+                {
+                    setBoxStatsGUI(boxManager);
+                }
+            });
+        }
+
+        private void systemHook(UserContext c, string[] x)
+        {
+            if (!boxManagers.containsKey(c.ClientAddress.ToString()))
+            {
+                return;
+            }
+
+            // Create pointer to box manager
+            BoxManager boxManager = boxManagers.getBoxManager(c.ClientAddress.ToString());
+
+            boxManager = new BoxManager(KV.parse(x[1]));
+
+            boxManagers.addBoxManager(boxManager);
+
+            BoxManager k = boxManagers.getBoxManager(c.ClientAddress.ToString());
+
+            // Request GUI-safe thread
+            modGUI(boxesList, () =>
+            {
+                // Add BoxManager to the GUI List if it's not there
+                if (!boxesList.Items.Contains(c.ClientAddress.ToString()))
+                {
+                    boxesList.Items.Add(c.ClientAddress.ToString());
+                }
+
+                // If the box manager is in the list and is selected, update the stats
+                if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == c.ClientAddress.ToString())
+                {
+                    setBoxStatsGUI(boxManager);
+                }
+            });
+
+            // Set timeout to request the system info again
+            Timers.setTimeout(1, Timers.SECONDS, () => { c.Send("system"); });
+        }
+
+        private void disconnectedHook(UserContext c)
+        {
+
+            // Remove boxmanager from the list
+            boxManagers.removeBoxManager(c.ClientAddress.ToString());
+
+            // Update listbox
+            modGUI(boxesList, () => { boxesList.Items.Remove(c.ClientAddress.ToString()); });
+        }
+
+        private void createGameServerHook(UserContext c, string[] x)
+        {
+
+            Helpers.log("Received createGameServer from lobby");
+            Lobby lobby = new Lobby(KV.parse(x[1]));
+
+            BoxManager boxManager = findBoxManager(lobby);
+
+            if (boxManager != null)
+            {
+                Helpers.log("Found game server");
+                GameServer gameServer = createGameServer(boxManager, lobby);
+
+                /*if (gameServer != null)
+                {
+                    c.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                 }
                 else
                 {
-                    c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
-                }
-            });
-            #endregion
-
-            // Receive confirmation of createGameServer from BoxManager
-            #region wsServer.addHook("gameServerInfo");
-            wsServer.addHook("gameServerInfo", (c, x) =>
+                    Helpers.log("Could not find server");
+                }*/
+            }
+            else
             {
-                if (x[1] == "success")
+                c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
+            }
+        }
+
+        private void gameServerInfoHook(UserContext c, string[] x)
+        {
+            if (x[1] == "success")
+            {
+                GameServer gameServer = new GameServer(KV.parse(x[2]));
+
+                Helpers.log("GAME SERVER: " + gameServer.toString());
+
+                foreach (Team team in gameServer.Lobby.Teams.getTeams())
                 {
-                    GameServer gameServer = new GameServer(KV.parse(x[2]));
-
-                    Helpers.log("GAME SERVER: " + gameServer.toString());
-
-                    foreach (Team team in gameServer.Lobby.Teams.getTeams())
+                    foreach (Player player in team.Players.getPlayers())
                     {
-                        foreach (Player player in team.Players.getPlayers())
-                        {
-                            lobbyManager.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
-                        }
+                        lobbyManager.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
                     }
                 }
-            });
-            #endregion
-
-            // A game server has exited
-            #region wsServer.addHook("gameServerExit");
-            wsServer.addHook("gameServerExit", (c, x) =>
-            {
-                if (x[2] == "good")
-                {
-
-                }
-                else if (x[2] == "error")
-                {
-
-                }
-                Helpers.log("gameServerExit received (and sent)");
-                lobbyManager.Send(Helpers.packArguments("gameServerExit", x[2]));
-            });
-            #endregion
-
-
-            #region wsServer.addHook("lobbyManager");
-            wsServer.addHook("lobbyManager", (c, x) =>
-            {
-                if (c.ClientAddress.ToString().Split(':')[0] == "127.0.0.1")
-                {
-                    lobbyManager = c;
-                }
-            });
-            #endregion
-
+            }
         }
+
+        private void gameServerExitHook(UserContext c, string[] x)
+        {
+            if (x[2] == "good")
+            {
+
+            }
+            else if (x[2] == "error")
+            {
+
+            }
+            Helpers.log("gameServerExit received (and sent)");
+            lobbyManager.Send(Helpers.packArguments("gameServerExit", x[2]));
+        }
+
+        private void lobbyManagerHook(UserContext c, string[] x)
+        {
+            if (c.ClientAddress.ToString().Split(':')[0] == "127.0.0.1")
+            {
+                lobbyManager = c;
+            }
+        }
+
+
+
 
         // All BoxManager/Gameserver related events here
         #region BoxManager/GameServer related events
@@ -345,8 +322,7 @@ namespace DotaHostServerManager
             int totalCpu = 0;
             foreach (Addon addon in lobby.Addons.getAddons())
             {
-                totalRam += addonRequirements[addon.Id].Ram;
-                totalCpu += addonRequirements[addon.Id].Cpu;
+
             }
             foreach (BoxManager boxManager in boxManagers.getBoxManagers())
             {
