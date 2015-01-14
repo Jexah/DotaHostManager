@@ -160,18 +160,18 @@ namespace DotaHostLibrary
             );*/
 
             HTTPRequestManager.startRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body) =>
-                {
-                    // Take the raw JSON body and convert it into a dictionary of server properties
-                    dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
-                    OpenStackServerList serverList = new OpenStackServerList(data);
-                    func(serverList);
-                }, null,
-                new Dictionary<string, string>()
-                {
-                    {"Content-Type", "application/json"},
-                    {"X-Auth-Token", OPENSTACK_AUTH_TOKEN}
-                }
-            );
+            {
+                // Take the raw JSON body and convert it into a dictionary of server properties
+                dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
+                OpenStackServerList serverList = new OpenStackServerList(data);
+                func(serverList);
+            }, null,
+            new Dictionary<string, string>()
+            {
+                {"Content-Type", "application/json"},
+                {"X-Auth-Token", OPENSTACK_AUTH_TOKEN}
+            });
+
         }
     }
 }
