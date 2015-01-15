@@ -9,49 +9,49 @@ namespace DotaHostClientLibrary
 
     public class DownloadInstruction
     {
-        private string sourceFile;
+        private readonly string _sourceFile;
         public string SourceFile
         {
             get
             {
-                return sourceFile;
+                return _sourceFile;
             }
         }
 
-        private string targetFile;
+        private readonly string _targetFile;
         public string TargetFile
         {
             get
             {
-                return targetFile;
+                return _targetFile;
             }
         }
 
-        private DownloadProgressDel downloadProgress;
+        private readonly DownloadProgressDel _downloadProgress;
         public DownloadProgressDel DownloadProgress
         {
             get
             {
-                return downloadProgress;
+                return _downloadProgress;
             }
         }
 
-        private DownloadCompleteDel downloadComplete;
+        private readonly DownloadCompleteDel _downloadComplete;
         public DownloadCompleteDel DownloadComplete
         {
             get
             {
-                return downloadComplete;
+                return _downloadComplete;
             }
         }
 
         public DownloadInstruction(string sourceFile, string targetFile, DownloadProgressDel downloadProgress, DownloadCompleteDel downloadComplete)
         {
-            this.sourceFile = sourceFile;
-            this.targetFile = targetFile;
+            this._sourceFile = sourceFile;
+            this._targetFile = targetFile;
 
-            this.downloadProgress = downloadProgress;
-            this.downloadComplete = downloadComplete;
+            this._downloadProgress = downloadProgress;
+            this._downloadComplete = downloadComplete;
         }
 
     }

@@ -1,39 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace DotaHostLibrary
 {
     public class VultrServerProperties
     {
-        public string SUBID { get; set; }
-        public string os { get; set; }
-        public string ram { get; set; }
-        public string disk { get; set; }
-        public string main_ip { get; set; }
-        public string vcpu_count { get; set; }
-        public string location { get; set; }
-        public string DCID { get; set; }
-        public string default_password { get; set; }
-        public string date_created { get; set; }
-        public string pending_charges { get; set; }
-        public string status { get; set; }
-        public string cost_per_month { get; set; }
-        public string current_bandwidth_gb { get; set; }
-        public string allowed_bandwidth_gb { get; set; }
-        public string netmask_v4 { get; set; }
-        public string gateway_v4 { get; set; }
-        public string power_status { get; set; }
-        public string VPSPLANID { get; set; }
-        public string v6_network { get; set; }
-        public string v6_main_ip { get; set; }
-        public string v6_network_size { get; set; }
-        public string label { get; set; }
-        public string kvm_url { get; set; }
-        public string auto_backups { get; set; }
-
-        public VultrServerProperties() { }
+        public string Subid { get; set; }
+        public string Os { get; set; }
+        public string Ram { get; set; }
+        public string Disk { get; set; }
+        public string MainIp { get; set; }
+        public string VcpuCount { get; set; }
+        public string Location { get; set; }
+        public string Dcid { get; set; }
+        public string DefaultPassword { get; set; }
+        public string DateCreated { get; set; }
+        public string PendingCharges { get; set; }
+        public string Status { get; set; }
+        public string CostPerMonth { get; set; }
+        public string CurrentBandwidthGb { get; set; }
+        public string AllowedBandwidthGb { get; set; }
+        public string NetmaskV4 { get; set; }
+        public string GatewayV4 { get; set; }
+        public string PowerStatus { get; set; }
+        public string Vpsplanid { get; set; }
+        public string V6Network { get; set; }
+        public string V6MainIp { get; set; }
+        public string V6NetworkSize { get; set; }
+        public string Label { get; set; }
+        public string KvmUrl { get; set; }
+        public string AutoBackups { get; set; }
     }
 }

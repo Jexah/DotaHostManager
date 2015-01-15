@@ -2,17 +2,17 @@
 using System;
 namespace DotaHostClientLibrary
 {
-    public class Player : KV
+    public class Player : Kv
     {
-        public string SteamID
+        public string SteamId
         {
             get
             {
-                return getValue("0");
+                return GetValue("0");
             }
             set
             {
-                setValue("0", value);
+                SetValue("0", value);
             }
         }
 
@@ -20,11 +20,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("1");
+                return GetValue("1");
             }
             set
             {
-                setValue("1", value);
+                SetValue("1", value);
             }
         }
 
@@ -32,23 +32,23 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("2");
+                return GetValue("2");
             }
             set
             {
-                setValue("2", value);
+                SetValue("2", value);
             }
         }
 
-        public string ProfileURL
+        public string ProfileUrl
         {
             get
             {
-                return getValue("3");
+                return GetValue("3");
             }
             set
             {
-                setValue("3", value);
+                SetValue("3", value);
             }
         }
 
@@ -56,11 +56,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("4"));
+                return Convert.ToByte(GetValue("4"));
             }
             set
             {
-                setValue("4", value.ToString());
+                SetValue("4", value.ToString());
             }
         }
 
@@ -68,24 +68,24 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("5"));
+                return Convert.ToByte(GetValue("5"));
             }
             set
             {
-                setValue("5", value.ToString());
+                SetValue("5", value.ToString());
             }
         }
 
 
         public Player()
         {
-            initObject();
+            InitObject();
         }
 
 
-        public Player(KV source)
+        public Player(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

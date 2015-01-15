@@ -15,7 +15,7 @@ namespace DotaHostLibrary
                 Dynamic["addresses"]["Ext-Net"][0]["addr"] = value;
             }
         }
-        public string FlavorID
+        public string FlavorId
         {
             get
             {
@@ -26,7 +26,7 @@ namespace DotaHostLibrary
                 Dynamic["flavor"]["id"] = value;
             }
         }
-        public string InstanceID
+        public string InstanceId
         {
             get
             {
@@ -41,7 +41,7 @@ namespace DotaHostLibrary
         {
             get
             {
-                return FlavorID == Runabove.LARGE_SANDBOX_FRANCE ? Runabove.FRANCE : Runabove.CANADA;
+                return FlavorId == Runabove.LargeSandboxFrance ? Runabove.France : Runabove.Canada;
             }
         }
 

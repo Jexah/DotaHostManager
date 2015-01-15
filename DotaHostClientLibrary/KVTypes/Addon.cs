@@ -1,17 +1,17 @@
 ﻿
 namespace DotaHostClientLibrary
 {
-    public class Addon : KV
+    public class Addon : Kv
     {
         public string Id
         {
             get
             {
-                return getValue("0");
+                return GetValue("0");
             }
             set
             {
-                setValue("0", value);
+                SetValue("0", value);
             }
 
         }
@@ -20,22 +20,22 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return new Options(getKV("1"));
+                return new Options(GetKv("1"));
             }
             set
             {
-                setKey("1", value);
+                SetKey("1", value);
             }
         }
 
         public Addon()
         {
-            initObject();
+            InitObject();
         }
 
-        public Addon(KV source)
+        public Addon(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

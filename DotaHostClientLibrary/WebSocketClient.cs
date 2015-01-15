@@ -1,5 +1,4 @@
 ﻿using Alchemy.Classes;
-using DotaHostClientLibrary;
 using System.Collections.Generic;
 
 namespace DotaHostClientLibrary
@@ -7,87 +6,87 @@ namespace DotaHostClientLibrary
     public class WebSocketClient
     {
         // Web socket client we gonna use
-        private Alchemy.WebSocketClient wsClient;
+        private readonly Alchemy.WebSocketClient _wsClient;
 
         // Dictionarie containing the socket and download functions
-        private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
+        private readonly Dictionary<string, List<ReceiveDel>> _wsReceive = new Dictionary<string, List<ReceiveDel>>();
 
 
-        private List<socketDel>[] wsHooks = new List<socketDel>[5];
+        private readonly List<SocketDel>[] _wsHooks = new List<SocketDel>[5];
         public delegate void FailedConnection();
-        private FailedConnection failedFunc;
 
         // Message queue
-        private List<string> wsQueue = new List<string>();
+        private readonly List<string> _wsQueue = new List<string>();
 
-        public const byte RECEIVE = 0;
-        public const byte SEND = 1;
-        public const byte CONNECT = 2;
-        public const byte CONNECTED = 3;
-        public const byte DISCONNECTED = 4;
+        public const byte TypeReceive = 0;
+        public const byte TypeSend = 1;
+        public const byte TypeConnect = 2;
+        public const byte TypeConnected = 3;
+        public const byte TypeDisconnected = 4;
 
         // Connection toserver
-        private UserContext gContext;
+        private UserContext _gContext;
+        private FailedConnection _failedFunc;
 
         public WebSocketClient(string connectionLocation)
         {
             // Initialize wsHooks
-            for(byte i = 0; i < wsHooks.Length; ++i)
+            for (byte i = 0; i < _wsHooks.Length; ++i)
             {
-                wsHooks[i] = new List<socketDel>();
+                _wsHooks[i] = new List<SocketDel>();
             }
 
             // Set up websocket server
-            wsClient = new Alchemy.WebSocketClient(connectionLocation)
+            _wsClient = new Alchemy.WebSocketClient(connectionLocation)
             {
-                OnReceive = new Alchemy.OnEventDelegate((c) => { checkAndCall(c, wsReceive); callEventFunc(c, wsHooks[RECEIVE]); }),
-                OnSend = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[SEND]); }),
-                OnConnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[CONNECT]); }),
-                OnConnected = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[CONNECTED]); }),
-                OnDisconnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[DISCONNECTED]); })
+                OnReceive = c => { CheckAndCall(c, _wsReceive); CallEventFunc(c, _wsHooks[TypeReceive]); },
+                OnSend = c => { CallEventFunc(c, _wsHooks[TypeSend]); },
+                OnConnect = c => { CallEventFunc(c, _wsHooks[TypeConnect]); },
+                OnConnected = c => { CallEventFunc(c, _wsHooks[TypeConnected]); },
+                OnDisconnect = c => { CallEventFunc(c, _wsHooks[TypeDisconnected]); }
             };
 
             // Hook default functions
-            hookDefaultFunctions();
+            HookDefaultFunctions();
         }
 
         // Connects the websocket client to the server
-        public void start()
+        public void Start()
         {
-            wsClient.Connect();
+            _wsClient.Connect();
         }
 
         // Sets on failure function
-        public void onFailure(FailedConnection func)
+        public void OnFailure(FailedConnection func)
         {
-            this.failedFunc = func;
+            _failedFunc = func;
         }
 
         // Adds a default hook to onConnected
-        private void hookDefaultFunctions()
+        private void HookDefaultFunctions()
         {
-            addHook(CONNECT, (c) =>
+            AddHook(TypeConnect, c =>
             {
-                Helpers.log("[Socket] Connecting...");
+                Helpers.Log("[Socket] Connecting...");
             });
-            addHook(CONNECTED, (c) =>
+            AddHook(TypeConnected, c =>
             {
-                Helpers.log("[Socket] Connected!");
-                
+                Helpers.Log("[Socket] Connected!");
+
                 // Loop through queue and send all waiting packets
-                for (byte i = 0; i < wsQueue.Count; ++i)
+                for (byte i = 0; i < _wsQueue.Count; ++i)
                 {
                     //c.Send(wsQueue[i], false, false);
                 }
-                wsQueue.Clear();
+                _wsQueue.Clear();
 
                 // Set gContext to this connection
-               gContext = c;
+                _gContext = c;
             });
         }
 
         // Loops through generic function calls for the given event type
-        private void callEventFunc(UserContext c, List<socketDel> funcList)
+        private static void CallEventFunc(UserContext c, IReadOnlyList<SocketDel> funcList)
         {
             // Find key if exists, run function with given args
             for (byte i = 0; i < funcList.Count; ++i)
@@ -95,52 +94,54 @@ namespace DotaHostClientLibrary
                 funcList[i](c);
             }
         }
-        
+
         // Checks the received message for matching functions, and calls them all
-        private void checkAndCall(UserContext c, Dictionary<string, List<receiveDel>> state)
+        private static void CheckAndCall(UserContext c, IReadOnlyDictionary<string, List<ReceiveDel>> state)
         {
             // Find key if exists, run function with given args
-            string[] args = c.DataFrame.ToString().Split(Global.MSG_SEP);
-            if (state.ContainsKey(args[0]))
+            var args = c.DataFrame.ToString().Split(Global.MsgSep);
+
+            // If there is no key, return
+            if (!state.ContainsKey(args[0])) return;
+
+            // There is a key, loop through the functions
+            for (byte i = 0; i < state[args[0]].Count; ++i)
             {
-                for (byte i = 0; i < state[args[0]].Count; ++i)
-                {
-                    state[args[0]][i](c, args);
-                }
+                state[args[0]][i](c, args);
             }
         }
-        
+
         // Adds a hook of the given type
-        public void addHook(byte type, socketDel func)
+        public void AddHook(byte type, SocketDel func)
         {
             // Add the hook to the given list
-            wsHooks[type].Add(func);
+            _wsHooks[type].Add(func);
         }
-        
+
         // Adds a hook to onReceive with a given name
-        public void addHook(string funcName, receiveDel func)
+        public void AddHook(string funcName, ReceiveDel func)
         {
             // Add the hook to the given dictionary
-            if (wsReceive.ContainsKey(funcName))
+            if (_wsReceive.ContainsKey(funcName))
             {
-                wsReceive[funcName].Add(func);
+                _wsReceive[funcName].Add(func);
             }
             else
             {
-                wsReceive.Add(funcName, new List<receiveDel>() { func });
+                _wsReceive.Add(funcName, new List<ReceiveDel> { func });
             }
         }
 
         // Attempts to send a message to gContext, otherwise stores it in the queue
-        public void send(string message)
+        public void Send(string message)
         {
-            if (gContext != null)
+            if (_gContext != null)
             {
-                gContext.Send(message);
+                _gContext.Send(message);
             }
             else
             {
-                wsQueue.Add(message);
+                _wsQueue.Add(message);
             }
         }
     }

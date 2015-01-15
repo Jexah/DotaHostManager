@@ -2,14 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 
 namespace DotaHostLibrary
 {
-    public static class HTTPRequestManager
+    public static class HttpRequestManager
     {
-        public static void startRequest(string url, string method, Action<string> responseAction, Dictionary<string, string> sendData = null, Dictionary<string, string> headers = null)
+        public static void StartRequest(string url, string method, Action<string> responseAction, Dictionary<string, string> sendData = null, Dictionary<string, string> headers = null)
         {
             // Initialize request object
             HttpWebRequest request = null;
@@ -23,10 +24,7 @@ namespace DotaHostLibrary
                 if (sendData != null)
                 {
                     // Loop through the kkey value pairs in the data, and append them to the url
-                    foreach (KeyValuePair<string, string> kvp in sendData)
-                    {
-                        url += kvp.Key + "=" + kvp.Value + "&";
-                    }
+                    url = sendData.Aggregate(url, (current, kvp) => current + (kvp.Key + "=" + kvp.Value + "&"));
 
                     // Remove the trailing & at the end
                     if (sendData.Count > 0)
@@ -48,7 +46,7 @@ namespace DotaHostLibrary
                 if (sendData != null)
                 {
                     // Loop through the key value pairs in the data, append them to postData, except in the case of api_key, append to URL
-                    foreach (KeyValuePair<string, string> kvp in sendData)
+                    foreach (var kvp in sendData)
                     {
                         if (kvp.Key == "api_key")
                         {
@@ -65,7 +63,7 @@ namespace DotaHostLibrary
                     {
                         postData = postData.Substring(0, postData.Length - 1);
                     }
-                    Helpers.log(url);
+                    Helpers.Log(url);
                 }
 
                 // Refine the request using the new URL
@@ -96,15 +94,15 @@ namespace DotaHostLibrary
 
             if (headers != null)
             {
-                foreach (KeyValuePair<string, string> kvp in headers)
+                foreach (var kvp in headers)
                 {
                     if (kvp.Key == "Content-Type")
                     {
-                        request.ContentType = kvp.Value;
+                        if (request != null) request.ContentType = kvp.Value;
                     }
                     else
                     {
-                        request.Headers[kvp.Key] = kvp.Value;
+                        if (request != null) request.Headers[kvp.Key] = kvp.Value;
                     }
                 }
             }
@@ -113,27 +111,28 @@ namespace DotaHostLibrary
             Action wrapperAction = () =>
             {
                 // Async get response
-                request.BeginGetResponse(new AsyncCallback((iar) =>
-                {
-                    // Get response object
-                    var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
+                if (request != null)
+                    request.BeginGetResponse(iar =>
+                    {
+                        // Get response object
+                        var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
 
-                    // Read response stream and store data
-                    var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                        // Read response stream and store data
+                        var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
 
-                    // Call the given function taking the raw JSON as the parameter
-                    responseAction(body);
+                        // Call the given function taking the raw JSON as the parameter
+                        responseAction(body);
 
-                }), request);
+                    }, request);
             };
 
             // Call of the async function defined above, asynchronously
-            wrapperAction.BeginInvoke(new AsyncCallback((iar) =>
+            wrapperAction.BeginInvoke(iar =>
             {
                 var action = (Action)iar.AsyncState;
                 action.EndInvoke(iar);
-            }), wrapperAction);
+            }, wrapperAction);
         }
 
     }

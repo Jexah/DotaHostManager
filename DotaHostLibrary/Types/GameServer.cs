@@ -3,18 +3,18 @@ using System;
 
 namespace DotaHostLibrary
 {
-    public class GameServer : KV
+    public class GameServer : Kv
     {
 
         public string Ip
         {
             get
             {
-                return getValue("0");
+                return GetValue("0");
             }
             set
             {
-                setValue("0", value);
+                SetValue("0", value);
             }
         }
 
@@ -22,11 +22,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToUInt16(getValue("1"));
+                return Convert.ToUInt16(GetValue("1"));
             }
             set
             {
-                setValue("1", value.ToString());
+                SetValue("1", value.ToString());
             }
         }
 
@@ -34,24 +34,24 @@ namespace DotaHostLibrary
         {
             get
             {
-                return new Lobby(getKV("2"));
+                return new Lobby(GetKv("2"));
             }
             set
             {
-                setKey("2", value);
+                SetKey("2", value);
             }
         }
 
 
         public GameServer()
         {
-            initObject();
+            InitObject();
         }
 
 
-        public GameServer(KV source)
+        public GameServer(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

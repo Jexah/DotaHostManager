@@ -8,37 +8,37 @@ namespace DotaHostServerManager
 {
     public class AddonRequirements
     {
-        private short ram;
+        private short _ram;
         public short Ram
         {
             get
             {
-                return ram;
+                return _ram;
             }
             set
             {
-                ram = value;
+                _ram = value;
             }
         }
 
-        private byte cpu;
+        private byte _cpu;
         public byte Cpu
         {
             get
             {
-                return cpu;
+                return _cpu;
             }
             set
             {
-                cpu = value;
+                _cpu = value;
             }
         }
 
         public AddonRequirements() { }
         public AddonRequirements(short ram, byte cpu)
         {
-            this.ram = ram;
-            this.cpu = cpu;
+            this._ram = ram;
+            this._cpu = cpu;
         }
     }
 }

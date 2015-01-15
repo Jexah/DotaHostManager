@@ -1,21 +1,21 @@
 ﻿
 namespace DotaHostClientLibrary
 {
-    public class GenericKV : KV
+    public class GenericKv : Kv
     {
-        public GenericKV()
+        public GenericKv()
         {
-            initObject();
+            InitObject();
         }
 
-        public void setGenericKey(string key, KV kv)
+        public void SetGenericKey(string key, Kv kv)
         {
-            setKey(key, kv);
+            SetKey(key, kv);
         }
 
-        public void setGenericValue(string key, string value)
+        public void SetGenericValue(string key, string value)
         {
-            setValue(key, value);
+            SetValue(key, value);
         }
     }
 }

@@ -8,30 +8,32 @@ namespace DotaHostManagerUpdater
     class Program
     {
         // Download manager
-        private static DownloadManager dlManager = new DownloadManager();
+        private static readonly DownloadManager DlManager = new DownloadManager();
 
-        static void Main(string[] args)
+        static void Main()
         {
-            update();
+            Update();
         }
 
-        private static void update()
+        private static void Update()
         {
             try
             {
                 // Download version info
-                dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManager"), Global.TEMP + "DotaHostManager.txt");
+                DlManager.DownloadSync(string.Format(Global.DownloadPathAddonInfo, "DotaHostManager"), Global.Temp + "DotaHostManager.txt");
 
                 // Store version info
-                string[] versionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManager.txt");
+                var versionCrc = File.ReadAllLines(Global.Temp + "DotaHostManager.txt");
 
                 // Download manager
-                dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_APP, versionCRC[0]), Global.BASE_PATH + @"DotaHostManager.exe");
+                DlManager.DownloadSync(string.Format(Global.DownloadPathApp, versionCrc[0]), Global.BasePath + @"DotaHostManager.exe");
 
-                ProcessStartInfo proc = new ProcessStartInfo();
-                proc.UseShellExecute = true;
-                proc.WorkingDirectory = Global.BASE_PATH;
-                proc.FileName = "DotaHostManager.exe";
+                var proc = new ProcessStartInfo
+                {
+                    UseShellExecute = true,
+                    WorkingDirectory = Global.BasePath,
+                    FileName = "DotaHostManager.exe"
+                };
                 try
                 {
                     Process.Start(proc);
@@ -39,12 +41,12 @@ namespace DotaHostManagerUpdater
                 }
                 catch
                 {
-                    Timers.setTimeout(1, Timers.SECONDS, update);
+                    Timers.SetTimeout(1, Timers.Seconds, Update);
                 }
             }
             catch
             {
-                Timers.setTimeout(1, Timers.SECONDS, update);
+                Timers.SetTimeout(1, Timers.Seconds, Update);
             }
         }
     }

@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Timers;
 using System.Windows.Forms;
 
@@ -13,116 +14,116 @@ namespace DotaHostManager
     class Program
     {
         // Addon status consts
-        private const byte ADDON_STATUS_ERROR = 0;
-        private const byte ADDON_STATUS_MISSING = 1;
-        private const byte ADDON_STATUS_UPDATE = 2;
-        private const byte ADDON_STATUS_READY = 3;
+        private const byte AddonStatusError = 0;
+        private const byte AddonStatusMissing = 1;
+        private const byte AddonStatusUpdate = 2;
+        private const byte AddonStatusReady = 3;
 
         // CRC of this exe
-        private static string CRC = "";
+        private static string _crc = "";
 
         // Keep-alive timer
-        private static System.Timers.Timer keepAlive;
+        private static System.Timers.Timer _keepAlive;
 
         // Keep-alive duration
-        private const int KEEP_ALIVE_DURATION = 60000; // 60 seconds
+        private const int KeepAliveDuration = 60000; // 60 seconds
 
         // Increments by 1 everytime an action is started, decrements every time an action is finished. The program will not close on timeout unless this is zero
-        private static byte zeroCanClose = 0;
+        private static byte _zeroCanClose;
 
         // If this is true, the program requests close, but will not close until zeroCanClose is equal to zero
-        private static bool requestClose = false;
+        private static bool _requestClose;
 
         // This is our download manager.
-        private static DownloadManager dlManager = new DownloadManager();
+        private static readonly DownloadManager DlManager = new DownloadManager();
 
         // Path to dota, eg: C:\Program Files (x86)\Steam\steamapps\dota 2 beta\
-        private static string dotaPath = "";
+        private static string _dotaPath = "";
 
         // Prevent running exit code more than once
-        private static bool exiting = false;
+        private static bool _exiting;
 
         // Our websocket server
-        private static WebSocketServer wsServer = new WebSocketServer(2074);
+        private static readonly WebSocketServer WsServer = new WebSocketServer(2074);
 
         private static void Main(string[] i)
         {
             if (i.Length > 1 && i[0] == "crc")
             {
-                Console.WriteLine(Helpers.calculateCRC(i[1]));
+                Console.WriteLine(Helpers.CalculateCrc(i[1]));
                 Console.ReadLine();
                 return;
             }
 
             // Reset log file
-            File.Delete(Global.BASE_PATH + "log.txt");
+            File.Delete(Global.BasePath + "log.txt");
 
-            File.Delete(Global.BASE_PATH + "DotaHostManagerUpdater.exe");
+            File.Delete(Global.BasePath + "DotaHostManagerUpdater.exe");
 
             // Create temp directory if it doesn't exist
-            Directory.CreateDirectory(Global.TEMP);
+            Directory.CreateDirectory(Global.Temp);
 
-            if (Global.TEMP != Global.BASE_PATH)
+            if (Global.Temp != Global.BasePath)
             {
-                if (!File.Exists(Global.TEMP + "DotaHostManager.exe"))
+                if (!File.Exists(Global.Temp + "DotaHostManager.exe"))
                 {
-                    copyAndDeleteSelf();
+                    CopyAndDeleteSelf();
                 }
                 else
                 {
-                    File.Delete(Global.TEMP + "DotaHostManager.exe");
-                    copyAndDeleteSelf();
+                    File.Delete(Global.Temp + "DotaHostManager.exe");
+                    CopyAndDeleteSelf();
                 }
                 return;
             }
 
             // Hook the dotaHostManager socket events
-            hookWSocketEvents();
+            HookWSocketEvents();
 
             // Download the version file from website
-            downloadAppVersion();
+            DownloadAppVersion();
 
             // Attempts to find the dota path, if it can't find it, sets it to 'unknown'
-            checkDotaPath();
+            CheckDotaPath();
 
             // Try to patch gameinfo
             if (!Properties.Settings.Default.gameinfoPatched)
             {
-                patchGameInfo();
+                PatchGameInfo();
             }
 
             // Start websocket server
-            Timers.setTimeout(500, Timers.MILLISECONDS, wsServer.start);
+            Timers.SetTimeout(500, Timers.Milliseconds, WsServer.Start);
 
             // If first-run or requested autorun, attempt to register the uri protocol
             Console.WriteLine(Properties.Settings.Default.autorun);
             if (Properties.Settings.Default.shouldRegister)
             {
-                registerProtocol();
+                RegisterProtocol();
             }
             if (Properties.Settings.Default.shouldDeregister)
             {
-                deregisterProtocol();
+                DeregisterProtocol();
             }
 
             // Begin exit timer
-            appKeepAlive();
+            AppKeepAlive();
 
             // Event loop to prevent program from exiting
-            doEvents();
+            DoEvents();
         }
 
         // Copies this application to temp, then deletes itself
-        private static void copyAndDeleteSelf()
+        private static void CopyAndDeleteSelf()
         {
             using (var inputFile = new FileStream(
-                        Helpers.FULL_EXE_PATH,
+                        Helpers.FullExePath,
                         FileMode.Open,
                         FileAccess.Read,
                         FileShare.ReadWrite
                     ))
             {
-                using (var outputFile = new FileStream(Global.TEMP + "DotaHostManager.exe", FileMode.Create))
+                using (var outputFile = new FileStream(Global.Temp + "DotaHostManager.exe", FileMode.Create))
                 {
                     var buffer = new byte[0x10000];
                     int bytes;
@@ -132,57 +133,57 @@ namespace DotaHostManager
                         outputFile.Write(buffer, 0, bytes);
                     }
                 }
-            };
-            Process.Start(Global.TEMP + "DotaHostManager.exe");
-            exit();
+            }
+            Process.Start(Global.Temp + "DotaHostManager.exe");
+            Exit();
         }
 
         // Download the most up-to-date version file of the app
-        private static void downloadAppVersion()
+        private static void DownloadAppVersion()
         {
-            Helpers.log(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManager"));
-            Helpers.log(Global.TEMP + "DotaHostManager.txt");
-            dlManager.download(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManager"), Global.TEMP + "DotaHostManager.txt", (e) => { }, (e) =>
+            Helpers.Log(string.Format(Global.DownloadPathAddonInfo, "DotaHostManager"));
+            Helpers.Log(Global.Temp + "DotaHostManager.txt");
+            DlManager.Download(string.Format(Global.DownloadPathAddonInfo, "DotaHostManager"), Global.Temp + "DotaHostManager.txt", e => { }, e =>
             {
-                Helpers.log("[Update] Checking for updates...");
+                Helpers.Log("[Update] Checking for updates...");
                 //try
                 //{
                 Console.WriteLine("1");
                 // Reads the version file from temp
-                string[] managerVersionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManager.txt");
+                string[] managerVersionCrc = File.ReadAllLines(Global.Temp + "DotaHostManager.txt");
                 Console.WriteLine("2");
                 // Clean up file
-                File.Delete(Global.TEMP + "DotaHostManager.txt");
+                File.Delete(Global.Temp + "DotaHostManager.txt");
 
                 Console.WriteLine("3");
-                Console.WriteLine(getCRC());
+                Console.WriteLine(GetCrc());
                 // Checks if the read version matches the const version
-                if (managerVersionCRC[1] != getCRC())
+                if (managerVersionCrc[1] != GetCrc())
                 {
                     // They do not match, download new version
-                    Helpers.log("[Update] New version detected!");
+                    Helpers.Log("[Update] New version detected!");
 
-                    dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "DotaHostManagerUpdater"), Global.TEMP + "DotaHostManagerUpdater.txt");
+                    DlManager.DownloadSync(string.Format(Global.DownloadPathAddonInfo, "DotaHostManagerUpdater"), Global.Temp + "DotaHostManagerUpdater.txt");
 
-                    string[] updaterVersionCRC = File.ReadAllLines(Global.TEMP + "DotaHostManagerUpdater.txt");
+                    string[] updaterVersionCrc = File.ReadAllLines(Global.Temp + "DotaHostManagerUpdater.txt");
 
-                    Helpers.log("[Update] Downloading updater...");
+                    Helpers.Log("[Update] Downloading updater...");
 
-                    dlManager.download(updaterVersionCRC[0], Global.TEMP + "DotaHostManagerUpdater.exe", (e2) =>
+                    DlManager.Download(updaterVersionCrc[0], Global.Temp + "DotaHostManagerUpdater.exe", e2 =>
                     {
-                        appUpdaterDownloadProgress(e2.ProgressPercentage);
-                    }, (e2) =>
+                        AppUpdaterDownloadProgress(e2.ProgressPercentage);
+                    }, e2 =>
                     {
                         // Begin the updater
-                        startUpdater();
+                        StartUpdater();
                     });
                 }
                 else
                 {
-                    Helpers.log("[Update] DotaHost up-to-date!");
+                    Helpers.Log("[Update] DotaHost up-to-date!");
                 }
                 //}
-                ///catch
+                //catch
                 //{
                 //    Helpers.log("[Update] Updating failed.");
                 //}
@@ -190,111 +191,105 @@ namespace DotaHostManager
         }
 
         // Calculate CRC and store it in CRC variable, if already calculated, just return CRC variable
-        private static string getCRC()
+        private static string GetCrc()
         {
             Console.WriteLine("getCRC 1");
-            if (CRC == "")
+            if (_crc == "")
             {
                 Console.WriteLine("getCRC 2");
-                CRC = Helpers.calculateCRC(Helpers.FULL_EXE_PATH);
+                _crc = Helpers.CalculateCrc(Helpers.FullExePath);
             }
             Console.WriteLine("getCRC 3");
-            return CRC;
+            return _crc;
         }
 
         // Called every time the app updater download progresses
-        private static void appUpdaterDownloadProgress(int percentage)
+        private static void AppUpdaterDownloadProgress(int percentage)
         {
-            wsServer.send(Helpers.packArguments("appUpdater", "percent", percentage.ToString()));
+            WsServer.Send(Helpers.PackArguments("appUpdater", "percent", percentage.ToString()));
         }
 
         // Exits the program as soon as it is finished the current task
-        private static void exit(object sender, ElapsedEventArgs e)
+        private static void Exit(object sender, ElapsedEventArgs e)
         {
-            requestClose = true;
-            Helpers.log("[Time Out] Exiting...");
+            _requestClose = true;
+            Helpers.Log("[Time Out] Exiting...");
         }
 
         // Starts the updater and closes this program
-        private static void startUpdater()
+        private static void StartUpdater()
         {
-            Helpers.log("[Update] Starting...");
-            ProcessStartInfo proc = new ProcessStartInfo();
-            proc.UseShellExecute = true;
-            proc.WorkingDirectory = Global.TEMP;
-            proc.FileName = "DotaHostManagerUpdater.exe";
+            Helpers.Log("[Update] Starting...");
+            var proc = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Global.Temp,
+                FileName = "DotaHostManagerUpdater.exe"
+            };
             try
             {
                 Process.Start(proc);
-                exit();
+                Exit();
             }
             catch
             {
-
+                // ignored
             }
         }
 
         // Generates a json structure of installed addon information, sends it to client
-        private static void checkAddons(UserContext c)
+        private static void CheckAddons(UserContext c)
         {
-            if (!Directory.Exists(dotaPath + @"dota\addons_dotahost"))
+            if (!Directory.Exists(_dotaPath + @"dota\addons_dotahost"))
             {
-                Directory.CreateDirectory(dotaPath + @"dota\addons_dotahost");
+                Directory.CreateDirectory(_dotaPath + @"dota\addons_dotahost");
             }
-            dlManager.downloadSync(Global.ROOT + "addons/addons.txt", Global.TEMP + "addons.txt");
-            string[] addonsList = File.ReadAllLines(Global.TEMP + "addons.txt");
-            Helpers.deleteSafe(Global.TEMP + "addons.txt");
-            string[] fileList = Directory.GetFiles(dotaPath + @"dota\addons_dotahost");
-            for (int i = 0; i < addonsList.Length; ++i)
+            DlManager.DownloadSync(Global.Root + "addons/addons.txt", Global.Temp + "addons.txt");
+            var addonsList = File.ReadAllLines(Global.Temp + "addons.txt");
+            Helpers.DeleteSafe(Global.Temp + "addons.txt");
+            foreach (string t in addonsList)
             {
                 try
                 {
-                    string addonID = addonsList[i];
-                    string downloadPath = string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, addonID);
-                    dlManager.downloadSync(downloadPath, Global.TEMP + addonID);
-                    string[] info = File.ReadAllLines(Global.TEMP + addonID);
-                    Helpers.deleteSafe(Global.TEMP + addonID);
+                    string addonId = t;
+                    string downloadPath = string.Format(Global.DownloadPathAddonInfo, addonId);
+                    DlManager.DownloadSync(downloadPath, Global.Temp + addonId);
+                    var info = File.ReadAllLines(Global.Temp + addonId);
+                    Helpers.DeleteSafe(Global.Temp + addonId);
                     if (info.Length != 2)
                     {
-                        Helpers.log("ERROR: Infopacket for " + addonID + " is corrupted! Got " + info.Length + " lines instead of 2.");
-                        c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_ERROR.ToString(), addonID));
+                        Helpers.Log("ERROR: Infopacket for " + addonId + " is corrupted! Got " + info.Length + " lines instead of 2.");
+                        c.Send(Helpers.PackArguments("addonStatus", AddonStatusError.ToString(), addonId));
                         continue;
                     }
 
-                    string version = info[0];
-                    string correctCRC = info[1];
-                    string actualCRC = "";
+                    string correctCrc = info[1];
 
                     // Check if the addon is already downloaded
-                    if (File.Exists(AddonDownloader.getAddonInstallLocation() + addonID + ".zip"))
+                    if (File.Exists(AddonDownloader.GetAddonInstallLocation() + addonId + ".zip"))
                     {
                         // Check the CRC
-                        actualCRC = Helpers.calculateCRC(AddonDownloader.getAddonInstallLocation() + addonID + ".zip");
+                        var actualCrc = Helpers.CalculateCrc(AddonDownloader.GetAddonInstallLocation() + addonId + ".zip");
 
                         // If it matches, we're already upto date
-                        if (actualCRC == correctCRC)
-                        {
-                            c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_READY.ToString(), addonID));
-                            continue;
-                        }
-                        else
-                        {
-                            c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_UPDATE.ToString(), addonID));
-                            continue;
-                        }
+                        c.Send(actualCrc == correctCrc
+                            ? Helpers.PackArguments("addonStatus", AddonStatusReady.ToString(), addonId)
+                            : Helpers.PackArguments("addonStatus", AddonStatusUpdate.ToString(), addonId));
                     }
                     else
                     {
-                        c.Send(Helpers.packArguments("addonStatus", ADDON_STATUS_MISSING.ToString(), addonID));
-                        continue;
+                        c.Send(Helpers.PackArguments("addonStatus", AddonStatusMissing.ToString(), addonId));
                     }
                 }
-                catch { }
+                catch
+                {
+                    // ignored
+                }
             }
         }
 
         // Attempts to find the dota path, returns false if not found
-        private static bool checkDotaPath()
+        private static bool CheckDotaPath()
         {
             try
             {
@@ -307,206 +302,198 @@ namespace DotaHostManager
                     // If path is found, update it in the program
                     if (path != String.Empty)
                     {
-                        updateDotaPath(path + @"\");
+                        UpdateDotaPath(path + @"\");
                     }
                 }
                 else
                 {
                     // Path has already been found, set it to the stored setting
-                    dotaPath = Properties.Settings.Default.dotaPath;
+                    _dotaPath = Properties.Settings.Default.dotaPath;
 
                     // Update addon downloader
-                    AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
+                    AddonDownloader.SetAddonInstallLocation(string.Format(Global.ClientAddonInstallLocation, _dotaPath));
                 }
-                Helpers.log("Found dota path: " + dotaPath);
+                Helpers.Log("Found dota path: " + _dotaPath);
                 return true;
             }
             catch
             {
-                Helpers.log("Could not find dota path. Enter dota path manually on website.");
-                updateDotaPath("unknown");
+                Helpers.Log("Could not find dota path. Enter dota path manually on website.");
+                UpdateDotaPath("unknown");
                 return false;
             }
         }
 
         // Updates the dota path
-        private static void updateDotaPath(string newPath)
+        private static void UpdateDotaPath(string newPath)
         {
             // Check if newPath is a valid directory
             if (!Directory.Exists(newPath))
             {
-                Helpers.log("Directory does not exist: " + newPath);
+                Helpers.Log("Directory does not exist: " + newPath);
             }
             else
             {
                 try
                 {
                     // Sets dotaPath and settings to the new path
-                    dotaPath = newPath;
-                    Properties.Settings.Default.dotaPath = dotaPath;
+                    _dotaPath = newPath;
+                    Properties.Settings.Default.dotaPath = _dotaPath;
                     Properties.Settings.Default.Save();
-                    Helpers.log("Updated dota path: " + dotaPath);
+                    Helpers.Log("Updated dota path: " + _dotaPath);
 
                     // Update the addon downloads
-                    AddonDownloader.setAddonInstallLocation(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, dotaPath));
+                    AddonDownloader.SetAddonInstallLocation(string.Format(Global.ClientAddonInstallLocation, _dotaPath));
 
-                    wsServer.send(Helpers.packArguments("dotaPath", newPath));
+                    WsServer.Send(Helpers.PackArguments("dotaPath", newPath));
                 }
                 catch
                 {
                     // Whoops, something went wrong
-                    Helpers.log("Failed to update path: Uncaught exception");
+                    Helpers.Log("Failed to update path: Uncaught exception");
                 }
             }
         }
 
         // Create and bind the functions for web socket events
-        private static void hookWSocketEvents()
+        private static void HookWSocketEvents()
         {
-            wsServer.addHook("setDotaPath", setDotaPathHook);
+            WsServer.AddHook("setDotaPath", SetDotaPathHook);
 
-            wsServer.addHook("exit", exitHook);
+            WsServer.AddHook("exit", ExitHook);
 
-            wsServer.addHook(WebSocketServer.CONNECTED, connectedHook);
+            WsServer.AddHook(WebSocketServer.TypeConnected, ConnectedHook);
 
-            wsServer.addHook("autorun", autorunHook);
+            WsServer.AddHook("autorun", AutorunHook);
 
-            wsServer.addHook("getAutorun", getAutorunHook);
+            WsServer.AddHook("getAutorun", GetAutorunHook);
 
-            wsServer.addHook("getDotapath", getDotapathHook);
+            WsServer.AddHook("getDotapath", GetDotapathHook);
 
-            wsServer.addHook("uninstall", uninstallHook);
+            WsServer.AddHook("uninstall", UninstallHook);
 
-            wsServer.addHook("update", updateHook);
+            WsServer.AddHook("update", UpdateHook);
 
-            wsServer.addHook("getAddonStatus", getAddonStatusHook);
+            WsServer.AddHook("getAddonStatus", GetAddonStatusHook);
 
-            wsServer.addHook(WebSocketServer.RECEIVE, receiveHook);
+            WsServer.AddHook(WebSocketServer.TypeReceive, ReceiveHook);
 
-            wsServer.addHook("gameServerInfo", gameServerInfoHook);
+            WsServer.AddHook("gameServerInfo", GameServerInfoHook);
 
-            wsServer.addHook("getPatchGameInfo", getPatchGameInfoHook);
+            WsServer.AddHook("getPatchGameInfo", GetPatchGameInfoHook);
 
-            wsServer.addHook("patchGameInfo", patchGameInfoHook);
+            WsServer.AddHook("patchGameInfo", PatchGameInfoHook);
         }
 
-        private static void setDotaPathHook(UserContext c, string[] x)
+        private static void SetDotaPathHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            updateDotaPath(x[1]);
+            if (!ValidateConnection(c)) { return; }
+            UpdateDotaPath(x[1]);
         }
 
-        private static void exitHook(UserContext c, string[] x)
+        private static void ExitHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            requestClose = true;
+            if (!ValidateConnection(c)) { return; }
+            _requestClose = true;
         }
 
-        private static void connectedHook(UserContext c)
+        private static void ConnectedHook(UserContext c)
         {
 
-            if (!validateConnection(c)) { return; }
-            c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
-            c.Send(Helpers.packArguments("dotaPath", Properties.Settings.Default.dotaPath));
+            if (!ValidateConnection(c)) { return; }
+            c.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+            c.Send(Helpers.PackArguments("dotaPath", Properties.Settings.Default.dotaPath));
         }
 
-        private static void autorunHook(UserContext c, string[] x)
+        private static void AutorunHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
+            if (!ValidateConnection(c)) { return; }
             Console.WriteLine("autorun receive");
             Properties.Settings.Default.shouldRegister = true;
             Properties.Settings.Default.Save();
-            registerProtocol();
+            RegisterProtocol();
         }
 
-        private static void getAutorunHook(UserContext c, string[] x)
+        private static void GetAutorunHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            c.Send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+            if (!ValidateConnection(c)) { return; }
+            c.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
         }
 
-        private static void getDotapathHook(UserContext c, string[] x)
+        private static void GetDotapathHook(UserContext c, string[] x)
         {
-            if (!validateConnection(c)) { return; }
-            c.Send(Helpers.packArguments("dotaPath", dotaPath));
+            if (!ValidateConnection(c)) { return; }
+            c.Send(Helpers.PackArguments("dotaPath", _dotaPath));
         }
 
-        private static void uninstallHook(UserContext c, string[] x)
+        private static void UninstallHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            deregisterProtocol();
-            Helpers.log("Uninstall received");
+            if (!ValidateConnection(c)) { return; }
+            DeregisterProtocol();
+            Helpers.Log("Uninstall received");
         }
 
-        private static void updateHook(UserContext c, string[] x)
+        private static void UpdateHook(UserContext c, string[] x)
         {
-            if (!validateConnection(c)) { return; }
+            if (!ValidateConnection(c)) { return; }
             c.Send("startInstall");
-            AddonDownloader.updateAddon(x[1], (addonID, success) =>
+            AddonDownloader.UpdateAddon(x[1], (addonId, success) =>
             {
                 // Tell the server what happened
-                if (success)
-                {
-                    // Installation was successful, send formatted string to most recent connection
-                    wsServer.send(Helpers.packArguments("installationComplete"));
-                }
-                else
-                {
-                    wsServer.send(Helpers.packArguments("installationFailed"));
-                }
-            }, (addonID, e) =>
+                WsServer.Send(Helpers.PackArguments(success ? "installationComplete" : "installationFailed"));
+            }, (addonId, e) =>
             {
                 // If a socket connection has previously been opened, send the progress percentage in a formatted string
-                wsServer.send(Helpers.packArguments("addon", addonID, e.ProgressPercentage.ToString()));
+                WsServer.Send(Helpers.PackArguments("addon", addonId, e.ProgressPercentage.ToString()));
             });
         }
 
-        private static void getAddonStatusHook(UserContext c, string[] x)
+        private static void GetAddonStatusHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            checkAddons(c);
+            if (!ValidateConnection(c)) { return; }
+            CheckAddons(c);
         }
 
-        private static void receiveHook(UserContext c)
+        private static void ReceiveHook(UserContext c)
         {
 
-            if (!validateConnection(c)) { return; }
-            appKeepAlive();
+            if (!ValidateConnection(c)) { return; }
+            AppKeepAlive();
         }
 
-        private static void gameServerInfoHook(UserContext c, string[] x)
+        private static void GameServerInfoHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            Lobby lobby = new Lobby(KV.parse(x[2], true));
-            AddonCompiler.compileAddons(lobby, AddonDownloader.getAddonInstallLocation(), dotaPath + @"dota\addons_dotahost\active\");
-            c.Send(Helpers.packArguments("connectToServer", x[1]));
+            if (!ValidateConnection(c)) { return; }
+            Lobby lobby = new Lobby(Kv.Parse(x[2], true));
+            AddonCompiler.CompileAddons(lobby, AddonDownloader.GetAddonInstallLocation(), _dotaPath + @"dota\addons_dotahost\active\");
+            c.Send(Helpers.PackArguments("connectToServer", x[1]));
         }
 
-        private static void getPatchGameInfoHook(UserContext c, string[] x)
+        private static void GetPatchGameInfoHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            c.Send(Helpers.packArguments("patchGameInfo", Properties.Settings.Default.gameinfoPatched ? "1" : "0"));
+            if (!ValidateConnection(c)) { return; }
+            c.Send(Helpers.PackArguments("patchGameInfo", Properties.Settings.Default.gameinfoPatched ? "1" : "0"));
         }
 
-        private static void patchGameInfoHook(UserContext c, string[] x)
+        private static void PatchGameInfoHook(UserContext c, string[] x)
         {
 
-            if (!validateConnection(c)) { return; }
-            c.Send(Helpers.packArguments("tryPatchGameInfo", patchGameInfo() ? "1" : "0"));
+            if (!ValidateConnection(c)) { return; }
+            c.Send(Helpers.PackArguments("tryPatchGameInfo", PatchGameInfo() ? "1" : "0"));
         }
 
 
-        private static bool validateConnection(UserContext c)
+        private static bool ValidateConnection(UserContext c)
         {
-            if (c == wsServer.getConnections()[wsServer.getConnectionsCount() - 1])
+            if (c == WsServer.GetConnections()[WsServer.GetConnectionsCount() - 1])
             {
                 return true;
             }
@@ -518,30 +505,30 @@ namespace DotaHostManager
         }
 
         // Attempt to patch gameinfo.txt
-        private static bool patchGameInfo()
+        private static bool PatchGameInfo()
         {
-            Helpers.log("Patching gameinfo.txt...");
-            if (!processIsRunning("dota"))
+            Helpers.Log("Patching gameinfo.txt...");
+            if (!ProcessIsRunning("dota"))
             {
-                source1GameInfoPatch();
+                Source1GameInfoPatch();
                 Properties.Settings.Default.gameinfoPatched = true;
                 Properties.Settings.Default.Save();
-                wsServer.send(Helpers.packArguments("gameinfo", "1"));
-                Helpers.log("Patching gameinfo.txt success!");
+                WsServer.Send(Helpers.PackArguments("gameinfo", "1"));
+                Helpers.Log("Patching gameinfo.txt success!");
                 return true;
             }
-            Helpers.log("Patching gameinfo.txt failure: dota.exe running");
+            Helpers.Log("Patching gameinfo.txt failure: dota.exe running");
             return false;
         }
 
         // Check if a process name is running.
-        private static bool processIsRunning(string process)
+        private static bool ProcessIsRunning(string process)
         {
-            return (System.Diagnostics.Process.GetProcessesByName(process).Length != 0);
+            return (Process.GetProcessesByName(process).Length != 0);
         }
 
         // Updates gameinfo.txt to match DotaHost
-        private static bool source1GameInfoPatch()
+        private static bool Source1GameInfoPatch()
         {
             // Gameinfo to load metamod
             string gameinfo =
@@ -573,7 +560,7 @@ namespace DotaHostManager
             // Write the metamod loader
             try
             {
-                File.WriteAllText(dotaPath + @"dota\gameinfo.txt", gameinfo);
+                File.WriteAllText(_dotaPath + @"dota\gameinfo.txt", gameinfo);
                 return true;
             }
             catch
@@ -583,107 +570,112 @@ namespace DotaHostManager
         }
 
         // Removes the old timer, and ccreates and binds another one
-        private static void appKeepAlive()
+        private static void AppKeepAlive()
         {
-            if (keepAlive != null)
+            if (_keepAlive != null)
             {
-                keepAlive.Dispose();
+                _keepAlive.Dispose();
             }
-            keepAlive = new System.Timers.Timer(KEEP_ALIVE_DURATION);
-            keepAlive.Elapsed += exit;
-            keepAlive.Start();
+            _keepAlive = new System.Timers.Timer(KeepAliveDuration);
+            _keepAlive.Elapsed += Exit;
+            _keepAlive.Start();
         }
 
         // Application.DoEvents() + check closeRequest and zeroCanClose
-        private static void doEvents()
+        private static void DoEvents()
         {
-            System.Windows.Forms.Application.DoEvents();
-            if (requestClose && zeroCanClose == 0)
+            Application.DoEvents();
+            if (_requestClose && _zeroCanClose == 0)
             {
-                exit();
+                Exit();
             }
-            Timers.setTimeout(1, Timers.SECONDS, doEvents);
+            Timers.SetTimeout(1, Timers.Seconds, DoEvents);
         }
 
         // Function to request registration of the dotahost uri protocol
-        private static void registerProtocol()
+        private static void RegisterProtocol()
         {
 
             // Begin task
-            zeroCanClose++;
+            _zeroCanClose++;
 
-            Helpers.log("[Protocol] Begin register...");
+            Helpers.Log("[Protocol] Begin register...");
 
             // Stores the full executable path of this application, file name included
-            string applicationPath = Helpers.FULL_EXE_PATH;
+            string applicationPath = Helpers.FullExePath;
 
             // Opens the key "dotahost" and stores it in key
-            bool found = false;
-            RegistryKey key = Registry.ClassesRoot.OpenSubKey("dotahost");
+            var key = Registry.ClassesRoot.OpenSubKey("dotahost");
 
             string[] subkeys = Registry.ClassesRoot.GetSubKeyNames();
-            for (var i = 0; i < subkeys.Length; ++i)
-            {
-                if (subkeys[i] == "dotahost")
-                {
-                    found = true;
-                    break;
-                }
-            }
+
+            bool found = subkeys.Any(t => t == "dotahost");
 
             // If the protocol is not registered yet, we register it
             if (!found)
             {
                 try
                 {
-                    Helpers.log("[Protocol] Key not found, attempting create...");
+                    Helpers.Log("[Protocol] Key not found, attempting create...");
 
                     // Creates the subkey in the registry
                     key = Registry.ClassesRoot.CreateSubKey("dotahost");
 
                     // Register the URI protocol in registry
+                    if (key == null)
+                    {
+                        throw new Exception("Registry key 1 was null.");
+                    }
+
                     key.SetValue(string.Empty, "URL:DotaHost Protocol");
                     key.SetValue("URL Protocol", string.Empty);
 
+
                     // Set URI to launch the application with one given argument
                     key = key.CreateSubKey(@"shell\open\command");
+                    if (key == null)
+                    {
+                        throw new Exception("Registry key 2 was null.");
+                    }
                     key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
 
                     Properties.Settings.Default.shouldRegister = false;
                     Properties.Settings.Default.autorun = true;
                     Properties.Settings.Default.Save();
 
-                    wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                    WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
 
-                    Helpers.log("[Protocol] Registry added.");
+                    Helpers.Log("[Protocol] Registry added.");
                 }
                 catch
                 {
-                    Helpers.log("[Protocol] Failed to add registry. Requesting launch as admin...");
+                    Helpers.Log("[Protocol] Failed to add registry. Requesting launch as admin...");
                     if (MessageBox.Show("Would you like DotaHostManager to launch itself automatically when you visit the DotaHost.net website? (Requires Administrator Privillages)", "Enable Autorun", MessageBoxButtons.YesNo, MessageBoxIcon.None, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly) == DialogResult.Yes)
                     {
-                        const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
+                        const int errorCancelled = 1223; //The operation was canceled by the user.
 
                         // Start a new instance of this executable as administrator
-                        ProcessStartInfo info = new ProcessStartInfo(Helpers.FULL_EXE_PATH);
-                        info.UseShellExecute = true;
-                        info.Verb = "runas";
+                        var info = new ProcessStartInfo(Helpers.FullExePath)
+                        {
+                            UseShellExecute = true,
+                            Verb = "runas"
+                        };
                         try
                         {
                             Properties.Settings.Default.shouldRegister = true;
                             Properties.Settings.Default.Save();
                             Process.Start(info);
-                            exit();
+                            Exit();
                         }
                         catch (Win32Exception ex)
                         {
-                            if (ex.NativeErrorCode == ERROR_CANCELLED)
+                            if (ex.NativeErrorCode == errorCancelled)
                             {
                                 Properties.Settings.Default.shouldRegister = false;
                                 Properties.Settings.Default.Save();
-                                Helpers.log("[Protocol] Admin request denied.");
+                                Helpers.Log("[Protocol] Admin request denied.");
 
-                                wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                                WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                             }
                         }
                     }
@@ -692,9 +684,9 @@ namespace DotaHostManager
                         // Save user preference
                         Properties.Settings.Default.shouldRegister = false;
                         Properties.Settings.Default.Save();
-                        Helpers.log("[Protocol] User declined autorun option.");
+                        Helpers.Log("[Protocol] User declined autorun option.");
 
-                        wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                        WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                     }
                 }
             }
@@ -703,12 +695,16 @@ namespace DotaHostManager
                 try
                 {
                     key = key.CreateSubKey(@"shell\open\command");
+                    if (key == null)
+                    {
+                        throw new Exception("Registry key 3 was null.");
+                    }
                     key.SetValue(string.Empty, "\"" + applicationPath + "\" " + "%1");
-                    Helpers.log("[Protocol] Registry updated.");
+                    Helpers.Log("[Protocol] Registry updated.");
                 }
                 catch
                 {
-                    Helpers.log("[Protocol] No registry action taken: Not running as Admin.");
+                    Helpers.Log("[Protocol] No registry action taken: Not running as Admin.");
                 }
             }
 
@@ -718,30 +714,24 @@ namespace DotaHostManager
                 key.Close();
             }
 
-            Helpers.log("[Protocol] Done.");
+            Helpers.Log("[Protocol] Done.");
 
             // End task
-            zeroCanClose--;
+            _zeroCanClose--;
         }
 
         // Function to request registration of the dotahost uri protocol
-        private static void deregisterProtocol()
+        private static void DeregisterProtocol()
         {
 
             // Begin task
-            zeroCanClose++;
+            _zeroCanClose++;
 
-            bool found = false;
-            RegistryKey key = Registry.ClassesRoot.OpenSubKey("dotahost");
+
             string[] subkeys = Registry.ClassesRoot.GetSubKeyNames();
-            for (var i = 0; i < subkeys.Length; ++i)
-            {
-                if (subkeys[i] == "dotahost")
-                {
-                    found = true;
-                    break;
-                }
-            }
+
+            bool found = subkeys.Any(t => t == "dotahost");
+
             if (found)
             {
                 try
@@ -753,78 +743,83 @@ namespace DotaHostManager
 
 
 
-                    wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                    WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                 }
                 catch
                 {
                     if (MessageBox.Show("Would you like to remove Autorun functionality from the DotaHost ModManager? (Requires Administrator Privillages)", "Disable Autorun", MessageBoxButtons.YesNo, MessageBoxIcon.None, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly) == DialogResult.Yes)
                     {
-                        Helpers.log("[Protocol] Failed to remove registry. Launching as admin...");
-                        const int ERROR_CANCELLED = 1223; //The operation was canceled by the user.
+                        Helpers.Log("[Protocol] Failed to remove registry. Launching as admin...");
+                        const int errorCancelled = 1223; //The operation was canceled by the user.
 
                         // Start a new instance of this executable as administrator
-                        ProcessStartInfo info = new ProcessStartInfo(Helpers.FULL_EXE_PATH);
-                        info.UseShellExecute = true;
-                        info.Verb = "runas";
+                        var info = new ProcessStartInfo(Helpers.FullExePath)
+                        {
+                            UseShellExecute = true,
+                            Verb = "runas"
+                        };
                         try
                         {
                             Properties.Settings.Default.shouldDeregister = true;
                             Properties.Settings.Default.Save();
                             Process.Start(info);
-                            exit();
+                            Exit();
                         }
                         catch (Win32Exception ex)
                         {
-                            if (ex.NativeErrorCode == ERROR_CANCELLED)
+                            if (ex.NativeErrorCode == errorCancelled)
                             {
                                 Properties.Settings.Default.shouldDeregister = false;
                                 Properties.Settings.Default.Save();
-                                Helpers.log("[Protocol] Admin request denied.");
+                                Helpers.Log("[Protocol] Admin request denied.");
 
-                                wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                                WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                             }
                         }
                     }
                     else
                     {
-                        Helpers.log("[Protocol] User declined disable autorun option.");
+                        Helpers.Log("[Protocol] User declined disable autorun option.");
 
                         Properties.Settings.Default.shouldDeregister = false;
                         Properties.Settings.Default.Save();
 
-                        wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                        WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
                     }
                 }
             }
             else
             {
-                Helpers.log("[Protocol] Key not found.");
+                Helpers.Log("[Protocol] Key not found.");
 
                 Properties.Settings.Default.shouldDeregister = false;
                 Properties.Settings.Default.Save();
 
-                wsServer.send(Helpers.packArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
+                WsServer.Send(Helpers.PackArguments("autorun", (Properties.Settings.Default.autorun ? "1" : "0")));
             }
 
 
             // End task
-            zeroCanClose--;
+            _zeroCanClose--;
         }
 
         // Deletes the exe if autorun is false
-        private static void exit()
+        private static void Exit()
         {
-            if (!exiting)
+            if (!_exiting)
             {
-                exiting = true;
+                _exiting = true;
                 if (!Properties.Settings.Default.autorun)
                 {
-                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 1000 > Nul & Del \"" + Helpers.FULL_EXE_PATH + "\"");
-                    info.WindowStyle = ProcessWindowStyle.Hidden;
-                    Process.Start(info).Dispose();
-                    File.Delete(Global.BASE_PATH + "log.txt");
+                    var info = new ProcessStartInfo("cmd.exe", "/C ping 1.1.1.1 -n 1 -w 1000 > Nul & Del \"" + Helpers.FullExePath + "\"")
+                    {
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    };
+                    var process = Process.Start(info);
+                    if (process != null) process.Dispose();
+                    File.Delete(Global.BasePath + "log.txt");
                 }
-                Timers.setTimeout(500, Timers.MILLISECONDS, () => { Environment.Exit(0); });
+                Timers.SetTimeout(500, Timers.Milliseconds, () => { Environment.Exit(0); });
             }
         }
 

@@ -1,56 +1,50 @@
 ﻿using DotaHostClientLibrary;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DotaHostLibrary
 {
-    public class GameServers : KV
+    public class GameServers : Kv
     {
-        public void addGameServer(GameServer gameServer)
+        public void AddGameServer(GameServer gameServer)
         {
             for (byte i = 0; true; ++i)
             {
-                if (!containsKey(i.ToString()))
-                {
-                    setKey(i.ToString(), gameServer);
-                    return;
-                }
+                if (ContainsKey(i.ToString())) continue;
+                SetKey(i.ToString(), gameServer);
+                return;
             }
         }
 
-        public void removeGameServer(GameServer gameServer)
+        public void RemoveGameServer(GameServer gameServer)
         {
-            removeKey(gameServer);
+            RemoveKey(gameServer);
         }
 
-        public void removeGameServer(byte id)
+        public void RemoveGameServer(byte id)
         {
-            removeKey(id.ToString());
+            RemoveKey(id.ToString());
         }
 
-        public GameServer getGameServer(byte id)
+        public GameServer GetGameServer(byte id)
         {
-            return new GameServer(getKV(id.ToString()));
+            return new GameServer(GetKv(id.ToString()));
         }
 
-        public List<GameServer> getGameServers()
+        public List<GameServer> GetGameServers()
         {
-            List<GameServer> gameServers = new List<GameServer>();
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
-            {
-                gameServers.Add(new GameServer(kvp.Value));
-            }
-            return gameServers;
+            return GetKeys().Select(kvp => new GameServer(kvp.Value)).ToList();
         }
 
 
         public GameServers()
         {
-            initObject();
+            InitObject();
         }
 
-        public GameServers(KV source)
+        public GameServers(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
 
     }

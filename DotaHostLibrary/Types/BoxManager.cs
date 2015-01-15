@@ -4,18 +4,18 @@ using System;
 
 namespace DotaHostLibrary
 {
-    public class BoxManager : KV
+    public class BoxManager : Kv
     {
 
         public string Ip
         {
             get
             {
-                return getValue("0");
+                return GetValue("0");
             }
             set
             {
-                setValue("0", value);
+                SetValue("0", value);
             }
 
         }
@@ -24,11 +24,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("1"));
+                return Convert.ToByte(GetValue("1"));
             }
             set
             {
-                setValue("1", value.ToString());
+                SetValue("1", value.ToString());
             }
         }
 
@@ -36,11 +36,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToUInt16(getValue("2"));
+                return Convert.ToUInt16(GetValue("2"));
             }
             set
             {
-                setValue("2", value.ToString());
+                SetValue("2", value.ToString());
             }
         }
 
@@ -48,11 +48,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToUInt16(getValue("3"));
+                return Convert.ToUInt16(GetValue("3"));
             }
             set
             {
-                setValue("3", value.ToString());
+                SetValue("3", value.ToString());
             }
         }
 
@@ -60,11 +60,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToUInt32(getValue("4"));
+                return Convert.ToUInt32(GetValue("4"));
             }
             set
             {
-                setValue("4", value.ToString());
+                SetValue("4", value.ToString());
             }
         }
 
@@ -72,11 +72,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToUInt32(getValue("5"));
+                return Convert.ToUInt32(GetValue("5"));
             }
             set
             {
-                setValue("5", value.ToString());
+                SetValue("5", value.ToString());
             }
         }
 
@@ -84,23 +84,23 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToBoolean(getValue("6"));
+                return Convert.ToBoolean(GetValue("6"));
             }
             set
             {
-                setValue("6", value.ToString());
+                SetValue("6", value.ToString());
             }
         }
 
-        public string InstanceID
+        public string InstanceId
         {
             get
             {
-                return getValue("7");
+                return GetValue("7");
             }
             set
             {
-                setValue("7", value);
+                SetValue("7", value);
             }
         }
 
@@ -108,11 +108,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return getValue("8");
+                return GetValue("8");
             }
             set
             {
-                setValue("8", value);
+                SetValue("8", value);
             }
         }
 
@@ -120,11 +120,11 @@ namespace DotaHostLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("9"));
+                return Convert.ToByte(GetValue("9"));
             }
             set
             {
-                setValue("9", value.ToString());
+                SetValue("9", value.ToString());
             }
         }
 
@@ -132,26 +132,26 @@ namespace DotaHostLibrary
         {
             get
             {
-                return new GameServers(getKV("a"));
+                return new GameServers(GetKv("a"));
             }
             set
             {
-                setKey("a", value);
+                SetKey("a", value);
             }
         }
 
 
         public BoxManager()
         {
-            initObject();
-            setValue("6", true.ToString());
+            InitObject();
+            SetValue("6", true.ToString());
         }
 
 
 
-        public BoxManager(KV source)
+        public BoxManager(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

@@ -1,22 +1,22 @@
 ﻿
 namespace DotaHostClientLibrary
 {
-    public class Options : KV
+    public class Options : Kv
     {
-        public void setOption(string key, string value)
+        public void SetOption(string key, string value)
         {
-            setValue(key, value);
+            SetValue(key, value);
         }
 
         public Options()
         {
-            initObject();
+            InitObject();
         }
 
 
-        public Options(KV source)
+        public Options(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
 
     }

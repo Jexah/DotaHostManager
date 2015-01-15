@@ -1,54 +1,49 @@
 ﻿
 using System.Collections.Generic;
+using System.Linq;
+
 namespace DotaHostClientLibrary
 {
-    public class Addons : KV
+    public class Addons : Kv
     {
-        public void addAddon(Addon addon)
+        public void AddAddon(Addon addon)
         {
-            for (byte i = 0; true; ++i)
+            for (byte i = 0; ; ++i)
             {
-                if (!containsKey(i.ToString()))
-                {
-                    setKey(i.ToString(), addon);
-                    return;
-                }
+                if (ContainsKey(i.ToString())) continue;
+                SetKey(i.ToString(), addon);
+                return;
             }
         }
 
-        public void removeAddon(Addon addon)
+        public void RemoveAddon(Addon addon)
         {
-            removeKey(addon);
+            RemoveKey(addon);
         }
 
-        public void removeAddon(string key)
+        public void RemoveAddon(string key)
         {
-            removeKey(key);
+            RemoveKey(key);
         }
 
-        public Addon getAddon(string key)
+        public Addon GetAddon(string key)
         {
-            return new Addon(getKV(key));
+            return new Addon(GetKv(key));
         }
 
-        public List<Addon> getAddons()
+        public List<Addon> GetAddons()
         {
-            List<Addon> addons = new List<Addon>();
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
-            {
-                addons.Add(new Addon(kvp.Value));
-            }
-            return addons;
+            return GetKeys().Select(kvp => new Addon(kvp.Value)).ToList();
         }
 
         public Addons()
         {
-            initObject();
+            InitObject();
         }
 
-        public Addons(KV source)
+        public Addons(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
 
     }

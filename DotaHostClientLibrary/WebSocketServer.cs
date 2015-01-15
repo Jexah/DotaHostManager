@@ -7,140 +7,144 @@ namespace DotaHostClientLibrary
 {
 
     // Delegates for asynchronous socket and download events
-    public delegate void receiveDel(UserContext c, string[] args);
-    public delegate void socketDel(UserContext c);
+    public delegate void ReceiveDel(UserContext c, string[] args);
+    public delegate void SocketDel(UserContext c);
 
 
     public class WebSocketServer
     {
         // Web socket server we gonna use
-        private Alchemy.WebSocketServer wsServer;
+        private readonly Alchemy.WebSocketServer _wsServer;
 
         // Dictionaries containing the socket and download functions
-        private Dictionary<string, List<receiveDel>> wsReceive = new Dictionary<string, List<receiveDel>>();
-        private List<socketDel>[] wsHooks = new List<socketDel>[5];
+        private readonly Dictionary<string, List<ReceiveDel>> _wsReceive = new Dictionary<string, List<ReceiveDel>>();
+        private readonly List<SocketDel>[] _wsHooks = new List<SocketDel>[5];
 
         // List of currently connected users
-        private Dictionary<string, UserContext> userIdToContext = new Dictionary<string, UserContext>();
-        private Dictionary<UserContext, string> userContextToId = new Dictionary<UserContext, string>();
+        private readonly Dictionary<string, UserContext> _userIdToContext = new Dictionary<string, UserContext>();
+        private readonly Dictionary<UserContext, string> _userContextToId = new Dictionary<UserContext, string>();
 
         // Message queue
-        private List<string> wsQueue = new List<string>();
+        private readonly List<string> _wsQueue = new List<string>();
 
         // Message type IDs
-        public const byte RECEIVE = 0;
-        public const byte SEND = 1;
-        public const byte CONNECT = 2;
-        public const byte CONNECTED = 3;
-        public const byte DISCONNECTED = 4;
+        public const byte TypeReceive = 0;
+        public const byte TypeSend = 1;
+        public const byte TypeConnect = 2;
+        public const byte TypeConnected = 3;
+        public const byte TypeDisconnected = 4;
 
 
         public WebSocketServer(int port)
         {
             // Initialize wsHooks
-            for (byte i = 0; i < wsHooks.Length; ++i)
+            for (byte i = 0; i < _wsHooks.Length; ++i)
             {
-                wsHooks[i] = new List<socketDel>();
+                _wsHooks[i] = new List<SocketDel>();
             }
 
             // Hook default functions
-            hookDefaultFunctions();
+            HookDefaultFunctions();
 
             // Set up websocket server
-            wsServer = new Alchemy.WebSocketServer(false, port, IPAddress.Any)
+            _wsServer = new Alchemy.WebSocketServer(false, port, IPAddress.Any)
             {
-                OnReceive = new Alchemy.OnEventDelegate((c) => { checkAndCall(c, wsReceive); callEventFunc(c, wsHooks[RECEIVE]); }),
-                OnSend = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[SEND]); }),
-                OnConnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[CONNECT]); }),
-                OnConnected = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[CONNECTED]); }),
-                OnDisconnect = new Alchemy.OnEventDelegate((c) => { callEventFunc(c, wsHooks[DISCONNECTED]); }),
-                TimeOut = new TimeSpan(24, 0, 0),
+                OnReceive = c => { CheckAndCall(c, _wsReceive); CallEventFunc(c, _wsHooks[TypeReceive]); },
+                OnSend = c => { CallEventFunc(c, _wsHooks[TypeSend]); },
+                OnConnect = c => { CallEventFunc(c, _wsHooks[TypeConnect]); },
+                OnConnected = c => { CallEventFunc(c, _wsHooks[TypeConnected]); },
+                OnDisconnect = c => { CallEventFunc(c, _wsHooks[TypeDisconnected]); },
+                TimeOut = new TimeSpan(24, 0, 0)
             };
         }
 
         // Starts the websocket server
-        public void start()
+        public void Start()
         {
-            wsServer.Start();
-            Helpers.log("[Socket] Server started!");
+            _wsServer.Start();
+            Helpers.Log("[Socket] Server started!");
         }
 
         // Adds a default hook to onConnected
-        private void hookDefaultFunctions()
+        private void HookDefaultFunctions()
         {
             // Log on connect begin
-            addHook(CONNECT, connectHook);
+            AddHook(TypeConnect, ConnectHook);
 
             // Log on connected, send all waiting messages, and store client ID
-            addHook(CONNECTED, connectedHook);
+            AddHook(TypeConnected, ConnectedHook);
 
             // Remove log disconnected, delete userID
-            addHook(DISCONNECTED, disconnectedHook);
+            AddHook(TypeDisconnected, DisconnectedHook);
 
         }
 
-        private void connectHook(UserContext c)
+        private static void ConnectHook(UserContext c)
         {
-
-            Helpers.log("[Socket] Connecting...");
+            Helpers.Log("[Socket] Connecting...");
         }
 
-        private void connectedHook(UserContext c)
+        private void ConnectedHook(UserContext c)
         {
-            Helpers.log("[Socket] Connected!");
+            Helpers.Log("[Socket] Connected!");
 
             // Loop through queue and send all waiting packets
-            for (byte i = 0; i < wsQueue.Count; ++i)
+            for (byte i = 0; i < _wsQueue.Count; ++i)
             {
-                c.Send(wsQueue[i]);
+                c.Send(_wsQueue[i]);
             }
-            wsQueue.Clear();
+            _wsQueue.Clear();
 
             // Assign userid
             string ip = c.ClientAddress.ToString();
-            if (userIdToContext.ContainsKey(ip))
+            if (_userIdToContext.ContainsKey(ip))
             {
-                c.Send(Helpers.packArguments("id", ip));
-                userIdToContext[ip] = c;
-                userContextToId[c] = ip;
+                c.Send(Helpers.PackArguments("id", ip));
+                _userIdToContext[ip] = c;
+                _userContextToId[c] = ip;
                 return;
             }
             // Send client uid
-            c.Send(Helpers.packArguments("id", ip));
+            c.Send(Helpers.PackArguments("id", ip));
 
             // Add connected user
-            try { userIdToContext.Add(ip, c); }
-            catch { }
-            try { userContextToId.Add(c, ip); }
-            catch { }
-        }
-
-        private void disconnectedHook(UserContext c)
-        {
-            // Remove userid
-            Helpers.log("[Socket] Disconnected!");
-            if (userContextToId.ContainsKey(c))
+            try { _userIdToContext.Add(ip, c); }
+            catch
             {
-                if (userIdToContext.ContainsKey(userContextToId[c]))
-                {
-                    userIdToContext.Remove(userContextToId[c]);
-                }
-                userContextToId.Remove(c);
+                // ignored
+            }
+            try { _userContextToId.Add(c, ip); }
+            catch
+            {
+                // ignored
             }
         }
 
+        private void DisconnectedHook(UserContext c)
+        {
+            // Remove userid
+            Helpers.Log("[Socket] Disconnected!");
+            if (!_userContextToId.ContainsKey(c)) return;
 
-        public List<UserContext> getConnections()
-        {
-            return new List<UserContext>(userIdToContext.Values);
+            if (_userIdToContext.ContainsKey(_userContextToId[c]))
+            {
+                _userIdToContext.Remove(_userContextToId[c]);
+            }
+            _userContextToId.Remove(c);
         }
-        public int getConnectionsCount()
+
+
+        public List<UserContext> GetConnections()
         {
-            return userIdToContext.Count;
+            return new List<UserContext>(_userIdToContext.Values);
+        }
+        public int GetConnectionsCount()
+        {
+            return _userIdToContext.Count;
         }
 
         // Loops through generic function calls for the given event type
-        private void callEventFunc(UserContext c, List<socketDel> funcList)
+        private static void CallEventFunc(UserContext c, IReadOnlyList<SocketDel> funcList)
         {
             // Find key if exists, run function with given args
             for (byte i = 0; i < funcList.Count; ++i)
@@ -150,60 +154,58 @@ namespace DotaHostClientLibrary
         }
 
         // Checks the received message for matching functions, and calls them all
-        private void checkAndCall(UserContext c, Dictionary<string, List<receiveDel>> state)
+        private static void CheckAndCall(UserContext c, IReadOnlyDictionary<string, List<ReceiveDel>> state)
         {
             // Find key if exists, run function with given args
-            string[] args = c.DataFrame.ToString().Split(Global.MSG_SEP);
-            if (state.ContainsKey(args[0]))
+            string[] args = c.DataFrame.ToString().Split(Global.MsgSep);
+            if (!state.ContainsKey(args[0])) return;
+            for (byte i = 0; i < state[args[0]].Count; ++i)
             {
-                for (byte i = 0; i < state[args[0]].Count; ++i)
-                {
-                    state[args[0]][i](c, args);
-                }
+                state[args[0]][i](c, args);
             }
         }
 
         // Adds a hook of the given type
-        public void addHook(byte type, socketDel func)
+        public void AddHook(byte type, SocketDel func)
         {
             // Add the hook to the given list
-            wsHooks[type].Add(func);
+            _wsHooks[type].Add(func);
         }
 
         // Adds a hook to onReceive with a given name
-        public void addHook(string funcName, receiveDel func)
+        public void AddHook(string funcName, ReceiveDel func)
         {
             // Add the hook to the given dictionary
-            if (wsReceive.ContainsKey(funcName))
+            if (_wsReceive.ContainsKey(funcName))
             {
-                wsReceive[funcName].Add(func);
+                _wsReceive[funcName].Add(func);
             }
             else
             {
-                wsReceive.Add(funcName, new List<receiveDel>() { func });
+                _wsReceive.Add(funcName, new List<ReceiveDel> { func });
             }
         }
 
         // Attempts to send a message to all connected users, otherwise stores it in the queue
-        public void send(string message)
+        public void Send(string message)
         {
-            if (userIdToContext.Count != 0)
+            if (_userIdToContext.Count != 0)
             {
-                foreach (string i in userIdToContext.Keys)
+                foreach (var i in _userIdToContext.Keys)
                 {
-                    userIdToContext[i].Send(message);
+                    _userIdToContext[i].Send(message);
                 }
             }
             else
             {
-                wsQueue.Add(message);
+                _wsQueue.Add(message);
             }
         }
 
         // Sends the message to the connected context with matching ID
-        public void send(string message, string id)
+        public void Send(string message, string id)
         {
-            userIdToContext[id].Send(message);
+            _userIdToContext[id].Send(message);
         }
 
     }

@@ -1,57 +1,52 @@
 ﻿
 using System.Collections.Generic;
+using System.Linq;
+
 namespace DotaHostClientLibrary
 {
-    public class Teams : KV
+    public class Teams : Kv
     {
 
-        public void addTeam(Team team)
+        public void AddTeam(Team team)
         {
-            for (byte i = 0; true; ++i)
+            for (byte i = 0; ; ++i)
             {
-                if (!containsKey(i.ToString()))
-                {
-                    setKey(i.ToString(), team);
-                    return;
-                }
+                if (ContainsKey(i.ToString())) continue;
+                SetKey(i.ToString(), team);
+                return;
             }
         }
 
-        public void removeTeam(string teamName)
+        public void RemoveTeam(string teamName)
         {
-            removeKey(teamName);
+            RemoveKey(teamName);
         }
 
-        public void removeTeam(Team team)
+        public void RemoveTeam(Team team)
         {
-            removeKey(team.TeamName);
+            RemoveKey(team.TeamName);
         }
 
-        public Team getTeam(string teamName)
+        public Team GetTeam(string teamName)
         {
-            return new Team(getKV(teamName));
+            return new Team(GetKv(teamName));
         }
 
-        public List<Team> getTeams()
+        public List<Team> GetTeams()
         {
-            List<Team> teams = new List<Team>();
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
-            {
-                teams.Add(new Team(kvp.Value));
-            }
-            return teams;
+            return GetKeys().Select(kvp => new Team(kvp.Value)).ToList();
         }
 
         public Teams()
         {
-            initObject();
+            InitObject();
         }
 
 
 
-        public Teams(KV source)
+        public Teams(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

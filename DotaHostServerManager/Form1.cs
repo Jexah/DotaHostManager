@@ -2,9 +2,9 @@
 using DotaHostClientLibrary;
 using DotaHostLibrary;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace DotaHostServerManager
@@ -12,162 +12,154 @@ namespace DotaHostServerManager
     public partial class Form1 : Form
     {
         // Colours for UI
-        private static Color success = Color.Green;
-        private static Color warning = Color.Orange;
-        private static Color danger = Color.Red;
+        private static readonly Color Success = Color.Green;
+        private static readonly Color Warning = Color.Orange;
+        private static readonly Color Danger = Color.Red;
 
         // Initialize boxManagers dictionary
-        private static BoxManagers boxManagers = new BoxManagers();
+        private static readonly BoxManagers BoxManagers = new BoxManagers();
 
         // Create WebSocketServer
-        private static WebSocketServer wsServer = new WebSocketServer(Runabove.SERVER_MANAGER_PORT);
+        private static readonly WebSocketServer WsServer = new WebSocketServer(Runabove.ServerManagerPort);
 
         // This is our lobby manager 
-        private static UserContext lobbyManager;
+        private static UserContext _lobbyManager;
 
         // Soft BoxManager limit
-        private static byte serverSoftCap;
+        private static byte _serverSoftCap;
 
         // Hard BoxManager limit
-        private const byte SERVER_HARD_CAP = 2;
+        private const byte ServerHardCap = 2;
 
 
         public Form1()
         {
             File.Delete("log.txt");
 
-            serverSoftCap = 2;
+            _serverSoftCap = 2;
 
             InitializeComponent();
 
             // Hook socket events
-            hookWSocketServerEvents();
+            HookWSocketServerEvents();
 
             // Start the websocket server, wait for incomming connections
-            wsServer.start();
+            WsServer.Start();
         }
 
-        private void updateCurrentBoxGameServers()
+        private void UpdateCurrentBoxGameServers()
         {
-            modGUI(boxesList, () =>
+            ModGui(boxesList, () =>
             {
                 if (boxesList.SelectedItem != null)
                 {
                     string ip = boxesList.SelectedItem.ToString();
-                    wsServer.send("gameServers", ip);
+                    WsServer.Send("gameServers", ip);
                 }
-                Timers.setTimeout(5, Timers.SECONDS, () =>
-                {
-                    updateCurrentBoxGameServers();
-                });
+                Timers.SetTimeout(5, Timers.Seconds, UpdateCurrentBoxGameServers);
             });
 
         }
 
         // Socket hooks go here
-        private void hookWSocketServerEvents()
+        private void HookWSocketServerEvents()
         {
             // When a server is started, it sends box function, so this tells the servermanager "Hey, there's a new box in town" and the server manager does it's things to accomodate
-            wsServer.addHook("box", boxHook);
+            WsServer.AddHook("box", BoxHook);
 
             // Receives the system status from the box manager, loops
-            wsServer.addHook("system", systemHook);
+            WsServer.AddHook("system", SystemHook);
 
             // Adds disconnect hook, removes box manager from list, refreshes server browser listbox
-            wsServer.addHook(WebSocketServer.DISCONNECTED, disconnectedHook);
+            WsServer.AddHook(WebSocketServer.TypeDisconnected, DisconnectedHook);
 
             // Receive game server request from webserver
-            wsServer.addHook("createGameServer", createGameServerHook);
+            WsServer.AddHook("createGameServer", CreateGameServerHook);
 
             // Receive confirmation of createGameServer from BoxManager
-            wsServer.addHook("gameServerInfo", gameServerInfoHook);
+            WsServer.AddHook("gameServerInfo", GameServerInfoHook);
 
             // A game server has exited
-            wsServer.addHook("gameServerExit", gameServerExitHook);
+            WsServer.AddHook("gameServerExit", GameServerExitHook);
 
-            wsServer.addHook("lobbyManager", lobbyManagerHook);
+            WsServer.AddHook("lobbyManager", LobbyManagerHook);
 
         }
 
-        private void boxHook(UserContext c, string[] x)
+        private void BoxHook(UserContext c, string[] x)
         {
-            if (boxManagers.containsKey(c.ClientAddress.ToString()))
+            if (BoxManagers.ContainsKey(c.ClientAddress.ToString()))
             {
                 return;
             }
 
 
             // Initialize the new BoxManager
-            BoxManager boxManager = new BoxManager();
+            var boxManager = new BoxManager
+            {
+                Ip = c.ClientAddress.ToString(),
+                Region = "None",
+                InstanceId = "None",
+                ThirdParty = true
+            };
 
-            boxManager.Ip = c.ClientAddress.ToString();
 
-            boxManager.Region = "None";
-            boxManager.InstanceID = "None";
-            boxManager.ThirdParty = true;
 
             // Get a list of servers
-            Runabove.getServers((serverList) =>
+            Runabove.GetServers(serverList =>
             {
                 // Finds the box manager in the list of servers by matching the IPs
-                serverList.forEach((server, i) =>
+                serverList.ForEach((server, i) =>
                 {
-                    string serverIP = server.Ip;
-                    string boxIP = c.ClientAddress.ToString().Split(':')[0];
+                    string serverIp = server.Ip;
+                    string boxIp = c.ClientAddress.ToString().Split(':')[0];
 
-                    Helpers.log("ServerIP: " + serverIP);
-                    Helpers.log("Box IP  " + boxIP);
+                    Helpers.Log("ServerIP: " + serverIp);
+                    Helpers.Log("Box IP  " + boxIp);
 
-                    if (serverIP == boxIP || serverIP.Split(':')[0] == "127.0.0.1")
-                    {
-                        boxManager.ThirdParty = false;
+                    if (serverIp != boxIp && serverIp.Split(':')[0] != "127.0.0.1") return false;
 
-                        // Sets the subID so it can be destroyed later
-                        boxManager.InstanceID = server.InstanceID;
+                    boxManager.ThirdParty = false;
 
-                        // Sets the region so we know where it is hosted
-                        boxManager.Region = server.Region;
+                    // Sets the subID so it can be destroyed later
+                    boxManager.InstanceId = server.InstanceId;
 
-                        return true;
-                    }
-                    return false;
+                    // Sets the region so we know where it is hosted
+                    boxManager.Region = server.Region;
+
+                    return true;
                 });
 
 
                 // Send BoxManager object to server so it knows its place
-                c.Send(Helpers.packArguments("box", boxManager.toString()));
+                c.Send(Helpers.PackArguments("box", boxManager.ToString()));
             });
 
             // Add the box manager to the list
-            boxManagers.addBoxManager(boxManager);
+            BoxManagers.AddBoxManager(boxManager);
 
-            modGUI(boxesList, () =>
+            ModGui(boxesList, () =>
             {
                 if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == boxManager.Ip)
                 {
-                    setBoxStatsGUI(boxManager);
+                    SetBoxStatsGui(boxManager);
                 }
             });
         }
 
-        private void systemHook(UserContext c, string[] x)
+        private void SystemHook(UserContext c, string[] x)
         {
-            if (!boxManagers.containsKey(c.ClientAddress.ToString()))
+            if (!BoxManagers.ContainsKey(c.ClientAddress.ToString()))
             {
                 return;
             }
 
-            // Create pointer to box manager
-            BoxManager boxManager = boxManagers.getBoxManager(c.ClientAddress.ToString());
+            var boxManager = new BoxManager(Kv.Parse(x[1]));
 
-            boxManager = new BoxManager(KV.parse(x[1]));
-
-            boxManagers.addBoxManager(boxManager);
-
-            BoxManager k = boxManagers.getBoxManager(c.ClientAddress.ToString());
+            BoxManagers.AddBoxManager(boxManager);
 
             // Request GUI-safe thread
-            modGUI(boxesList, () =>
+            ModGui(boxesList, () =>
             {
                 // Add BoxManager to the GUI List if it's not there
                 if (!boxesList.Items.Contains(c.ClientAddress.ToString()))
@@ -178,36 +170,36 @@ namespace DotaHostServerManager
                 // If the box manager is in the list and is selected, update the stats
                 if (boxesList.SelectedItem != null && boxesList.SelectedItem.ToString() == c.ClientAddress.ToString())
                 {
-                    setBoxStatsGUI(boxManager);
+                    SetBoxStatsGui(boxManager);
                 }
             });
 
             // Set timeout to request the system info again
-            Timers.setTimeout(1, Timers.SECONDS, () => { c.Send("system"); });
+            Timers.SetTimeout(1, Timers.Seconds, () => c.Send("system"));
         }
 
-        private void disconnectedHook(UserContext c)
+        private void DisconnectedHook(UserContext c)
         {
 
             // Remove boxmanager from the list
-            boxManagers.removeBoxManager(c.ClientAddress.ToString());
+            BoxManagers.RemoveBoxManager(c.ClientAddress.ToString());
 
             // Update listbox
-            modGUI(boxesList, () => { boxesList.Items.Remove(c.ClientAddress.ToString()); });
+            ModGui(boxesList, () => boxesList.Items.Remove(c.ClientAddress));
         }
 
-        private void createGameServerHook(UserContext c, string[] x)
+        private void CreateGameServerHook(UserContext c, string[] x)
         {
 
-            Helpers.log("Received createGameServer from lobby");
-            Lobby lobby = new Lobby(KV.parse(x[1]));
+            Helpers.Log("Received createGameServer from lobby");
+            var lobby = new Lobby(Kv.Parse(x[1]));
 
-            BoxManager boxManager = findBoxManager(lobby);
+            var boxManager = FindBoxManager(lobby);
 
             if (boxManager != null)
             {
-                Helpers.log("Found game server");
-                GameServer gameServer = createGameServer(boxManager, lobby);
+                Helpers.Log("Found game server");
+                var gameServer = CreateGameServer(boxManager, lobby);
 
                 /*if (gameServer != null)
                 {
@@ -220,29 +212,25 @@ namespace DotaHostServerManager
             }
             else
             {
-                c.Send(Helpers.packArguments("gameServerInfo", "failed", lobby.toString()));
+                c.Send(Helpers.PackArguments("gameServerInfo", "failed", lobby.ToString()));
             }
         }
 
-        private void gameServerInfoHook(UserContext c, string[] x)
+        private static void GameServerInfoHook(UserContext c, string[] x)
         {
-            if (x[1] == "success")
+            if (x[1] != "success") return;
+
+            var gameServer = new GameServer(Kv.Parse(x[2]));
+
+            Helpers.Log("GAME SERVER: " + gameServer.ToString());
+
+            gameServer.Lobby.ForEachPlayer(player =>
             {
-                GameServer gameServer = new GameServer(KV.parse(x[2]));
-
-                Helpers.log("GAME SERVER: " + gameServer.toString());
-
-                foreach (Team team in gameServer.Lobby.Teams.getTeams())
-                {
-                    foreach (Player player in team.Players.getPlayers())
-                    {
-                        lobbyManager.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
-                    }
-                }
-            }
+                _lobbyManager.Send(Helpers.PackArguments("gameServerInfo", "success", gameServer.ToString()));
+            });
         }
 
-        private void gameServerExitHook(UserContext c, string[] x)
+        private static void GameServerExitHook(UserContext c, string[] x)
         {
             if (x[2] == "good")
             {
@@ -252,15 +240,15 @@ namespace DotaHostServerManager
             {
 
             }
-            Helpers.log("gameServerExit received (and sent)");
-            lobbyManager.Send(Helpers.packArguments("gameServerExit", x[2]));
+            Helpers.Log("gameServerExit received (and sent)");
+            _lobbyManager.Send(Helpers.PackArguments("gameServerExit", x[2]));
         }
 
-        private void lobbyManagerHook(UserContext c, string[] x)
+        private static void LobbyManagerHook(UserContext c, string[] x)
         {
             if (c.ClientAddress.ToString().Split(':')[0] == "127.0.0.1")
             {
-                lobbyManager = c;
+                _lobbyManager = c;
             }
         }
 
@@ -271,72 +259,63 @@ namespace DotaHostServerManager
         #region BoxManager/GameServer related events
 
         // Create a new box instance using snapshot
-        private static void addBoxManager(string region)
+        private static void AddBoxManager(string region)
         {
-            Runabove.getServers((serverList) =>
+            Runabove.GetServers(serverList =>
             {
-                if (serverList.Count >= SERVER_HARD_CAP)
+                if (serverList.Count >= ServerHardCap)
                 {
-                    Helpers.log("SERVER HARD CAP REACHED: SERVER NOT CREATED");
+                    Helpers.Log("SERVER HARD CAP REACHED: SERVER NOT CREATED");
                 }
-                else if (serverList.Count >= serverSoftCap)
+                else if (serverList.Count >= _serverSoftCap)
                 {
-                    Helpers.log("SERVER SOFT CAP REACHED: SERVER NOT CREATED");
+                    Helpers.Log("SERVER SOFT CAP REACHED: SERVER NOT CREATED");
                 }
                 else
                 {
-                    Runabove.createServer(region);
+                    Runabove.CreateServer(region);
                 }
             });
         }
 
         // Destroy box instance
-        private void removeBoxManager(BoxManager boxManager, bool now = false)
+        private void RemoveBoxManager(BoxManager boxManager, bool now = false)
         {
             string ip = boxManager.Ip;
             if (!Convert.ToBoolean(boxManager.ThirdParty))
             {
-                if (now)
-                {
-                    // Sends instant destroy message
-                    wsServer.send("destroy|hard", ip);
-                }
-                else
-                {
-                    // Waits for current games to finish, polls every minute
-                    wsServer.send("destroy", ip);
-                }
+                WsServer.Send(now ? "destroy|hard" : "destroy", ip);
             }
 
             // Remove boxmanager from list
-            boxManagers.removeBoxManager(ip);
+            BoxManagers.RemoveBoxManager(ip);
 
             // Update the listbox
-            modGUI(boxesList, () => { boxesList.Items.Remove(ip); });
+            ModGui(boxesList, () => { boxesList.Items.Remove(ip); });
         }
 
         // Finds a server to host the gamemode selected, in the region selected
-        private BoxManager findBoxManager(Lobby lobby)
+        private static BoxManager FindBoxManager(Lobby lobby)
         {
             int totalRam = 0;
             int totalCpu = 0;
-            foreach (Addon addon in lobby.Addons.getAddons())
+            foreach (Addon addon in lobby.Addons.GetAddons())
             {
 
             }
-            foreach (BoxManager boxManager in boxManagers.getBoxManagers())
+            foreach (BoxManager boxManager in BoxManagers.GetBoxManagers())
             {
                 if (boxManager.Region == lobby.Region)
                 {
-                    Helpers.log("region OK");
-                    Helpers.log("Total req RAM: " + totalRam);
-                    Helpers.log("Available RAM: " + boxManager.RamAvailable);
-                    Helpers.log("Total req CPU: " + totalCpu);
-                    Helpers.log("Available CPU: " + (100 - boxManager.Cpu).ToString());
+                    Helpers.Log("region OK");
+                    Helpers.Log("Total req RAM: " + totalRam);
+                    Helpers.Log("Available RAM: " + boxManager.RamAvailable);
+                    Helpers.Log("Total req CPU: " + totalCpu);
+                    Helpers.Log("Available CPU: " + (100 - boxManager.Cpu).ToString());
 
                     if (boxManager.RamAvailable > totalRam && 100 - boxManager.Cpu > totalCpu)
                     {
-                        Helpers.log("stats OK");
+                        Helpers.Log("stats OK");
                         return boxManager;
                     }
                 }
@@ -345,38 +324,36 @@ namespace DotaHostServerManager
         }
 
         // Creates a game server
-        private GameServer createGameServer(BoxManager boxManager, Lobby lobby)
+        private static GameServer CreateGameServer(BoxManager boxManager, Lobby lobby)
         {
-            Helpers.log("createGameServer");
+            Helpers.Log("createGameServer");
 
-            List<ushort> ports = new List<ushort>();
-            foreach (GameServer gs in boxManager.GameServers.getGameServers())
-            {
-                ports.Add(gs.Port);
-            }
+            var ports = boxManager.GameServers.GetGameServers().Select(gs => gs.Port).ToList();
+
             GameServer gameServer = null;
             for (ushort i = 27015; i < 27025; ++i)
             {
-                if (!ports.Contains(i))
+                if (ports.Contains(i)) continue;
+
+                Helpers.Log("Port Found");
+
+                gameServer = new GameServer
                 {
-                    Helpers.log("Port Found");
+                    Port = i,
+                    Lobby = lobby,
+                    Ip = boxManager.Ip
+                };
 
-                    gameServer = new GameServer();
-                    gameServer.Port = i;
-                    gameServer.Lobby = lobby;
-                    gameServer.Ip = boxManager.Ip;
+                Helpers.Log("sent create gameserver to boxmanager");
+                WsServer.Send(Helpers.PackArguments("create", gameServer.ToString()), boxManager.Ip);
 
-                    Helpers.log("sent create gameserver to boxmanager");
-                    wsServer.send(Helpers.packArguments("create", gameServer.toString()), boxManager.Ip);
-
-                    break;
-                }
+                break;
             }
             return gameServer;
         }
 
         // Reboots the selected box
-        private void restartBox(BoxManager boxManager)
+        private void RestartBox(BoxManager boxManager)
         {
             // TODO: Add box restart code here
         }
@@ -389,22 +366,22 @@ namespace DotaHostServerManager
         // When the box managers list box selection changes
         private void boxesList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            modGUI(boxGameServerList, () =>
+            ModGui(boxGameServerList, () =>
             {
                 boxGameServerList.Items.Clear();
                 boxGameServerList.Enabled = false;
             });
 
             // Stores selected item
-            object selectedItem = boxesList.SelectedItem;
+            var selectedItem = boxesList.SelectedItem;
 
             // If the selected item is actually something
             if (selectedItem != null && selectedItem.ToString() != "")
             {
                 // Set the current visible stats to those of the box manager
-                string boxIP = boxesList.SelectedItem.ToString();
-                setBoxStatsGUI(boxManagers.getBoxManager(boxIP));
-                wsServer.send("gameServers", boxIP);
+                string boxIp = boxesList.SelectedItem.ToString();
+                SetBoxStatsGui(BoxManagers.GetBoxManager(boxIp));
+                WsServer.Send("gameServers", boxIp);
             }
             else
             {
@@ -416,7 +393,7 @@ namespace DotaHostServerManager
                 else
                 {
                     // Restore default values in GUI
-                    setBoxDefaultGUI();
+                    SetBoxDefaultGui();
                 }
             }
         }
@@ -424,9 +401,9 @@ namespace DotaHostServerManager
         // Form 1 load
         private void Form1_Load(object sender, EventArgs e)
         {
-            setBoxDefaultGUI();
+            SetBoxDefaultGui();
 
-            updateCurrentBoxGameServers();
+            UpdateCurrentBoxGameServers();
         }
 
         // Form 1 shown (after GUI loads)
@@ -443,13 +420,13 @@ namespace DotaHostServerManager
         // Temporary button, creates a new server in Australia
         private void button1_Click(object sender, EventArgs e)
         {
-            addBoxManager(Runabove.CANADA);
+            AddBoxManager(Runabove.Canada);
         }
 
         // Temporary button, destroys the selected server
         private void button2_Click(object sender, EventArgs e)
         {
-            removeBoxManager(boxManagers.getBoxManager(boxesList.SelectedItem.ToString()));
+            RemoveBoxManager(BoxManagers.GetBoxManager(boxesList.SelectedItem.ToString()));
         }
 
         #endregion
@@ -458,223 +435,216 @@ namespace DotaHostServerManager
         #region UPDATE GUI
 
         // Set the default values for the elements of the GUI
-        private void setBoxDefaultGUI()
+        private void SetBoxDefaultGui()
         {
-            setBoxNameGUI("None");
-            setBoxStatusGUI(Runabove.BOX_INACTIVE);
-            setBoxRAMGUI(0, 0);
-            setBoxCPUGUI(0);
-            setBoxNetworkGUI(0, 0);
-            setBoxVerifiedGUI(false);
-            modGUI(boxGameServerList, () => { boxGameServerList.Enabled = false; });
+            SetBoxNameGui("None");
+            SetBoxStatusGui(Runabove.BoxInactive);
+            SetBoxRamGui(0, 0);
+            SetBoxCpuGui(0);
+            SetBoxNetworkGui(0, 0);
+            SetBoxVerifiedGui(false);
+            ModGui(boxGameServerList, () => { boxGameServerList.Enabled = false; });
         }
 
         // Wrapper to find thread-safe thread to change GUI elements
-        private void modGUI(Control o, Action a)
+        private static void ModGui(Control o, Action a)
         {
             // Begins a function invoke using a thread safe for object o
             o.BeginInvoke(new MethodInvoker(delegate { a(); }));
         }
 
         // Sets all the stats of the GUI to that of the given boxmanager
-        private void setBoxStatsGUI(BoxManager boxManager)
+        private void SetBoxStatsGui(BoxManager boxManager)
         {
-            setBoxNameGUI(boxManager);
-            setBoxStatusGUI(boxManager);
-            setBoxCPUGUI(boxManager);
-            setBoxRAMGUI(boxManager);
-            setBoxNetworkGUI(boxManager);
-            setBoxVerifiedGUI(boxManager);
-            setBoxRegionGUI(boxManager);
-            updateGameServerListGUI(boxManager);
+            SetBoxNameGui(boxManager);
+            SetBoxStatusGui(boxManager);
+            SetBoxCpuGui(boxManager);
+            SetBoxRamGui(boxManager);
+            SetBoxNetworkGui(boxManager);
+            SetBoxVerifiedGui(boxManager);
+            SetBoxRegionGui(boxManager);
+            UpdateGameServerListGui(boxManager);
         }
 
         // Sets the name label to that of the name of the given name
-        private void setBoxNameGUI(BoxManager boxManager)
+        private void SetBoxNameGui(BoxManager boxManager)
         {
-            setBoxNameGUI(boxManager.Ip);
+            SetBoxNameGui(boxManager.Ip);
         }
-        private void setBoxNameGUI(string name)
+        private void SetBoxNameGui(string name)
         {
-            modGUI(boxNameLabel, () => { boxNameLabel.Text = name; });
+            ModGui(boxNameLabel, () => { boxNameLabel.Text = name; });
         }
 
         // Sets the value and color of the status label to that of the status of the given status
-        private void setBoxStatusGUI(BoxManager boxManager)
+        private void SetBoxStatusGui(BoxManager boxManager)
         {
-            setBoxStatusGUI(boxManager.Status);
+            SetBoxStatusGui(boxManager.Status);
         }
-        private void setBoxStatusGUI(byte status)
+        private void SetBoxStatusGui(byte status)
         {
-            modGUI(boxStatusLabel, () =>
+            ModGui(boxStatusLabel, () =>
             {
                 switch (status)
                 {
-                    case Runabove.BOX_ACTIVE:
+                    case Runabove.BoxActive:
                         boxStatusLabel.Text = "Active";
-                        boxStatusLabel.ForeColor = success;
+                        boxStatusLabel.ForeColor = Success;
                         break;
-                    case Runabove.BOX_MIA:
+                    case Runabove.BoxMia:
                         boxStatusLabel.Text = "MIA";
-                        boxStatusLabel.ForeColor = warning;
+                        boxStatusLabel.ForeColor = Warning;
                         break;
-                    case Runabove.BOX_IDLE:
+                    case Runabove.BoxIdle:
                         boxStatusLabel.Text = "Idle";
-                        boxStatusLabel.ForeColor = success;
+                        boxStatusLabel.ForeColor = Success;
                         break;
-                    case Runabove.BOX_INACTIVE:
+                    case Runabove.BoxInactive:
                         boxStatusLabel.Text = "Inactive";
-                        boxStatusLabel.ForeColor = danger;
+                        boxStatusLabel.ForeColor = Danger;
                         break;
-                    case Runabove.BOX_DEACTIVATED:
+                    case Runabove.BoxDeactivated:
                         boxStatusLabel.Text = "Deactivated";
-                        boxStatusLabel.ForeColor = warning;
+                        boxStatusLabel.ForeColor = Warning;
                         break;
                 }
             });
         }
 
         // Sets ram labels color and value to that of the given ram levels
-        private void setBoxRAMGUI(BoxManager boxManager)
+        private void SetBoxRamGui(BoxManager boxManager)
         {
-            ushort[] ram = new ushort[2];
+            var ram = new ushort[2];
             ram[0] = boxManager.RamAvailable;
             ram[1] = boxManager.RamTotal;
-            setBoxRAMGUI(ram[0], ram[1]);
+            SetBoxRamGui(ram[0], ram[1]);
         }
-        private void setBoxRAMGUI(ushort remaining, ushort total)
+        private void SetBoxRamGui(ushort remaining, ushort total)
         {
             short current = (short)(total - remaining);
-            modGUI(boxRAMBar, () =>
+            ModGui(boxRAMBar, () =>
             {
                 boxRAMBar.Maximum = total;
                 boxRAMBar.Value = current;
             });
-            modGUI(boxRAMLabel, () =>
+            ModGui(boxRAMLabel, () =>
             {
                 boxRAMLabel.Text = current + " / " + total;
                 float percent = (float)current / (float)total;
                 if (percent < 0.75)
                 {
-                    boxRAMLabel.ForeColor = success;
+                    boxRAMLabel.ForeColor = Success;
                 }
                 else if (percent < 0.9)
                 {
-                    boxRAMLabel.ForeColor = warning;
+                    boxRAMLabel.ForeColor = Warning;
                 }
                 else
                 {
-                    boxRAMLabel.ForeColor = danger;
+                    boxRAMLabel.ForeColor = Danger;
                 }
             });
         }
 
         // Sets cpu label and bar to that of the % cpu usage given
-        private void setBoxCPUGUI(BoxManager boxManager)
+        private void SetBoxCpuGui(BoxManager boxManager)
         {
-            setBoxCPUGUI(boxManager.Cpu);
+            SetBoxCpuGui(boxManager.Cpu);
         }
-        private void setBoxCPUGUI(int percent)
+        private void SetBoxCpuGui(int percent)
         {
-            modGUI(boxCPUBar, () => { boxCPUBar.Value = percent; });
-            modGUI(boxCPULabel, () =>
+            ModGui(boxCPUBar, () => { boxCPUBar.Value = percent; });
+            ModGui(boxCPULabel, () =>
             {
                 boxCPULabel.Text = percent + "%";
                 if (percent < 75)
                 {
-                    boxCPULabel.ForeColor = success;
+                    boxCPULabel.ForeColor = Success;
                 }
                 else if (percent < 90)
                 {
-                    boxCPULabel.ForeColor = warning;
+                    boxCPULabel.ForeColor = Warning;
                 }
                 else
                 {
-                    boxCPULabel.ForeColor = danger;
+                    boxCPULabel.ForeColor = Danger;
                 }
             });
         }
 
         // Sets the network labels
-        private void setBoxNetworkGUI(BoxManager boxManager)
+        private void SetBoxNetworkGui(BoxManager boxManager)
         {
             uint[] network = new uint[2];
             network[0] = boxManager.Upload;
             network[1] = boxManager.Download;
-            setBoxNetworkGUI(network[0], network[1]);
+            SetBoxNetworkGui(network[0], network[1]);
         }
-        private void setBoxNetworkGUI(uint upload, uint download)
+        private void SetBoxNetworkGui(uint upload, uint download)
         {
-            modGUI(boxUploadLabel, () =>
+            ModGui(boxUploadLabel, () =>
             {
                 boxUploadLabel.Text = (upload * 8 / 1000) + " kb/s";
                 if (upload < 7500000)
                 {
-                    boxUploadLabel.ForeColor = success;
+                    boxUploadLabel.ForeColor = Success;
                 }
                 else if (upload < 9000000)
                 {
-                    boxUploadLabel.ForeColor = warning;
+                    boxUploadLabel.ForeColor = Warning;
                 }
                 else
                 {
-                    boxUploadLabel.ForeColor = danger;
+                    boxUploadLabel.ForeColor = Danger;
                 }
             });
-            modGUI(boxDownloadLabel, () =>
+            ModGui(boxDownloadLabel, () =>
             {
                 boxDownloadLabel.Text = (download * 8 / 1000) + " kb/s";
                 if (download < 7500000)
                 {
-                    boxDownloadLabel.ForeColor = success;
+                    boxDownloadLabel.ForeColor = Success;
                 }
                 else if (upload < 9000000)
                 {
-                    boxDownloadLabel.ForeColor = warning;
+                    boxDownloadLabel.ForeColor = Warning;
                 }
                 else
                 {
-                    boxDownloadLabel.ForeColor = danger;
+                    boxDownloadLabel.ForeColor = Danger;
                 }
             });
 
         }
 
         // Sets the network labels
-        private void setBoxVerifiedGUI(BoxManager boxManager)
+        private void SetBoxVerifiedGui(BoxManager boxManager)
         {
             bool verified = !Convert.ToBoolean(boxManager.ThirdParty);
-            setBoxVerifiedGUI(verified);
+            SetBoxVerifiedGui(verified);
         }
-        private void setBoxVerifiedGUI(bool verified)
+        private void SetBoxVerifiedGui(bool verified)
         {
-            modGUI(boxVerifiedLabel, () =>
+            ModGui(boxVerifiedLabel, () =>
             {
                 boxVerifiedLabel.Text = verified.ToString();
-                if (verified)
-                {
-                    boxVerifiedLabel.ForeColor = success;
-                }
-                else
-                {
-                    boxVerifiedLabel.ForeColor = danger;
-                }
+                boxVerifiedLabel.ForeColor = verified ? Success : Danger;
             });
         }
 
         // Update region label
-        private void setBoxRegionGUI(BoxManager boxManager)
+        private void SetBoxRegionGui(BoxManager boxManager)
         {
-            setBoxRegionGUI(boxManager.Region);
+            SetBoxRegionGui(boxManager.Region);
         }
-        private void setBoxRegionGUI(string region)
+        private void SetBoxRegionGui(string region)
         {
-            modGUI(boxRegionLabel, () =>
+            ModGui(boxRegionLabel, () =>
             {
-                if (Runabove.REGION_ID_TO_NAME.ContainsKey(region))
+                if (Runabove.RegionIdToName.ContainsKey(region))
                 {
-                    boxRegionLabel.Text = Runabove.REGION_ID_TO_NAME[region];
-                    boxRegionLabel.ForeColor = success;
+                    boxRegionLabel.Text = Runabove.RegionIdToName[region];
+                    boxRegionLabel.ForeColor = Success;
                 }
                 else
                 {
@@ -685,16 +655,15 @@ namespace DotaHostServerManager
         }
 
         // Refreshes the GameServer list
-        private void updateGameServerListGUI(BoxManager boxManager)
+        private void UpdateGameServerListGui(BoxManager boxManager)
         {
-            if (boxManager.GameServers != null && boxManager.GameServers.getKeys() != null)
+            if (boxManager.GameServers != null && boxManager.GameServers.GetKeys() != null)
             {
-                modGUI(boxGameServerList, () =>
+                ModGui(boxGameServerList, () =>
                 {
                     boxGameServerList.Items.Clear();
-                    foreach (KeyValuePair<string, KV> kvp in boxManager.GameServers.getKeys())
+                    foreach (var gameServer in boxManager.GameServers.GetKeys().Select(kvp => new GameServer(kvp.Value)))
                     {
-                        GameServer gameServer = new GameServer(kvp.Value);
                         boxGameServerList.Items.Add(gameServer.Ip);
                     }
                 });
@@ -705,7 +674,7 @@ namespace DotaHostServerManager
 
         private void boxUpdateButton_Click(object sender, EventArgs e)
         {
-            wsServer.send("updateServer", boxesList.SelectedItem.ToString());
+            WsServer.Send("updateServer", boxesList.SelectedItem.ToString());
         }
 
 

@@ -7,26 +7,26 @@ namespace DotaHostClientLibrary
     public static class Timers
     {
         // Timespan IDs
-        public const byte MILLISECONDS = 0;
-        public const byte SECONDS = 1;
-        public const byte MINUTES = 2;
-        public const byte HOURS = 3;
+        public const byte Milliseconds = 0;
+        public const byte Seconds = 1;
+        public const byte Minutes = 2;
+        public const byte Hours = 3;
 
-        public delegate void endTimer();
+        public delegate void EndTimer();
 
         // Create new timeout
-        public static endTimer setTimeout(int duration, byte type, TimerCallback func)
+        public static EndTimer SetTimeout(int duration, byte type, TimerCallback func)
         {
             int properDuration;
             switch (type)
             {
-                case SECONDS:
+                case Seconds:
                     properDuration = duration * 1000;
                     break;
-                case MINUTES:
+                case Minutes:
                     properDuration = duration * 1000 * 60;
                     break;
-                case HOURS:
+                case Hours:
                     properDuration = duration * 1000 * 60 * 60;
                     break;
                 default:
@@ -34,7 +34,7 @@ namespace DotaHostClientLibrary
                     break;
             }
             // Creates a new timer with the given duration
-            Timer timer = new System.Timers.Timer(properDuration);
+            var timer = new Timer(properDuration);
 
             // Sets the elapsed function
             timer.Elapsed += (sender, e) =>

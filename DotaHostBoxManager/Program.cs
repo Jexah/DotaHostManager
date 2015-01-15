@@ -1,10 +1,12 @@
-﻿using DotaHostClientLibrary;
+﻿using Alchemy.Classes;
+using DotaHostClientLibrary;
 using DotaHostLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace DotaHostBoxManager
 {
@@ -14,93 +16,90 @@ namespace DotaHostBoxManager
         #region Constants
 
         // The path to steamcmd
-        private const string STEAMCMD_PATH = @"steamcmd\";
+        private const string SteamcmdPath = @"steamcmd\";
 
         // The steam cmd file to run steam commands with
-        private const string STEAMCMD = STEAMCMD_PATH + "steamcmd.exe";
+        private const string Steamcmd = SteamcmdPath + "steamcmd.exe";
 
         // The base path to our files
-        private const string DOWNLOAD_PATH_BASE = "http://dotahost.net/files/";
+        private const string DownloadPathBase = "http://dotahost.net/files/";
 
         // The path to download steamcmd from
-        private const string DOWNLOAD_PATH_STEAMCMD = DOWNLOAD_PATH_BASE + "steamcmd.zip";
+        private const string DownloadPathSteamcmd = DownloadPathBase + "steamcmd.zip";
 
         // URL to download SRCDS from
-        private const string DOWNLOAD_PATH_SRCDS = DOWNLOAD_PATH_BASE + "srcds.zip";
+        private const string DownloadPathSrcds = DownloadPathBase + "srcds.zip";
 
         // URL to download metamod from
-        private const string DOWNLOAD_PATH_METAMOD = DOWNLOAD_PATH_BASE + "mmsource.zip";
+        private const string DownloadPathMetamod = DownloadPathBase + "mmsource.zip";
 
         // URL to download d2fixups from
-        private const string DOWNLOAD_PATH_D2FIXUPS = DOWNLOAD_PATH_BASE + "d2fixups.zip";
+        private const string DownloadPathD2Fixups = DownloadPathBase + "d2fixups.zip";
 
         // The path to the source servers
-        private const string SOURCE_PATH = @"dota\";
+        private const string SourcePath = @"dota\";
 
         // The username to download files with (Username and password should probably be exported somewhere)
-        private const string STEAM_USERNAME = "dotahost_net";
+        private const string SteamUsername = "dotahost_net";
 
         // The password to download files with
-        private const string STEAM_PASSWORD = "***REMOVED***";
+        private const string SteamPassword = "***REMOVED***";
 
         // The minidump error
-        private const string MINIDUMP_ERROR = "Setting breakpad minidump AppID = 580";
+        private const string MinidumpError = "Setting breakpad minidump AppID = 580";
 
         #endregion
 
         #region Static Readonlys
 
         // Network card set up for network monitoring
-        private static readonly string[] NETWORK_CARDS = getNetworkCards();
+        private static readonly string[] NetworkCards = GetNetworkCards();
 
         // The command to update the servers
-        private static readonly string STEAMCMD_UPDATE_SERVERS = "+login " + STEAM_USERNAME + " " + STEAM_PASSWORD + " +runscript install.txt";
+        private const string SteamcmdUpdateServers = "+login " + SteamUsername + " " + SteamPassword + " +runscript install.txt";
 
         // The update file for source1
         // Need to add Environment.NewLine + "app_update 316570", in order to install/update source2
-        private static readonly string STEAMCMD_UPDATEFILE = "@ShutdownOnFailedCommand 0" + Environment.NewLine + "force_install_dir " + Global.BASE_PATH + SOURCE_PATH + Environment.NewLine + "app_update 570" + Environment.NewLine + "quit";
+        private static readonly string SteamcmdUpdatefile = "@ShutdownOnFailedCommand 0" + Environment.NewLine + "force_install_dir " + Global.BasePath + SourcePath + Environment.NewLine + "app_update 570" + Environment.NewLine + "quit";
 
         #endregion
 
         #region Private variables
 
         // Performance monitoring
-        private static PerformanceCounter cpuCounter = new PerformanceCounter();
-        private static PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-        private static List<PerformanceCounter> dataSentCounter = new List<PerformanceCounter>();
-        private static List<PerformanceCounter> dataReceivedCounter = new List<PerformanceCounter>();
+        private static readonly PerformanceCounter CpuCounter = new PerformanceCounter();
+        private static readonly PerformanceCounter RamCounter = new PerformanceCounter("Memory", "Available MBytes");
+        private static readonly List<PerformanceCounter> DataSentCounter = new List<PerformanceCounter>();
+        private static readonly List<PerformanceCounter> DataReceivedCounter = new List<PerformanceCounter>();
 
         // Used for downloading files
-        private static DownloadManager dlManager = new DownloadManager();
+        private static readonly DownloadManager DlManager = new DownloadManager();
 
         // Web socket client
-        private static WebSocketClient wsClient = new WebSocketClient("ws://" + Runabove.SERVER_MANAGER_IP + ":" + Runabove.SERVER_MANAGER_PORT + "/");
+        private static readonly WebSocketClient WsClient = new WebSocketClient("ws://" + Runabove.ServerManagerIp + ":" + Runabove.ServerManagerPort + "/");
 
         // Unique websocket client ID
-        private static string websocketUserID;
+        public static string WebsocketUserId { get; set; }
 
         // List of game server running on the box
-        private static GameServers gameServers = new GameServers();
+        private static readonly GameServers GameServers = new GameServers();
 
         // This box manager
-        private static BoxManager boxManager = new BoxManager();
+        private static BoxManager _boxManager = new BoxManager();
 
         // Box Server status
-        private static byte status;
-
-        // Box Server instanceID
-        private static string instanceID;
+        private static byte _status;
 
         #endregion
 
         // The main entry point into the program
-        private static void Main(string[] args)
+        private static void Main()
         {
             // Ensure temp dir exists
-            Directory.CreateDirectory(Global.TEMP);
+            Directory.CreateDirectory(Global.Temp);
 
             // Delete the old log file
-            File.Delete(Global.BASE_PATH + "log.txt");
+            File.Delete(Global.BasePath + "log.txt");
 
 
 
@@ -109,130 +108,126 @@ namespace DotaHostBoxManager
             return;//*/
 
             // Update addons (and serverinit)
-            updateAddons(true);
+            UpdateAddons(true);
 
             // Set box status to idle.
-            status = Runabove.BOX_IDLE;
+            _status = Runabove.BoxIdle;
 
             // Prepare to calculate + send system diagnostics.
-            setupSystemDiagnostics();
+            SetupSystemDiagnostics();
 
             // Hook the websocket events/
-            hookWSocketEvents();
+            HookWSocketEvents();
 
             // Start the websocket client.
-            wsClient.start();
+            WsClient.Start();
 
-            
+
 
             // Update the dota install
             //updateServers();
         }
 
         // Updates serverinit.zip
-        private static bool updateServerInit()
+        private static void UpdateServerInit()
         {
             try
             {
                 // Attempt to install serverinit (server scripts)
-                dlManager.downloadSync(string.Format(Global.DOWNLOAD_PATH_ADDON_INFO, "serverinit"), Global.TEMP + "serverinit.txt");
+                DlManager.DownloadSync(string.Format(Global.DownloadPathAddonInfo, "serverinit"), Global.Temp + "serverinit.txt");
 
                 // Read the file to a variable
-                string[] CRC_CommitID = File.ReadAllLines(Global.TEMP + "serverinit.txt");
+                string[] crcCommitId = File.ReadAllLines(Global.Temp + "serverinit.txt");
 
                 // Delete the serverinit.txt
-                File.Delete(Global.TEMP + "serverinit.txt");
+                File.Delete(Global.Temp + "serverinit.txt");
 
                 // Download the serverinit.zip
-                dlManager.downloadSync(Global.SERVERINIT_DOWNLOAD, Global.TEMP + "serverinit.zip");
+                DlManager.DownloadSync(Global.ServerinitDownload, Global.Temp + "serverinit.zip");
 
                 // Calculate the CRC of the downloaded zip file.
-                string downloadedCRC = Helpers.calculateCRC(Global.TEMP + "serverinit.zip");
+                string downloadedCrc = Helpers.CalculateCrc(Global.Temp + "serverinit.zip");
 
                 // Check if the downloaded zip file CRC matches the CRC found in the serverinit.txt file
-                if (downloadedCRC == CRC_CommitID[0])
+                if (downloadedCrc == crcCommitId[0])
                 {
                     // They match
-                    Helpers.log("[ServerInit] Latest version aquired, installing...");
+                    Helpers.Log("[ServerInit] Latest version aquired, installing...");
 
                     // Delete old folder if still here for some reason
-                    Helpers.deleteFolder(Global.TEMP + "serverinit", true);
+                    Helpers.DeleteFolder(Global.Temp + "serverinit", true);
 
                     // Extract the new serverinit.zip to serverinit
-                    ZipFile.ExtractToDirectory(Global.TEMP + "serverinit.zip", Global.TEMP + "serverinit");
+                    ZipFile.ExtractToDirectory(Global.Temp + "serverinit.zip", Global.Temp + "serverinit");
 
                     // Delete the downloaded serverinit.zip
-                    File.Delete(Global.TEMP + "serverinit.zip");
+                    File.Delete(Global.Temp + "serverinit.zip");
 
                     // Zip up the second level folder in the extracted zip, to serverinit.zip so it matches the compileAddons function.
-                    ZipFile.CreateFromDirectory(Global.TEMP + @"serverinit\Jexah-DotaHostServerInit-" + CRC_CommitID[1], Global.TEMP + "serverinit.zip");
+                    ZipFile.CreateFromDirectory(Global.Temp + @"serverinit\Jexah-DotaHostServerInit-" + crcCommitId[1], Global.Temp + "serverinit.zip");
 
                     // If the addon install location exists, delete serverinit.zip from it.
-                    if (Directory.Exists(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH)))
+                    if (Directory.Exists(string.Format(Global.ClientAddonInstallLocation, Global.BasePath)))
                     {
-                        File.Delete(string.Format(Global.CLIENT_ADDON_INSTALL_LOCATION, Global.BASE_PATH) + "serverinit.zip");
+                        File.Delete(string.Format(Global.ClientAddonInstallLocation, Global.BasePath) + "serverinit.zip");
                     }
 
                     // Delete the serverinit.zip
-                    File.Delete(AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
+                    File.Delete(AddonDownloader.GetAddonInstallLocation() + "serverinit.zip");
 
                     // Move the zip into the addon install location
-                    File.Move(Global.TEMP + "serverinit.zip", AddonDownloader.getAddonInstallLocation() + "serverinit.zip");
+                    File.Move(Global.Temp + "serverinit.zip", AddonDownloader.GetAddonInstallLocation() + "serverinit.zip");
 
                     // Delete the temp serverinit folder
-                    Helpers.deleteFolder(Global.TEMP + "serverinit", true);
+                    Helpers.DeleteFolder(Global.Temp + "serverinit", true);
 
-                    Helpers.log("[ServerInit] Successfully updated!");
+                    Helpers.Log("[ServerInit] Successfully updated!");
 
                     // Successfully updated
-                    return true;
                 }
                 else
                 {
-                    Helpers.log(string.Format("[ServerInit] Download failed, CRC mismatch: {0} : {1}", downloadedCRC, CRC_CommitID[0]));
+                    Helpers.Log(string.Format("[ServerInit] Download failed, CRC mismatch: {0} : {1}", downloadedCrc, crcCommitId[0]));
 
                     // Failed to update
-                    return false;
                 }
             }
             catch
             {
-                Helpers.log("[ServerInit] Update failed, unknown error");
+                Helpers.Log("[ServerInit] Update failed, unknown error");
 
                 // Failed to update
-                return false;
             }
-
         }
 
         // Updates all addons in DotaHost library
-        private static void updateAddons(bool serverinit)
+        private static void UpdateAddons(bool serverinit)
         {
-            Helpers.log("[Addons] Starting update of all addons.");
+            Helpers.Log("[Addons] Starting update of all addons.");
 
             // Cleanup addons folder
-            Helpers.deleteFolder(Global.BASE_PATH + "addons\\", true);
+            Helpers.DeleteFolder(Global.BasePath + "addons\\", true);
 
             // Download list of addons.
-            dlManager.downloadSync(Global.ROOT + "addons/addons.txt", "addons.txt");
+            DlManager.DownloadSync(Global.Root + "addons/addons.txt", "addons.txt");
 
             // Store list in array
-            string[] addons = File.ReadAllLines(Global.BASE_PATH + "addons.txt");
+            string[] addons = File.ReadAllLines(Global.BasePath + "addons.txt");
 
             // For each addon
             for (byte i = 0; i < addons.Length; ++i)
             {
                 // Attempt to install addon
-                AddonDownloader.updateAddon(addons[i], (addonID, success) =>
+                AddonDownloader.UpdateAddon(addons[i], (addonId, success) =>
                 {
                     // Check if it worked!
                     if (success)
                     {
-                        Helpers.log(addonID + " was successfully installed!");
+                        Helpers.Log(addonId + " was successfully installed!");
                     }
                     else
                     {
-                        Helpers.log(addonID + " failed to install!");
+                        Helpers.Log(addonId + " failed to install!");
                     }
                 });
             }
@@ -241,171 +236,175 @@ namespace DotaHostBoxManager
             if (serverinit)
             {
                 // Update it.
-                updateServerInit();
+                UpdateServerInit();
             }
 
-            Helpers.log("[Addons] Update complete.");
+            Helpers.Log("[Addons] Update complete.");
         }
 
         // Iterates through the network cards, adding them to dataSendCounter and dataReceivedCounter
-        private static void setupNetworkCards()
+        private static void SetupNetworkCards()
         {
             // For each network card
-            for (int i = 0; i < NETWORK_CARDS.Length; ++i)
+            for (byte i = 0; i < NetworkCards.Length; ++i)
             {
                 // Add a performance counter to dataSent
-                dataSentCounter.Add(new PerformanceCounter("Network Interface", "Bytes Sent/sec", NETWORK_CARDS[i]));
+                DataSentCounter.Add(new PerformanceCounter("Network Interface", "Bytes Sent/sec", NetworkCards[i]));
 
                 // And received
-                dataReceivedCounter.Add(new PerformanceCounter("Network Interface", "Bytes Received/sec", NETWORK_CARDS[i]));
+                DataReceivedCounter.Add(new PerformanceCounter("Network Interface", "Bytes Received/sec", NetworkCards[i]));
             }
         }
 
+        // ID of boxmanager instance
+        public static string InstanceId { get; set; }
+
         // Hook websocket events
-        private static void hookWSocketEvents()
+        private static void HookWSocketEvents()
         {
             // Log everything that is sent, for debugging
-            #region wsClient.addHook(WebSocketClient.SEND);
-            wsClient.addHook(WebSocketClient.SEND, (c) =>
-            {
-                Helpers.log("SENT SOMETHING");
-            });
-            #endregion
+            WsClient.AddHook(WebSocketClient.TypeSend, BoxManagerHook);
 
             // Log everything that is received, for debugging
-            #region wsClient.addHook(WebSocketClient.RECEIVE);
-            wsClient.addHook(WebSocketClient.RECEIVE, (c) =>
-            {
-                Helpers.log("RECEIVE: " + c.DataFrame.ToString());
-            });
-            #endregion
+            WsClient.AddHook(WebSocketClient.TypeReceive, ReceiveHook);
 
             // When connected to the ServerManager, send alert and request information and instructions
-            #region wsClient.addHook(WebSocketClient.CONNECTED);
-            wsClient.addHook(WebSocketClient.CONNECTED, (c) =>
-            {
-                c.Send("box");
-            });
-            #endregion
+            WsClient.AddHook(WebSocketClient.TypeConnected, ConnectedHook);
 
             // Begin server reboot
-            #region wsClient.addHook("reboot");
-            wsClient.addHook("reboot", (c, x) =>
-            {
-                // Set status to deactivated
-                status = Runabove.BOX_DEACTIVATED;
-
-                // Begin reboot loop.
-                rebootLoop();
-            });
-            #endregion
+            WsClient.AddHook("reboot", RebootHook);
 
             // Server destroy (soft/hard)
-            #region wsClient.addHook("destroy");
-            wsClient.addHook("destroy", (c, x) =>
-            {
-                // If requested hard destroy
-                if (x.Length > 1 && x[1] == "hard")
-                {
-                    // Hard destroy, no waiting, no timeout
-                    destroy();
-                }
-                else
-                {
-                    // Soft destroy, waits for games to finish, polls every minute
-                    status = Runabove.BOX_DEACTIVATED;
-                    destroyLoop();
-                }
-            });
-            #endregion
+            WsClient.AddHook("destroy", DestroyHook);
 
             // Receive subid from server manager
-            #region wsClient.addHook("instanceid");
-            wsClient.addHook("instanceid", (c, x) =>
-            {
-                // Update instanceID
-                instanceID = x[1];
-            });
-            #endregion
+            WsClient.AddHook("instanceid", InstanceidHook);
 
             // Get unique socket identifier from server
-            #region wsClient.addHook("id");
-            wsClient.addHook("id", (c, x) =>
-            {
-                // Update ip
-                boxManager.Ip = x[1];
-            });
-            #endregion
+            WsClient.AddHook("id", IdHook);
 
             // Get unique socket identifier from server
-            #region wsClient.addHook("box");
-            wsClient.addHook("box", (c, x) =>
-            {
-                boxManager = new BoxManager(KV.parse(x[1]));
-                c.Send(Helpers.packArguments("system", boxManager.toString()));
-            });
-            #endregion
+            WsClient.AddHook("box", BoxHook);
 
             // Get status overview
-            #region wsClient.addHook("system");
-            wsClient.addHook("system", (c, x) =>
-            {
-                // Update system diagnostics
-                refreshSystemDiagnostics();
-
-                // If this server isn't deactivated
-                if (status != Runabove.BOX_DEACTIVATED)
-                {
-                    // If there are no game servers running
-                    if (gameServers.getKeys() != null && gameServers.getKeys().Count == 0)
-                    {
-                        // Set box status to idle.
-                        status = Runabove.BOX_IDLE;
-                    }
-                    else
-                    {
-                        // There are game servers running, we are active.
-                        status = Runabove.BOX_ACTIVE;
-                    }
-
-                    // Send updated box manager info to server manager.
-                    c.Send(Helpers.packArguments("system", boxManager.toString()));
-                }
-
-            });
-            #endregion
+            WsClient.AddHook("system", SystemHook);
 
             // Create game server function
-            #region wsClient.addHook("create");
-            wsClient.addHook("create", (c, x) =>
-            {
-
-                // Create server object to handle game server info
-                GameServer gameServer = new GameServer(KV.parse(x[1]));
-
-                // Adds game server to game server list.
-                gameServers.addGameServer(gameServer);
-
-                // Launch the server using the string options
-                launchGameServer(gameServer);
-
-            });
-            #endregion
+            WsClient.AddHook("create", CreateHook);
 
             // Updates server
-            #region wsClient.addHook("updateServer");
-            wsClient.addHook("updateServer", (c, x) =>
+            WsClient.AddHook("updateServer", UpdateServerHook);
+        }
+
+        private static void BoxManagerHook(UserContext c)
+        {
+            Helpers.Log("SENT SOMETHING");
+        }
+
+        private static void ReceiveHook(UserContext c)
+        {
+            Helpers.Log("RECEIVE: " + c.DataFrame);
+        }
+
+        private static void ConnectedHook(UserContext c)
+        {
+            c.Send("box");
+        }
+
+        private static void RebootHook(UserContext c, string[] x)
+        {
+            // Set status to deactivated
+            _status = Runabove.BoxDeactivated;
+
+            // Begin reboot loop.
+            RebootLoop();
+        }
+
+        private static void InstanceidHook(UserContext c, string[] x)
+        {
+
+            // Update instanceID
+            InstanceId = x[1];
+        }
+
+
+        private static void DestroyHook(UserContext c, string[] x)
+        {
+
+            // If requested hard destroy
+            if (x.Length > 1 && x[1] == "hard")
             {
-                // Updates server
-                updateServers();
-            });
-            #endregion
+                // Hard destroy, no waiting, no timeout
+                Destroy();
+            }
+            else
+            {
+                // Soft destroy, waits for games to finish, polls every minute
+                _status = Runabove.BoxDeactivated;
+                DestroyLoop();
+            }
+        }
 
+        private static void IdHook(UserContext c, string[] x)
+        {
 
+            // Update ip
+            _boxManager.Ip = x[1];
+        }
+
+        private static void BoxHook(UserContext c, string[] x)
+        {
+
+            _boxManager = new BoxManager(Kv.Parse(x[1]));
+            c.Send(Helpers.PackArguments("system", _boxManager.ToString()));
+        }
+
+        private static void SystemHook(UserContext c, string[] x)
+        {
+            // Update system diagnostics
+            RefreshSystemDiagnostics();
+
+            // If this server isn't deactivated
+            if (_status == Runabove.BoxDeactivated) return;
+
+            // If there are no game servers running
+            if (GameServers.GetKeys() != null && GameServers.GetKeys().Count == 0)
+            {
+                // Set box status to idle.
+                _status = Runabove.BoxIdle;
+            }
+            else
+            {
+                // There are game servers running, we are active.
+                _status = Runabove.BoxActive;
+            }
+
+            // Send updated box manager info to server manager.
+            c.Send(Helpers.PackArguments("system", _boxManager.ToString()));
+        }
+
+        private static void CreateHook(UserContext c, string[] x)
+        {
+
+            // Create server object to handle game server info
+            var gameServer = new GameServer(Kv.Parse(x[1]));
+
+            // Adds game server to game server list.
+            GameServers.AddGameServer(gameServer);
+
+            // Launch the server using the string options
+            LaunchGameServer(gameServer);
+        }
+
+        private static void UpdateServerHook(UserContext c, string[] x)
+        {
+
+            // Updates server
+            UpdateServers();
         }
 
         // Starts a specific game server with a specific set of arguments
-        private static void launchGameServer(GameServer gameServer)
+        private static void LaunchGameServer(GameServer gameServer)
         {
             // NOTE: WE NEED TO ENSURE ONLY ONE SERVER IS BOOTING AT A TIME, OR WE WILL HAVE A SHIT STORM!
 
@@ -413,10 +412,10 @@ namespace DotaHostBoxManager
 
             // We probably want to report that the server failed, if it did infact fail
 
-            Helpers.log("Here we go...");
+            Helpers.Log("Here we go...");
 
             // Update addons
-            updateAddons(true);
+            UpdateAddons(true);
 
 
             // BEGIN OPTIONS: SHOULD AUTO FILL THESE
@@ -431,12 +430,12 @@ namespace DotaHostBoxManager
             int port = gameServer.Port;
 
             // The map to load up
-            string map = "dota";
+            const string map = "dota";
 
             // The path to the addons we need to mount (this will be generated by addon compiler)
             // Once the server has closed, the mount path will need to be deleted as well!
             // NOTE: This function takes another argument which will be the gameServerArgs -- this still needs to be built
-            string mountPath = AddonCompiler.compileAddons(gameServer.Lobby, AddonDownloader.getAddonInstallLocation(), Global.BASE_PATH + @"addons_dotahost\", true);
+            var mountPath = AddonCompiler.CompileAddons(gameServer.Lobby, AddonDownloader.GetAddonInstallLocation(), Global.BasePath + @"addons_dotahost\", true);
             mountPath = mountPath.Substring(0, mountPath.Length - 1);
 
             // END OPTIONS
@@ -444,7 +443,7 @@ namespace DotaHostBoxManager
 
 
             // The path to SRCDS
-            string path = Global.BASE_PATH + SOURCE_PATH;
+            string path = Global.BasePath + SourcePath;
 
             // The application to launch
             string app;
@@ -462,7 +461,7 @@ namespace DotaHostBoxManager
                 // -strictportbind doesn't appear to work, doh!
 
                 // Patch gameinfo.txt
-                source1GameInfoPatch(mountPath);
+                Source1GameInfoPatch(mountPath);
             }
             else
             {
@@ -477,34 +476,30 @@ namespace DotaHostBoxManager
 
 
             // Build the update commmand
-            ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WorkingDirectory = path;
-            proc.FileName = path + app;
-            proc.Arguments = args;
-            proc.RedirectStandardOutput = true;
-            proc.RedirectStandardError = true;
-            proc.UseShellExecute = false;
+            var proc = new ProcessStartInfo
+            {
+                WorkingDirectory = path,
+                FileName = path + app,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
 
             // Attempt to launch the server
             //try
             //{
             // Start the process
-            Process process = Process.Start(proc);
-            
+            var process = Process.Start(proc);
+
             // Set to true once STDOUT has been fully read.
-            Boolean canStop = false;
+            var canStop = false;
 
             // Create diconary to check who has played
-            Dictionary<string, int> connections = new Dictionary<string, int>();
+            var connections = new Dictionary<string, int>();
 
             // Default everyone to not connected yet
-            foreach (Team team in gameServer.Lobby.Teams.getTeams())
-            {
-                foreach (Player player in team.Players.getPlayers())
-                {
-                    connections[player.SteamID] = Global.PLAYER_STATUS_NOT_CONNECTED;
-                }
-            }
+            gameServer.Lobby.ForEachPlayer((player) => connections[player.SteamId] = Global.PlayerStatusNotConnected);
 
             // Did the server even activate?
             bool activated = false;
@@ -512,52 +507,55 @@ namespace DotaHostBoxManager
             // Error manager
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
-                // Wait for an error (if process exits, this will be null)
-                string stderrx = process.StandardError.ReadLine();
-                
-                // Check for minidump error
-                if (stderrx == MINIDUMP_ERROR) stderrx = null;
-
-                // Ensure the process is dead
-                if (!process.HasExited) process.Kill();
-
-                // Wait for SRDOUT to be done
-                while (!canStop) System.Threading.Thread.Sleep(100);
-
-                // DEBUG: Print who has connected and who hasn't
-                foreach (KeyValuePair<string, int> pair in connections)
+                if (process != null)
                 {
-                    Helpers.log(port + ": " + pair.Key + " - " + pair.Value);
+                    // Wait for an error (if process exits, this will be null)
+                    var stderrx = process.StandardError.ReadLine();
+
+                    // Check for minidump error
+                    if (stderrx == MinidumpError) stderrx = null;
+
+                    // Ensure the process is dead
+                    if (!process.HasExited) process.Kill();
+
+                    // Wait for SRDOUT to be done
+                    while (!canStop) System.Threading.Thread.Sleep(100);
+
+                    // DEBUG: Print who has connected and who hasn't
+                    foreach (var pair in connections)
+                    {
+                        Helpers.Log(port + ": " + pair.Key + " - " + pair.Value);
+                    }
+
+                    // DEBUG: Log if something went REALLY wrong
+                    if (!activated)
+                    {
+                        Helpers.Log(port + ": The server didnt even activate, we have a SERIOUS problem!");
+                    }
+
+                    // Check if we got an error
+                    if (stderrx == null)
+                    {
+                        // Log the error
+                        Helpers.Log(port + ": Game server exited normally");
+
+                        // No error, server exited, report to master server
+                        WsClient.Send(Helpers.PackArguments("gameServerExit", "good", gameServer.ToString()));
+                    }
+                    else
+                    {
+                        // Log the error
+                        Helpers.Log(port + ": SRCDS Error: " + stderrx);
+
+                        // Report error to master server
+                        WsClient.Send(Helpers.PackArguments("gameServerExit", "error", gameServer.ToString(), stderrx));
+                    }
                 }
 
-                // DEBUG: Log if something went REALLY wrong
-                if (!activated)
-                {
-                    Helpers.log(port + ": The server didnt even activate, we have a SERIOUS problem!");
-                }
-
-                // Check if we got an error
-                if (stderrx == null)
-                {
-                    // Log the error
-                    Helpers.log(port + ": Game server exited normally");
-
-                    // No error, server exited, report to master server
-                    wsClient.send(Helpers.packArguments("gameServerExit", "good", gameServer.toString()));
-                }
-                else
-                {
-                    // Log the error
-                    Helpers.log(port + ": SRCDS Error: " + stderrx);
-
-                    // Report error to master server
-                    wsClient.send(Helpers.packArguments("gameServerExit", "error", gameServer.toString(), stderrx));
-                }
-
-                gameServers.removeGameServer(gameServer);
+                GameServers.RemoveGameServer(gameServer);
 
                 // Cleanup the addon folder
-                Helpers.deleteFolder(mountPath, true);
+                Helpers.DeleteFolder(mountPath, true);
             }, null);
 
             // STDOUT watch dog
@@ -565,48 +563,50 @@ namespace DotaHostBoxManager
             {
                 while (true)
                 {
+                    if (process == null) continue;
+
                     // Read a line and check if it;s the end of our input
-                    string line = process.StandardOutput.ReadLine();
+                    var line = process.StandardOutput.ReadLine();
                     if (line == null) break;
 
                     // Check for Lua data
-                    string[] message = line.Split('\u0007');
-                    if (message.Length > 1)
+                    var message = line.Split('\u0007');
+
+                    if (message.Length <= 1) continue;
+
+                    switch (message[0])
                     {
-                        switch (message[0])
-                        {
-                            // The server activated successfully
-                            case "activate":
-                                // Log it
-                                Helpers.log(port + ": Activated successfully!");
-                                activated = true;
+                        // The server activated successfully
+                        case "activate":
+                            // Log it
+                            Helpers.Log(port + ": Activated successfully!");
+                            activated = true;
 
-                                // Report to the master server
-                                wsClient.send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
-                                break;
+                            // Report to the master server
+                            WsClient.Send(Helpers.PackArguments("gameServerInfo", "success", gameServer.ToString()));
+                            break;
 
-                            // Output from a mod, lets just log for now
-                            case "print":
-                                Helpers.log(port + ": "+message[1]);
-                                break;
+                        // Output from a mod, lets just log for now
+                        case "print":
+                            Helpers.Log(port + ": " + message[1]);
+                            break;
 
-                            // A user connects successfully
-                            case "connect":
-                                Helpers.log(port + ": " + message[1] + " connected.");
-                                connections[message[1]] = Global.PLAYER_STATUS_CONNECTED;
-                                break;
+                        // A user connects successfully
+                        case "connect":
+                            Helpers.Log(port + ": " + message[1] + " connected.");
+                            connections[message[1]] = Global.PlayerStatusConnected;
+                            break;
 
-                            // A user disconnected
-                            case "disconnect":
-                                Helpers.log(port + ": " + message[1] + " disconnected.");
-                                connections[message[1]] = Global.PLAYER_STATUS_DISCONNECTED;
-                                break;
+                        // A user disconnected
+                        case "disconnect":
+                            Helpers.Log(port + ": " + message[1] + " disconnected.");
+                            connections[message[1]] = Global.PlayerStatusDisconnected;
+                            break;
 
-                            // Unknown message, doh!
-                            default:
-                                Helpers.log(port + ": " + message[0] + " = " + message[1]);
-                                break;
-                        }
+                        // Unknown message, doh!
+                        default:
+                            Helpers.Log(port + ": " + message[0] + " = " + message[1]);
+                            break;
                     }
                 }
 
@@ -615,7 +615,7 @@ namespace DotaHostBoxManager
             }, null);
 
             // Woot, success
-            Helpers.log(port + ": Launched successfully!");
+            Helpers.Log(port + ": Launched successfully!");
 
             // We probably want to store a reference to the process so we can see if it dies
             //}
@@ -628,27 +628,27 @@ namespace DotaHostBoxManager
         }
 
         // Reboot check loop
-        private static void rebootLoop()
+        private static void RebootLoop()
         {
-            if (gameServers.getKeys().Count > 0)
+            if (GameServers.GetKeys().Count > 0)
             {
                 // Game server still running, check again in 60 seconds
-                Timers.setTimeout(60, Timers.SECONDS, () => { rebootLoop(); });
+                Timers.SetTimeout(60, Timers.Seconds, RebootLoop);
             }
             else
             {
                 // Reboot server
-                System.Diagnostics.Process.Start("shutdown.exe", "-r -t 0");
+                Process.Start("shutdown.exe", "-r -t 0");
             }
         }
 
         // Destroy check loop
-        private static void destroyLoop()
+        private static void DestroyLoop()
         {
-            if (gameServers.getKeys().Count > 0)
+            if (GameServers.GetKeys().Count > 0)
             {
                 // Game servers still running, check again in 60 seconds
-                Timers.setTimeout(60, Timers.SECONDS, () => { destroyLoop(); });
+                Timers.SetTimeout(60, Timers.Seconds, DestroyLoop);
             }
             else
             {
@@ -658,56 +658,56 @@ namespace DotaHostBoxManager
         }
 
         // Destroy server instantly
-        private static void destroy()
+        private static void Destroy()
         {
             //Runabove.destroyServer(instanceID);
         }
 
         // Set up system diagnostics
-        private static void setupSystemDiagnostics()
+        private static void SetupSystemDiagnostics()
         {
-            setupNetworkCards();
-            cpuCounter.CategoryName = "Processor";
-            cpuCounter.CounterName = "% Processor Time";
-            cpuCounter.InstanceName = "_Total";
+            SetupNetworkCards();
+            CpuCounter.CategoryName = "Processor";
+            CpuCounter.CounterName = "% Processor Time";
+            CpuCounter.InstanceName = "_Total";
         }
 
         // Get system diagnostics such as CPU % usage, RAM used and RAM remaining
-        private static void refreshSystemDiagnostics()
+        private static void RefreshSystemDiagnostics()
         {
-            boxManager.GameServers = gameServers;
-            boxManager.Cpu = getCurrentCpuUsage();
-            boxManager.RamAvailable = getAvailableRAM();
-            boxManager.RamTotal = getTotalRAM();
-            boxManager.Upload = getUploadSpeed();
-            boxManager.Download = getDownloadSpeed();
+            _boxManager.GameServers = GameServers;
+            _boxManager.Cpu = GetCurrentCpuUsage();
+            _boxManager.RamAvailable = GetAvailableRam();
+            _boxManager.RamTotal = GetTotalRam();
+            _boxManager.Upload = GetUploadSpeed();
+            _boxManager.Download = GetDownloadSpeed();
         }
 
         // This function ensures steamcmd is available
-        private static void installServerFile(string localFileCheck, string downloadURL, string extractTo, string friendlyName, Action callback)
+        private static void InstallServerFile(string localFileCheck, string downloadUrl, string extractTo, string friendlyName, Action callback)
         {
             // Check if steamcmd exists
             if (!File.Exists(localFileCheck))
             {
                 // Debug log
-                Helpers.log(friendlyName + " not found, downloading...");
+                Helpers.Log(friendlyName + " not found, downloading...");
 
                 // Name of the zip to use
                 string zipName = friendlyName + ".zip";
 
                 // If there is an old version of steamcmd.zip, delete it
-                File.Delete(Global.BASE_PATH + zipName);
+                File.Delete(Global.BasePath + zipName);
 
                 // NOTE: WE NEED TO CATCH EXCEPTIONS HERE INCASE STEAM UNREACHABLE!
 
                 // Download steamcmd zip
-                dlManager.download(downloadURL, zipName, (e) => { }, (e) =>
+                DlManager.Download(downloadUrl, zipName, (e) => { }, (e) =>
                 {
                     // Extract the archive
                     ZipFile.ExtractToDirectory(zipName, extractTo);
 
                     // Delete the zip
-                    File.Delete(Global.BASE_PATH + zipName);
+                    File.Delete(Global.BasePath + zipName);
 
                     // Run the callback
                     callback();
@@ -723,58 +723,60 @@ namespace DotaHostBoxManager
 
         // This function updates both servers
         // If server aren't installed, this function will install them from scratch
-        private static void updateServers()
+        private static void UpdateServers()
         {
             // Debug log
-            Helpers.log("Updating dota 2 (source2)...");
+            Helpers.Log("Updating dota 2 (source2)...");
 
             // Ensure steamcmd exists
-            installServerFile(Global.BASE_PATH + STEAMCMD, DOWNLOAD_PATH_STEAMCMD, Global.BASE_PATH + STEAMCMD_PATH, "steamCMD", () =>
+            InstallServerFile(Global.BasePath + Steamcmd, DownloadPathSteamcmd, Global.BasePath + SteamcmdPath, "steamCMD", () =>
             {
                 // Ensure the directory exists
-                Directory.CreateDirectory(SOURCE_PATH);
+                Directory.CreateDirectory(SourcePath);
 
                 // Create the path command file
-                File.WriteAllText(Global.BASE_PATH + STEAMCMD_PATH + "install.txt", STEAMCMD_UPDATEFILE);
+                File.WriteAllText(Global.BasePath + SteamcmdPath + "install.txt", SteamcmdUpdatefile);
 
                 // Build the update commmand
-                ProcessStartInfo proc = new ProcessStartInfo();
-                proc.WorkingDirectory = Global.BASE_PATH;
-                proc.FileName = STEAMCMD;
-                proc.Arguments = STEAMCMD_UPDATE_SERVERS;
+                var proc = new ProcessStartInfo
+                {
+                    WorkingDirectory = Global.BasePath,
+                    FileName = Steamcmd,
+                    Arguments = SteamcmdUpdateServers
+                };
 
                 // Attempt to run the update
                 try
                 {
                     // Start the process
-                    Process process = Process.Start(proc);
+                    var process = Process.Start(proc);
 
                     // Wait for it to end
-                    process.WaitForExit();
+                    if (process != null) process.WaitForExit();
                 }
                 catch
                 {
-                    Helpers.log("Failed to update!");
+                    Helpers.Log("Failed to update!");
                     return;
                 }
 
                 // Install SRCDS
-                installServerFile(Global.BASE_PATH + SOURCE_PATH + "srcds.exe", DOWNLOAD_PATH_SRCDS, Global.BASE_PATH + SOURCE_PATH, "srcds", () =>
+                InstallServerFile(Global.BasePath + SourcePath + "srcds.exe", DownloadPathSrcds, Global.BasePath + SourcePath, "srcds", () =>
                 {
                     // Install Metamod
-                    installServerFile(Global.BASE_PATH + SOURCE_PATH + @"dota\addons\metamod.vdf", DOWNLOAD_PATH_METAMOD, Global.BASE_PATH + SOURCE_PATH + @"dota\", "metamod", () =>
+                    InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod.vdf", DownloadPathMetamod, Global.BasePath + SourcePath + @"dota\", "metamod", () =>
                     {
                         // Install d2fixups
-                        installServerFile(Global.BASE_PATH + SOURCE_PATH + @"dota\addons\metamod\d2fixups.vdf", DOWNLOAD_PATH_D2FIXUPS, Global.BASE_PATH + SOURCE_PATH + @"dota\", "d2fixups", () =>
+                        InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod\d2fixups.vdf", DownloadPathD2Fixups, Global.BasePath + SourcePath + @"dota\", "d2fixups", () =>
                         {
                             // Patch the gameinfo file
-                            source1GameInfoPatch();
+                            Source1GameInfoPatch();
 
                             // Patch the maps
-                            patchSource1Maps();
+                            PatchSource1Maps();
 
                             // Finished installing
-                            Helpers.log("Finished installing servers!");
+                            Helpers.Log("Finished installing servers!");
                         });
                     });
                 });
@@ -783,10 +785,10 @@ namespace DotaHostBoxManager
 
         // Patches gameinfo.txt for source1
         // additonalMount is an extra location to mount into the server
-        private static void source1GameInfoPatch(string additonalMount = null)
+        private static void Source1GameInfoPatch(string additonalMount = null)
         {
             // Ensure additonalMount is valid
-            if (additonalMount == null || additonalMount == "")
+            if (string.IsNullOrEmpty(additonalMount))
             {
                 additonalMount = "";
             }
@@ -796,7 +798,7 @@ namespace DotaHostBoxManager
             }
 
             // Gameinfo to load metamod
-            string gameinfo =
+            var gameinfo =
                 "\"GameInfo\"" + Environment.NewLine +
                     "{" + Environment.NewLine +
                         "game \"DOTA 2\"" + Environment.NewLine +
@@ -823,18 +825,17 @@ namespace DotaHostBoxManager
             // May need to add addon mounting here eventually
 
             // Write the metamod loader
-            File.WriteAllText(Global.BASE_PATH + SOURCE_PATH + @"dota\gameinfo.txt", gameinfo);
+            File.WriteAllText(Global.BasePath + SourcePath + @"dota\gameinfo.txt", gameinfo);
         }
 
         // This function patches source1 maps
         // This function could could issues with data[i++] if the map is made to fail on purpose
         // This function won't fail on standard source maps, since we have control over this,
         // Everything is good in the hood
-        private static void patchSource1Maps()
+        private static void PatchSource1Maps()
         {
             // List of maps to patch
-            string[] maps = new string[]
-			{
+            string[] maps = {
 				"dota",
 				"dota_681",
 				"dota_autumn",
@@ -843,58 +844,51 @@ namespace DotaHostBoxManager
 			};
 
             // Path to the map folder
-            string mapPath = Global.BASE_PATH + SOURCE_PATH + @"dota\maps\";
+            var mapPath = Global.BasePath + SourcePath + @"dota\maps\";
 
             // Loop over each map
-            foreach (string map in maps)
+            foreach (var map in maps)
             {
                 // Debug log
-                Helpers.log("Attempting to patch " + map);
+                Helpers.Log("Attempting to patch " + map);
 
                 // Make a copy of the map
-                System.IO.File.Copy(mapPath + map + ".bsp", mapPath + map + ".bsp.tmp", true);
+                File.Copy(mapPath + map + ".bsp", mapPath + map + ".bsp.tmp", true);
 
                 // Delete the original map
                 File.Delete(mapPath + map + ".bsp");
 
                 // Load up the map
-                using (FileStream fs = File.Open(mapPath + map + ".bsp.tmp", FileMode.Open))
+                using (var fs = File.Open(mapPath + map + ".bsp.tmp", FileMode.Open))
                 {
                     // Read in the map data
-                    byte[] data = new BinaryReader(fs).ReadBytes((int)fs.Length);
+                    var data = new BinaryReader(fs).ReadBytes((int)fs.Length);
 
                     // Search over data
                     for (int i = 0; i < data.Length - 10; )
                     {
                         // Searching for `world_maxs` basically
-                        if (data[i++] == 'w' &&
-                            data[i++] == 'o' &&
-                            data[i++] == 'r' &&
-                            data[i++] == 'l' &&
-                            data[i++] == 'd' &&
-                            data[i++] == '_' &&
-                            data[i++] == 'm' &&
-                            data[i++] == 'a' &&
-                            data[i++] == 'x' &&
-                            data[i++] == 's')
-                        {
-                            // Matched, lets find where the numbers begin
-                            while (i < data.Length && data[i++] != '"') ;
-                            while (i < data.Length && data[i++] != '"') ;
+                        if (data[i++] != 'w' || data[i++] != 'o' || data[i++] != 'r' || data[i++] != 'l' ||
+                            data[i++] != 'd' || data[i++] != '_' || data[i++] != 'm' || data[i++] != 'a' ||
+                            data[i++] != 'x' || data[i++] != 's') continue;
 
-                            // i is now positioned at the numbers
-                            data[i++] = (byte)'8';
-                            data[i++] = (byte)'3';
-                            data[i++] = (byte)'2';
-                            data[i++] = (byte)'0';
 
-                            // Store that we patched successfully
-                            Helpers.log(map + " was patched successfully!");
-                        }
+                        // Matched, lets find where the numbers begin
+                        while (i < data.Length && data[i++] != '"') ;
+                        while (i < data.Length && data[i++] != '"') ;
+
+                        // i is now positioned at the numbers
+                        data[i++] = (byte)'8';
+                        data[i++] = (byte)'3';
+                        data[i++] = (byte)'2';
+                        data[i++] = (byte)'0';
+
+                        // Store that we patched successfully
+                        Helpers.Log(map + " was patched successfully!");
                     }
 
                     // Write the new map
-                    using (BinaryWriter writer = new BinaryWriter(File.Open(mapPath + map + ".bsp", FileMode.Create)))
+                    using (var writer = new BinaryWriter(File.Open(mapPath + map + ".bsp", FileMode.Create)))
                     {
                         // Write the data
                         writer.Write(data);
@@ -907,57 +901,51 @@ namespace DotaHostBoxManager
         }
 
         // Gets the current CPU usage in percent
-        private static byte getCurrentCpuUsage()
+        private static byte GetCurrentCpuUsage()
         {
             // Call is required twice because Windows
-            cpuCounter.NextValue();
+            CpuCounter.NextValue();
 
             // Sleep is required to delay next call because Windows
             System.Threading.Thread.Sleep(1000);
-            return (byte)Math.Round(cpuCounter.NextValue());
+            return (byte)Math.Round(CpuCounter.NextValue());
         }
 
         // Gets the available RAM in the system in megabytes
-        private static ushort getAvailableRAM()
+        private static ushort GetAvailableRam()
         {
-            return (ushort)Math.Round(ramCounter.NextValue());
+            return (ushort)Math.Round(RamCounter.NextValue());
         }
 
         // Gets the total RAM available in the system in megabytes
-        private static ushort getTotalRAM()
+        private static ushort GetTotalRam()
         {
             return (ushort)(new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1000000);
         }
 
         // Gets the current upload speed in bytes/second
-        private static uint getUploadSpeed()
+        private static uint GetUploadSpeed()
         {
-            uint upload = 0;
-            for (int i = 0; i < dataSentCounter.Count; ++i)
-            {
-                // Iterates through all adapters and sums them
-                upload += (uint)(Math.Round(dataSentCounter[i].NextValue()));
-            }
-            return upload;
+            return DataSentCounter.Aggregate<PerformanceCounter, uint>(0, (current, t) => current + (uint)(Math.Round(t.NextValue())));
         }
 
         // Gets the current download speed in bytes/second
-        private static uint getDownloadSpeed()
+        private static uint GetDownloadSpeed()
         {
             uint download = 0;
-            for (int i = 0; i < dataSentCounter.Count; ++i)
+            for (int i = 0; i < DataSentCounter.Count; ++i)
             {
                 // Iterates through all adapters and sums them
-                download += (uint)(Math.Round(dataReceivedCounter[i].NextValue()));
+                download += (uint)(Math.Round(DataReceivedCounter[i].NextValue()));
             }
             return download;
         }
 
         // Returns a list of all network interface card reference names
-        private static string[] getNetworkCards()
+        private static string[] GetNetworkCards()
         {
-            PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
-            string[] instancename = category.GetInstanceNames();
+            var category = new PerformanceCounterCategory("Network Interface");
+            var instancename = category.GetInstanceNames();
             return instancename;
         }
 

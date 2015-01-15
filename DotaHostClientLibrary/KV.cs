@@ -1,120 +1,116 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace DotaHostClientLibrary
 {
-    public class KV
+    public class Kv
     {
         // The sort of element this is
-        protected byte sort;
+        protected byte Sort;
 
         // List of keys this KV contains if it is an object
-        protected Dictionary<string, KV> keys;
+        protected Dictionary<string, Kv> Keys;
 
         // List of values for this key
-        protected List<string> values;
+        protected List<string> Values;
 
         // This KV is an object
-        private static byte SORT_OBJECT = 1;
+        private const byte SortObject = 1;
 
         // This KV is a value
-        private static byte SORT_VALUE = 2;
+        private const byte SortValue = 2;
 
         // Block type
-        private static readonly byte TYPE_BLOCK = 0;
+        private const byte TypeBlock = 0;
 
         // Array type
-        private static readonly byte TYPE_ARRAY = 1;
+        private const byte TypeArray = 1;
 
         // Create a new KV that can store keys
-        public KV()
+        public Kv()
         {
-            initObject();
+            InitObject();
         }
 
-        protected void initObject()
+        protected void InitObject()
         {
             // This is an object sort
-            this.sort = SORT_OBJECT;
+            Sort = SortObject;
 
             // Create store for keys
-            this.keys = new Dictionary<string, KV>();
+            Keys = new Dictionary<string, Kv>();
         }
 
-        protected void inheritSource(KV source)
+        protected void InheritSource(Kv source)
         {
             if (source == null)
             {
-                this.sort = 1;
-                this.keys = new Dictionary<string, KV>();
-                this.values = new List<string>();
+                Sort = 1;
+                Keys = new Dictionary<string, Kv>();
+                Values = new List<string>();
                 return;
             }
-            this.sort = source.getSort() == 0 ? (byte)SORT_OBJECT : source.getSort();
-            this.keys = source.getKeys() != null ? source.getKeys() : new Dictionary<string, KV>();
-            this.values = source.getValues() != null ? source.getValues() : new List<string>();
+            Sort = source.GetSort() == 0 ? (byte)SortObject : source.GetSort();
+            Keys = source.GetKeys() ?? new Dictionary<string, Kv>();
+            Values = source.GetValues() ?? new List<string>();
         }
 
         // Create a new KV that can store objects
-        public KV(string value)
+        public Kv(string value)
         {
             // This is a value kind
-            this.sort = SORT_VALUE;
+            Sort = SortValue;
 
-            // Create store for values
-            values = new List<string>();
+            // Create store for values and add the value
+            Values = new List<string> { value };
 
-            // Add the value
-            values.Add(value);
         }
 
         // Adds a key to the KV
-        protected bool addKey(string key, KV kv)
+        protected bool AddKey(string key, Kv kv)
         {
             // Ensure this is an object sort
-            if (this.sort != SORT_OBJECT) return false;
+            if (Sort != SortObject) return false;
 
             // Check if the key already exists
-            if (this.keys.ContainsKey(key)) return false;
+            if (Keys.ContainsKey(key)) return false;
 
             // Add the key
-            this.keys.Add(key, kv);
+            Keys.Add(key, kv);
 
             // Success
             return true;
         }
 
         // Removes a key from the KV
-        protected bool removeKey(string key)
+        protected bool RemoveKey(string key)
         {
             // Ensure this is an object sort
-            if (this.sort != SORT_OBJECT) return false;
+            if (Sort != SortObject) return false;
 
             // Remove the key
-            this.keys.Remove(key);
+            Keys.Remove(key);
 
             // Success
             return true;
         }
 
         // Removes a key with given value from the KV
-        protected bool removeKey(KV kv)
+        protected bool RemoveKey(Kv kv)
         {
             // Ensure this is an object sort
-            if (this.sort != SORT_OBJECT) return false;
+            if (Sort != SortObject) return false;
 
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            foreach (var kvp in GetKeys().Where(kvp => kvp.Value == kv))
             {
-                if (kvp.Value == kv)
-                {
-                    // Remove key
-                    this.keys.Remove(kvp.Key);
+                // Remove key
+                Keys.Remove(kvp.Key);
 
-                    // Success
-                    return true;
-                }
+                // Success
+                return true;
             }
 
             // Remove failed
@@ -122,261 +118,251 @@ namespace DotaHostClientLibrary
         }
 
         // Clears the a given key, then recreates it with the given KV
-        protected bool setKey(string key, KV kv)
+        protected bool SetKey(string key, Kv kv)
         {
-            if (this.containsKey(key))
+            if (ContainsKey(key))
             {
-                this.removeKey(key);
+                RemoveKey(key);
             }
-            return this.addKey(key, kv);
+            return AddKey(key, kv);
         }
 
         // Clears the a given value at key, then recreates that key with the given value
-        protected bool setValue(string key, string value)
+        protected bool SetValue(string key, string value)
         {
-            return (removeKey(key) && addValue(key, value));
+            return (RemoveKey(key) && AddValue(key, value));
         }
 
         // Adds a value to the KV
-        protected bool addValue(string key, string value)
+        protected bool AddValue(string key, string value)
         {
             // Ensure this is an object sort
-            if (this.sort != SORT_OBJECT) return false;
+            if (Sort != SortObject) return false;
 
             // Check if the key already exists
-            if (this.keys.ContainsKey(key))
+            if (Keys.ContainsKey(key))
             {
                 // Grab the KV
-                KV kv = this.keys[key];
+                var kv = Keys[key];
 
                 // The key exists, it needs to accept values
-                if (kv == null || kv.getSort() != SORT_VALUE) return false;
+                if (kv == null || kv.GetSort() != SortValue) return false;
 
                 // Add the new value
-                kv.addValue(value);
+                kv.AddValue(value);
 
                 // Syccess
                 return true;
             }
-            else
-            {
-                // The key doesn't exist, make it
-                KV newKey = new KV(value);
 
-                // Store the key
-                this.addKey(key, newKey);
+            // The key doesn't exist, make it
+            var newKey = new Kv(value);
 
-                // Success
-                return true;
-            }
+            // Store the key
+            AddKey(key, newKey);
+
+            // Success
+            return true;
         }
 
         // Stores a value into a value KV
-        protected bool addValue(string value)
+        protected bool AddValue(string value)
         {
             // Ensure this is the value sort
-            if (this.sort != SORT_VALUE) return false;
+            if (Sort != SortValue) return false;
 
             // Add the value
-            this.values.Add(value);
+            Values.Add(value);
 
             // Success
             return true;
         }
 
         // Returns the sort of this KV
-        public byte getSort()
+        public byte GetSort()
         {
-            return this.sort;
+            return Sort;
         }
 
         // Gets a KV at the given key
-        public KV getKV(string key)
+        public Kv GetKv(string key)
         {
             // Ensure this is the object sort
-            if (this.sort != SORT_OBJECT) return null;
+            if (Sort != SortObject) return null;
 
             // Ensure we have the key
-            if (this.keys == null || !this.keys.ContainsKey(key)) return null;
+            if (Keys == null || !Keys.ContainsKey(key)) return null;
 
             // Return the KV
-            return this.keys[key];
+            return Keys[key];
         }
 
         // Checks if the KV has the given key
-        public bool containsKey(string key)
+        public bool ContainsKey(string key)
         {
-            return keys.ContainsKey(key);
+            return Keys.ContainsKey(key);
         }
 
         // Gets the nth value at the given key
-        public string getValue(string key, int n = 0)
+        public string GetValue(string key, int n = 0)
         {
             // Ensure this is the object sort
-            if (this.sort != SORT_OBJECT) return null;
+            if (Sort != SortObject) return null;
 
             // Ensure we have the key
-            if (this.keys == null || !this.keys.ContainsKey(key)) return null;
+            if (Keys == null || !Keys.ContainsKey(key)) return null;
 
             // Grab the kv
-            KV kv = this.keys[key];
+            var kv = Keys[key];
 
-            // Ensure a valid reference
-            if (kv == null) return null;
-
-            // Return the key
-            return kv.getValue(n);
+            // Ensure a valid reference or return the key
+            return kv == null ? null : kv.GetValue(n);
         }
 
         // Returns the nth value of this KV
-        public string getValue(int n = 0)
+        public string GetValue(int n = 0)
         {
             // Ensure this is the correct type
-            if (this.sort != SORT_VALUE) return null;
+            if (Sort != SortValue) return null;
 
             // Ensure we have enough values
-            if (n < 0 || n >= this.values.Count) return null;
+            if (n < 0 || n >= Values.Count) return null;
 
             // Return the value
-            return this.values[n];
+            return Values[n];
         }
 
         // Returns all the values (WARNING: THIS EXPOSES THE INSIDES, BADNESS COULD HAPPEN)
-        public List<string> getValues(string key)
+        public List<string> GetValues(string key)
         {
             // Ensure this is the object sort
-            if (this.sort != SORT_OBJECT) return null;
+            if (Sort != SortObject) return null;
 
             // Ensure we have the key
-            if (!this.keys.ContainsKey(key)) return null;
+            if (!Keys.ContainsKey(key)) return null;
 
             // Grab the kv
-            KV kv = this.keys[key];
+            var kv = Keys[key];
 
-            // Ensure a valid reference
-            if (kv == null) return null;
-
-            // Return the key
-            return kv.getValues();
+            // Ensure a valid reference or return the key
+            return kv == null ? null : kv.GetValues();
         }
 
         // Returns all the values for this kv (WARNING: THIS EXPOSES THE INSIDES, BADNESS COULD HAPPEN)
-        public List<string> getValues()
+        public List<string> GetValues()
         {
-            // Ensure this is the correct type
-            if (this.sort != SORT_VALUE) return null;
-
-            // Return the value
-            return this.values;
+            // Ensure this is the correct type and return the value
+            return Sort != SortValue ? null : Values;
         }
 
         // Returns all the keys for this kv (WARNING: THIS EXPOSES THE INSIDES, BADNESS COULD HAPPEN)
-        public Dictionary<string, KV> getKeys()
+        public Dictionary<string, Kv> GetKeys()
         {
-            // Ensure this is the correct type
-            if (this.sort != SORT_OBJECT) return null;
-
-            // Return the value
-            return this.keys;
+            // Ensure this is the correct type and return the value
+            return Sort != SortObject ? null : Keys;
         }
 
         // Escapes a string for output
-        public static string escapeString(string toEscape)
+        public static string EscapeString(string toEscape)
         {
             return toEscape.Replace(@"\", @"\\").Replace("\"", "\\\"");
         }
 
         // Compiles this KV into a string
-        public string toString(string key = null)
+        public string ToString(string key = null)
         {
-            string output = "";
+            var output = "";
 
-            if (this.sort == SORT_VALUE)
+            switch (Sort)
             {
-                bool first = true;
-
-                for (int i = 0; i < this.values.Count; ++i)
-                {
-                    if (first)
+                case SortValue:
                     {
-                        first = false;
+                        bool first = true;
+
+                        foreach (var value in Values)
+                        {
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                output += " ";
+                            }
+
+                            output += '"' + key + "\" \"" + EscapeString(value) + '"';
+                        }
                     }
-                    else
+                    break;
+                case SortObject:
                     {
-                        output += " ";
+                        bool first = true;
+
+                        foreach (var entry in Keys)
+                        {
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                output += " ";
+                            }
+
+                            output += entry.Value.ToString(entry.Key);
+                        }
+
+                        if (key != null)
+                        {
+                            output = '"' + EscapeString(key) + "\" {" + output + "}";
+                        }
+
                     }
-
-                    output += '"' + key + "\" \"" + escapeString(this.values[i]) + '"';
-                }
-            }
-            else if (this.sort == SORT_OBJECT)
-            {
-                bool first = true;
-
-                foreach (KeyValuePair<string, KV> entry in this.keys)
-                {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        output += " ";
-                    }
-
-                    output += entry.Value.toString(entry.Key);
-                }
-
-                if (key != null)
-                {
-                    output = '"' + escapeString(key) + "\" {" + output + "}";
-                }
-
+                    break;
             }
 
             return output;
         }
 
         // Compiles this KV into a string (JSON FORMATTED)
-        public string toJSON(string key = null)
+        public string ToJson(string key = null)
         {
             string output = "";
 
-            if (this.sort == SORT_VALUE)
+            if (Sort == SortValue)
             {
                 // Ensure we have a key
                 if (key == null) return "";
 
                 // Return only the first value
-                return '"' + escapeString(key) + "\":\"" + escapeString(this.values[0]) + '"';
+                return '"' + EscapeString(key) + "\":\"" + EscapeString(Values[0]) + '"';
             }
-            else if (this.sort == SORT_OBJECT)
+
+            if (Sort != SortObject) return output;
+
+            bool first = true;
+
+            foreach (var entry in Keys)
             {
-                bool first = true;
-
-                foreach (KeyValuePair<string, KV> entry in this.keys)
+                if (first)
                 {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        output += ",";
-                    }
-
-                    output += entry.Value.toJSON(entry.Key);
-                }
-
-                if (key == null)
-                {
-                    output = "{" + output + "}";
+                    first = false;
                 }
                 else
                 {
-                    output = '"' + escapeString(key) + "\":{" + output + "}";
+                    output += ",";
                 }
 
+                output += entry.Value.ToJson(entry.Key);
+            }
+
+            if (key == null)
+            {
+                output = "{" + output + "}";
+            }
+            else
+            {
+                output = '"' + EscapeString(key) + "\":{" + output + "}";
             }
 
             return output;
@@ -384,64 +370,65 @@ namespace DotaHostClientLibrary
 
         // Merges in the given KV (WARNING: This will MODIFY the original KV)
         // NOTE: This will some what link the two data structures, use this carefully!
-        public void merge(KV kv)
+        public void Merge(Kv kv)
         {
             // Validate input
             if (kv == null) return;
-            if (this.sort != kv.getSort()) return;
+            if (Sort != kv.GetSort()) return;
 
-            if (this.sort == SORT_OBJECT)
+            if (Sort == SortObject)
             {
                 // Grab all the keys that need merging
-                Dictionary<string, KV> mergeKeys = kv.getKeys();
+                var mergeKeys = kv.GetKeys();
 
-                foreach (KeyValuePair<String, KV> entry in mergeKeys)
+                foreach (var entry in mergeKeys)
                 {
-                    if (!this.keys.ContainsKey(entry.Key))
+                    if (!Keys.ContainsKey(entry.Key))
                     {
-                        this.keys.Add(entry.Key, entry.Value);
+                        Keys.Add(entry.Key, entry.Value);
                     }
                     else
                     {
-                        if (this.keys[entry.Key] != null)
+                        if (Keys[entry.Key] != null)
                         {
                             // Do a proper merge
-                            this.keys[entry.Key].merge(entry.Value);
+                            Keys[entry.Key].Merge(entry.Value);
                         }
                     }
                 }
             }
-            else if (this.sort == SORT_VALUE)
+            else
             {
+                if (Sort != SortValue) return;
+
                 // Decide if we are doing an override, or an addition
-                if (this.values.Count == 1)
+                if (Values.Count == 1)
                 {
                     // Since there is only one key, lets just copy the new value over
-                    this.values[0] = kv.getValue();
+                    Values[0] = kv.GetValue();
                 }
                 else
                 {
                     // Add each value to the end
-                    foreach (string value in kv.getValues())
+                    foreach (var value in kv.GetValues())
                     {
-                        this.values.Add(value);
+                        Values.Add(value);
                     }
                 }
             }
-
         }
 
         // Reads the KV file at the given path
-        public static KV read(string path, bool isJSON = false)
+        public static Kv Read(string path, bool isJson = false)
         {
             // The file may fail to read
             try
             {
                 // Load up the file
-                string data = File.ReadAllText(path, Encoding.UTF8);
+                var data = File.ReadAllText(path, Encoding.UTF8);
 
                 // Pass the data
-                return parse(data, isJSON);
+                return Parse(data, isJson);
             }
             catch
             {
@@ -451,26 +438,23 @@ namespace DotaHostClientLibrary
         }
 
         // Parses KV Data
-        public static KV parse(string kvString, bool isJSON = false)
+        public static Kv Parse(string kvString, bool isJson = false)
         {
             // Ensure nothing bad happens
             try
             {
                 // If it's json, we need to strip the first and last character
-                if (isJSON)
+                if (isJson)
                 {
                     kvString = kvString.Substring(1, kvString.Length - 2);
                 }
 
                 // Create initial trees
-                List<KV> tree = new List<KV>();
-                tree.Add(new KV());
+                var tree = new List<Kv> { new Kv() };
 
-                List<byte> treeType = new List<byte>();
-                treeType.Add(TYPE_BLOCK);
+                var treeType = new List<byte> { TypeBlock };
 
-                List<string> keys = new List<string>();
-                keys.Add(null);
+                var keys = new List<string> { null };
 
                 // Index into kvString and the line
                 int i = 0;
@@ -479,17 +463,17 @@ namespace DotaHostClientLibrary
                 while (i < kvString.Length)
                 {
                     // Grab the next character
-                    Char chr = kvString[i];
+                    var chr = kvString[i];
 
                     if (chr == ' ' || chr == '\t')
                     {
                         // Ignore white space
                     }
-                    else if (isJSON && chr == ':')
+                    else if (isJson && chr == ':')
                     {
                         // Ignore, JSON character
                     }
-                    else if (isJSON && chr == ',')
+                    else if (isJson && chr == ',')
                     {
                         // Ignore, JSON character
                     }
@@ -518,11 +502,11 @@ namespace DotaHostClientLibrary
                                     if (kvString[i + 1] == '\r') ++i;
                                     break;
                                 }
-                                else if (chr == '\r')
-                                {
-                                    if (kvString[i + 1] == '\n') ++i;
-                                    break;
-                                }
+
+                                if (chr != '\r') continue;
+
+                                if (kvString[i + 1] == '\n') ++i;
+                                break;
                             }
 
                             // We are on a new line
@@ -540,53 +524,53 @@ namespace DotaHostClientLibrary
                             chr = kvString[i];
                             if (chr == '"') break;
 
-                            if (chr == '\n')
+                            switch (chr)
                             {
-                                // We moved onto the next line
-                                ++line;
-                                if (kvString[i + 1] == '\r') ++i;
-                            }
-                            else if (chr == '\r')
-                            {
-                                // We moved onto the next line
-                                ++line;
-                                if (kvString[i + 1] == '\n') ++i;
-                            }
-                            else if (chr == '\\')
-                            {
-                                ++i;
-                                // Grab the next character
-                                chr = kvString[i + 1];
+                                case '\n':
+                                    // We moved onto the next line
+                                    ++line;
+                                    if (kvString[i + 1] == '\r') ++i;
+                                    break;
+                                case '\r':
+                                    // We moved onto the next line
+                                    ++line;
+                                    if (kvString[i + 1] == '\n') ++i;
+                                    break;
+                                case '\\':
+                                    ++i;
+                                    // Grab the next character
+                                    chr = kvString[i + 1];
 
-                                // Check for escaped characters
-                                switch (chr)
-                                {
-                                    case '\\': chr = '\\'; break;
-                                    case '"': chr = '"'; break;
-                                    case '\'': chr = '\\'; break;
-                                    case 'n': chr = '\n'; break;
-                                    case 'r': chr = '\r'; break;
-                                    default:
-                                        chr = '\\';
-                                        --i;
-                                        break;
-                                }
+                                    // Check for escaped characters
+                                    switch (chr)
+                                    {
+                                        case '\\': chr = '\\'; break;
+                                        case '"': chr = '"'; break;
+                                        case '\'': chr = '\\'; break;
+                                        case 'n': chr = '\n'; break;
+                                        case 'r': chr = '\r'; break;
+                                        default:
+                                            chr = '\\';
+                                            --i;
+                                            break;
+                                    }
+                                    break;
                             }
 
                             // Add to the result string
-                            resultString += (char)chr;
+                            resultString += chr;
                             ++i;
                         }
 
                         // Error checking
                         if (i == kvString.Length || chr == '\n' || chr == '\r')
                         {
-                            Helpers.log("UNTERMINATED STRING AT LINE " + line + " IGNORING");
+                            Helpers.Log("UNTERMINATED STRING AT LINE " + line + " IGNORING");
                             return null;
                         }
 
                         // Check if object or array
-                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
+                        if (treeType[treeType.Count - 1] == TypeBlock)
                         {
                             // Check if this is a key or a value
                             if (keys[keys.Count - 1] == null)
@@ -599,13 +583,13 @@ namespace DotaHostClientLibrary
                                 // A value
 
                                 // Grab the dictonary
-                                KV e = tree[tree.Count - 1];
+                                var e = tree[tree.Count - 1];
 
                                 // Grab the key
                                 string key = keys[keys.Count - 1];
 
                                 // Add the value
-                                e.addValue(key, resultString);
+                                e.AddValue(key, resultString);
 
                                 // Cleanup the current key
                                 keys[keys.Count - 1] = null;
@@ -613,7 +597,7 @@ namespace DotaHostClientLibrary
                         }
                         else
                         {
-                            Helpers.log("ARRAYS NOT IMPLEMENTED line " + line);
+                            Helpers.Log("ARRAYS NOT IMPLEMENTED line " + line);
                             return null;
                         }
 
@@ -622,17 +606,17 @@ namespace DotaHostClientLibrary
                     }
                     else if (chr == '{')
                     {
-                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
+                        if (treeType[treeType.Count - 1] == TypeBlock)
                         {
                             // Error checking
                             if (keys[keys.Count - 1] == null)
                             {
-                                Helpers.log("A block needs a key at line " + line + " (offset " + i + ")");
+                                Helpers.Log("A block needs a key at line " + line + " (offset " + i + ")");
                                 return null;
                             }
 
-                            tree.Add(new KV());
-                            treeType.Add(TYPE_BLOCK);
+                            tree.Add(new Kv());
+                            treeType.Add(TypeBlock);
                             keys.Add(null);
                         }
                     }
@@ -641,7 +625,7 @@ namespace DotaHostClientLibrary
                         // Error Checking
                         if (tree.Count == 1)
                         {
-                            Helpers.log("Mismatching bracket at line " + line + " (offset " + i + ")");
+                            Helpers.Log("Mismatching bracket at line " + line + " (offset " + i + ")");
                             return null;
                         }
 
@@ -650,9 +634,9 @@ namespace DotaHostClientLibrary
                         treeType.RemoveAt(treeType.Count - 1);
 
                         // Ensure correct tree type
-                        if (tt != TYPE_BLOCK)
+                        if (tt != TypeBlock)
                         {
-                            Helpers.log("Mismatching brackets at line " + line + " (offset " + i + ")");
+                            Helpers.Log("Mismatching brackets at line " + line + " (offset " + i + ")");
                             return null;
                         }
 
@@ -660,26 +644,26 @@ namespace DotaHostClientLibrary
                         keys.RemoveAt(keys.Count - 1);
 
                         // Grab the current tree
-                        KV obj = tree[tree.Count - 1];
+                        Kv obj = tree[tree.Count - 1];
                         tree.RemoveAt(tree.Count - 1);
 
                         // Attempt to store the tree
-                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
+                        if (treeType[treeType.Count - 1] == TypeBlock)
                         {
-                            KV e = tree[tree.Count - 1];
-                            e.addKey(keys[keys.Count - 1], obj);
+                            Kv e = tree[tree.Count - 1];
+                            e.AddKey(keys[keys.Count - 1], obj);
                             keys[keys.Count - 1] = null;
                         }
                         else
                         {
-                            Helpers.log("ARRAYS NOT IMPLEMENTED line " + line);
+                            Helpers.Log("ARRAYS NOT IMPLEMENTED line " + line);
                             return null;
                         }
                     }
                     else
                     {
                         // Unknwon character
-                        Helpers.log("Unexpected character \"" + chr + "\" at line " + line + " (offset " + i + ")");
+                        Helpers.Log("Unexpected character \"" + chr + "\" at line " + line + " (offset " + i + ")");
 
                         // Skip to next line
                         while (++i < kvString.Length)
@@ -702,18 +686,15 @@ namespace DotaHostClientLibrary
                 }
 
                 // Ensure everything is good
-                if (tree.Count != 1)
-                {
-                    Helpers.log("Missing brackets");
-                    return null;
-                }
+                if (tree.Count == 1) return tree[0];
 
-                return tree[0];
+                Helpers.Log("Missing brackets");
+                return null;
             }
             catch
             {
                 // Bad kv file
-                Helpers.log("Bad KV file");
+                Helpers.Log("Bad KV file");
                 return null;
             }
         }
@@ -721,20 +702,17 @@ namespace DotaHostClientLibrary
 
 
         // Parses KV Data
-        public static void parse<T>(string kvString, string atKey, dynamic output)
+        public static void Parse<T>(string kvString, string atKey, dynamic output)
         {
             // Ensure nothing bad happens
             try
             {
                 // Create initial trees
-                List<T> tree = new List<T>();
-                tree.Add((T)Activator.CreateInstance(typeof(T)));
+                var tree = new List<T> { (T)Activator.CreateInstance(typeof(T)) };
 
-                List<byte> treeType = new List<byte>();
-                treeType.Add(TYPE_BLOCK);
+                var treeType = new List<byte> { TypeBlock };
 
-                List<string> keys = new List<string>();
-                keys.Add(null);
+                var keys = new List<string> { null };
 
                 // Index into kvString and the line
                 int i = 0;
@@ -743,208 +721,204 @@ namespace DotaHostClientLibrary
                 while (i < kvString.Length)
                 {
                     // Grab the next character
-                    Char chr = kvString[i];
+                    var chr = kvString[i];
 
-                    if (chr == ' ' || chr == '\t')
+                    switch (chr)
                     {
-                        // Ignore white space
-                    }
-                    else if (chr == '\n')
-                    {
-                        // We moved onto the next line
-                        ++line;
-                        if (kvString[i + 1] == '\r') i++;
-                    }
-                    else if (chr == '\r')
-                    {
-                        // We moved onto the next line
-                        ++line;
-                        if (kvString[i + 1] == '\n') i++;
-                    }
-                    else if (chr == '/')
-                    {
-                        if (kvString[i + 1] == '/')
-                        {
-                            // We found a comment, ignore rest of the line
+                        case ' ':
+                        case '\t':
+                            // Ignore white space
+                            break;
+                        case '\n':
+                            // We moved onto the next line
+                            ++line;
+                            if (kvString[i + 1] == '\r') i++;
+                            break;
+                        case '\r':
+                            // We moved onto the next line
+                            ++line;
+                            if (kvString[i + 1] == '\n') i++;
+                            break;
+                        case '/':
+                            if (kvString[i + 1] == '/')
+                            {
+                                // We found a comment, ignore rest of the line
+                                while (++i < kvString.Length)
+                                {
+                                    chr = kvString[i];
+                                    if (chr == '\n' || chr == '\r') break;
+                                }
+
+                                // We are on a new line
+                                ++line;
+
+                                // Move onto the next char
+                                ++i;
+                            }
+                            break;
+                        case '"':
+                            // Create string to read into
+                            string resultString = "";
+                            ++i;
+
+                            while (i < kvString.Length)
+                            {
+                                chr = kvString[i];
+                                if (chr == '"') break;
+
+                                switch (chr)
+                                {
+                                    case '\n':
+                                        // We moved onto the next line
+                                        ++line;
+                                        if (kvString[i + 1] == '\r') ++i;
+                                        break;
+                                    case '\r':
+                                        // We moved onto the next line
+                                        ++line;
+                                        if (kvString[i + 1] == '\n') ++i;
+                                        break;
+                                    case '\\':
+                                        ++i;
+                                        // Grab the next character
+                                        chr = kvString[i + 1];
+
+                                        // Check for escaped characters
+                                        switch (chr)
+                                        {
+                                            case '\\': chr = '\\'; break;
+                                            case '"': chr = '"'; break;
+                                            case '\'': chr = '\\'; break;
+                                            case 'n': chr = '\n'; break;
+                                            case 'r': chr = '\r'; break;
+                                            default:
+                                                chr = '\\';
+                                                --i;
+                                                break;
+                                        }
+                                        break;
+                                }
+
+                                // Add to the result string
+                                resultString += (char)chr;
+                                ++i;
+                            }
+
+                            // Error checking
+                            if (i == kvString.Length || chr == '\n' || chr == '\r')
+                            {
+                                Helpers.Log("UNTERMINATED STRING AT LINE " + line + " IGNORING");
+                                return;
+                            }
+
+                            // Check if object or array
+                            if (treeType[treeType.Count - 1] == TypeBlock)
+                            {
+                                // Check if this is a key or a value
+                                if (keys[keys.Count - 1] == null)
+                                {
+                                    // A Key
+                                    keys[keys.Count - 1] = resultString;
+                                }
+                                else
+                                {
+                                    // A value
+
+                                    // Grab the dictonary
+                                    dynamic e = tree[tree.Count - 1];
+
+                                    // Grab the key
+                                    string key = keys[keys.Count - 1];
+
+                                    // Add the value
+                                    e.addValue(key, resultString);
+
+                                    // Cleanup the current key
+                                    keys[keys.Count - 1] = null;
+                                }
+                            }
+                            else
+                            {
+                                Helpers.Log("ARRAYS NOT IMPLEMENTED line " + line);
+                                return;
+                            }
+
+                            // Check if we need to reparse the character that ended this string
+                            if (chr != '"') --i;
+                            break;
+                        case '{':
+                            if (treeType[treeType.Count - 1] == TypeBlock)
+                            {
+                                // Error checking
+                                if (keys[keys.Count - 1] == null)
+                                {
+                                    Helpers.Log("A block needs a key at line " + line + " (offset " + i + ")");
+                                    return;
+                                }
+
+                                tree.Add((T)Activator.CreateInstance(typeof(T)));
+                                treeType.Add(TypeBlock);
+                                keys.Add(null);
+                            }
+                            break;
+                        case '}':
+                            // Error Checking
+                            if (tree.Count == 1)
+                            {
+                                Helpers.Log("Mismatching bracket at line " + line + " (offset " + i + ")");
+                                return;
+                            }
+
+                            // Grab the tree type
+                            byte tt = treeType[treeType.Count - 1];
+                            treeType.RemoveAt(treeType.Count - 1);
+
+                            // Ensure correct tree type
+                            if (tt != TypeBlock)
+                            {
+                                Helpers.Log("Mismatching brackets at line " + line + " (offset " + i + ")");
+                                return;
+                            }
+
+                            // Drop the current key
+                            keys.RemoveAt(keys.Count - 1);
+
+                            // Grab the current tree
+                            T obj = tree[tree.Count - 1];
+                            tree.RemoveAt(tree.Count - 1);
+
+                            // Attempt to store the tree
+                            if (treeType[treeType.Count - 1] == TypeBlock)
+                            {
+                                dynamic e = tree[tree.Count - 1];
+                                e.addKey(keys[keys.Count - 1], obj);
+                                keys[keys.Count - 1] = null;
+                            }
+                            else
+                            {
+                                Helpers.Log("ARRAYS NOT IMPLEMENTED line " + line);
+                                return;
+                            }
+                            break;
+                        default:
+                            // Unknwon character
+                            Helpers.Log("Unexpected character \"" + chr + "\" at line " + line + " (offset " + i + ")");
+
+                            // Skip to next line
                             while (++i < kvString.Length)
                             {
                                 chr = kvString[i];
+
+                                // Check for new line
                                 if (chr == '\n' || chr == '\r') break;
                             }
 
                             // We are on a new line
-                            ++line;
+                            line++;
 
                             // Move onto the next char
-                            ++i;
-                        }
-                    }
-                    else if (chr == '"')
-                    {
-                        // Create string to read into
-                        string resultString = "";
-                        ++i;
-
-                        while (i < kvString.Length)
-                        {
-                            chr = kvString[i];
-                            if (chr == '"') break;
-
-                            if (chr == '\n')
-                            {
-                                // We moved onto the next line
-                                ++line;
-                                if (kvString[i + 1] == '\r') ++i;
-                            }
-                            else if (chr == '\r')
-                            {
-                                // We moved onto the next line
-                                ++line;
-                                if (kvString[i + 1] == '\n') ++i;
-                            }
-                            else if (chr == '\\')
-                            {
-                                ++i;
-                                // Grab the next character
-                                chr = kvString[i + 1];
-
-                                // Check for escaped characters
-                                switch (chr)
-                                {
-                                    case '\\': chr = '\\'; break;
-                                    case '"': chr = '"'; break;
-                                    case '\'': chr = '\\'; break;
-                                    case 'n': chr = '\n'; break;
-                                    case 'r': chr = '\r'; break;
-                                    default:
-                                        chr = '\\';
-                                        --i;
-                                        break;
-                                }
-                            }
-
-                            // Add to the result string
-                            resultString += (char)chr;
-                            ++i;
-                        }
-
-                        // Error checking
-                        if (i == kvString.Length || chr == '\n' || chr == '\r')
-                        {
-                            Helpers.log("UNTERMINATED STRING AT LINE " + line + " IGNORING");
-                            return;
-                        }
-
-                        // Check if object or array
-                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
-                        {
-                            // Check if this is a key or a value
-                            if (keys[keys.Count - 1] == null)
-                            {
-                                // A Key
-                                keys[keys.Count - 1] = resultString;
-                            }
-                            else
-                            {
-                                // A value
-
-                                // Grab the dictonary
-                                dynamic e = tree[tree.Count - 1];
-
-                                // Grab the key
-                                string key = keys[keys.Count - 1];
-
-                                // Add the value
-                                e.addValue(key, resultString);
-
-                                // Cleanup the current key
-                                keys[keys.Count - 1] = null;
-                            }
-                        }
-                        else
-                        {
-                            Helpers.log("ARRAYS NOT IMPLEMENTED line " + line);
-                            return;
-                        }
-
-                        // Check if we need to reparse the character that ended this string
-                        if (chr != '"') --i;
-                    }
-                    else if (chr == '{')
-                    {
-                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
-                        {
-                            // Error checking
-                            if (keys[keys.Count - 1] == null)
-                            {
-                                Helpers.log("A block needs a key at line " + line + " (offset " + i + ")");
-                                return;
-                            }
-
-                            tree.Add((T)Activator.CreateInstance(typeof(T)));
-                            treeType.Add(TYPE_BLOCK);
-                            keys.Add(null);
-                        }
-                    }
-                    else if (chr == '}')
-                    {
-                        // Error Checking
-                        if (tree.Count == 1)
-                        {
-                            Helpers.log("Mismatching bracket at line " + line + " (offset " + i + ")");
-                            return;
-                        }
-
-                        // Grab the tree type
-                        byte tt = treeType[treeType.Count - 1];
-                        treeType.RemoveAt(treeType.Count - 1);
-
-                        // Ensure correct tree type
-                        if (tt != TYPE_BLOCK)
-                        {
-                            Helpers.log("Mismatching brackets at line " + line + " (offset " + i + ")");
-                            return;
-                        }
-
-                        // Drop the current key
-                        keys.RemoveAt(keys.Count - 1);
-
-                        // Grab the current tree
-                        T obj = tree[tree.Count - 1];
-                        tree.RemoveAt(tree.Count - 1);
-
-                        // Attempt to store the tree
-                        if (treeType[treeType.Count - 1] == TYPE_BLOCK)
-                        {
-                            dynamic e = tree[tree.Count - 1];
-                            e.addKey(keys[keys.Count - 1], obj);
-                            keys[keys.Count - 1] = null;
-                        }
-                        else
-                        {
-                            Helpers.log("ARRAYS NOT IMPLEMENTED line " + line);
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        // Unknwon character
-                        Helpers.log("Unexpected character \"" + chr + "\" at line " + line + " (offset " + i + ")");
-
-                        // Skip to next line
-                        while (++i < kvString.Length)
-                        {
-                            chr = kvString[i];
-
-                            // Check for new line
-                            if (chr == '\n' || chr == '\r') break;
-                        }
-
-                        // We are on a new line
-                        line++;
-
-                        // Move onto the next char
-                        i++;
+                            i++;
+                            break;
                     }
 
                     // Move onto the next character
@@ -952,20 +926,13 @@ namespace DotaHostClientLibrary
                 }
 
                 // Ensure everything is good
-                if (tree.Count != 1)
-                {
-                    Helpers.log("Missing brackets");
-                    return;
-                }
-
-                output = (T)((tree[0] as dynamic).getKV(atKey));
-                return;
+                if (tree.Count == 1) return;
+                Helpers.Log("Missing brackets");
             }
             catch
             {
                 // Bad kv file
-                Helpers.log("Bad KV file");
-                return;
+                Helpers.Log("Bad KV file");
             }
         }
 

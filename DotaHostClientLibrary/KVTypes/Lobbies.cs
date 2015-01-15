@@ -1,55 +1,58 @@
 ﻿
 using System.Collections.Generic;
+using System.Linq;
+
 namespace DotaHostClientLibrary
 {
-    public class Lobbies : KV
+    public class Lobbies : Kv
     {
-        public bool addLobby(Lobby lobby)
+        public bool AddLobby(Lobby lobby)
         {
-            if (!containsKey(lobby.Name))
-            {
-                setKey(lobby.Name, lobby);
-                return true;
-            }
+            if (ContainsKey(lobby.Name)) return false;
 
-            return false;
+            SetKey(lobby.Name, lobby);
+            return true;
         }
 
-        public void removeLobby(Lobby lobby)
+        public void RemoveLobby(Lobby lobby)
         {
-            removeKey(lobby.Name);
+            RemoveKey(lobby.Name);
         }
 
-        public void removeLobby(string key)
+        public void RemoveLobby(string key)
         {
-            removeKey(key);
+            RemoveKey(key);
         }
 
-        public Lobby getLobby(string key)
+        public Lobby GetLobby(string key)
         {
-            return new Lobby(getKV(key));
+            return new Lobby(GetKv(key));
         }
 
-        public List<Lobby> getLobbies()
+        public List<Lobby> GetLobbies()
         {
-            List<Lobby> lobbies = new List<Lobby>();
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
-            {
-                lobbies.Add(new Lobby(kvp.Value));
-            }
-            return lobbies;
+            return GetKeys().Select(kvp => new Lobby(kvp.Value)).ToList();
         }
 
 
         public Lobbies()
         {
-            initObject();
+            InitObject();
         }
 
 
-        public Lobbies(KV source)
+        public Lobbies(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
+        }
+
+        public Lobbies(IEnumerable<Lobby> lobbies)
+        {
+            InitObject();
+            foreach (var lobby in lobbies)
+            {
+                AddLobby(lobby);
+            }
         }
 
     }

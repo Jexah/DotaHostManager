@@ -1,70 +1,61 @@
 ﻿
 using System.Collections.Generic;
+using System.Linq;
+
 namespace DotaHostClientLibrary
 {
-    public class Players : KV
+    public class Players : Kv
     {
 
-        public void addPlayer(Player player)
+        public void AddPlayer(Player player)
         {
-            for (byte i = 0; true; ++i)
+            for (byte i = 0; ; ++i)
             {
-                if (!containsKey(i.ToString()))
-                {
-                    setKey(i.ToString(), player);
-                    return;
-                }
+                if (ContainsKey(i.ToString())) continue;
+                SetKey(i.ToString(), player);
+                return;
             }
         }
 
-        public void addPlayer(Player player, string slot)
+        public void AddPlayer(Player player, string slot)
         {
-            setKey(slot, player);
+            SetKey(slot, player);
         }
 
-        public void removePlayer(Player player)
+        public void RemovePlayer(Player player)
         {
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
+            foreach (var kvp in from kvp in GetKeys() let p = new Player(kvp.Value) where player.SteamId == p.SteamId select kvp)
             {
-                Player p = new Player(kvp.Value);
-                if (player.SteamID == p.SteamID)
-                {
-                    removeKey(kvp.Key);
-                    return;
-                }
+                RemoveKey(kvp.Key);
+                return;
             }
         }
 
-        public void removePlayer(string id)
+        public void RemovePlayer(string id)
         {
-            removeKey(id);
+            RemoveKey(id);
         }
 
-        public Player getPlayer(string id)
+        public Player GetPlayer(string id)
         {
-            return new Player(getKV(id));
+            return new Player(GetKv(id));
         }
 
-        public List<Player> getPlayers()
+        public List<Player> GetPlayers()
         {
-            List<Player> players = new List<Player>();
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
-            {
-                players.Add(new Player(kvp.Value));
-            }
-            return players;
+            return GetKeys().Select(kvp => new Player(kvp.Value)).ToList();
         }
 
         public Players()
         {
-            initObject();
+            InitObject();
         }
 
 
 
-        public Players(KV source)
+        public Players(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

@@ -10,38 +10,38 @@ namespace DotaHostLibrary
         // Server Manager IP
         //public const string SERVER_MANAGER_IP = "127.0.0.1";
         // Vultr Texas
-        public const string SERVER_MANAGER_IP = "***REMOVED***";
+        public const string ServerManagerIp = "***REMOVED***";
         // Runabove Canada
         //public const string SERVER_MANAGER_IP = "192.99.64.198";
 
         // Server Manager Port
-        public const int SERVER_MANAGER_PORT = 3875;
+        public const int ServerManagerPort = 3875;
 
         // Define region consts based on Vultr API
         //public const byte AMERICA = 3;      // Dallas, USA
         //public const byte EUROPE = 7;       // Amsterdam, Nederlands
         //public const byte AUSTRALIA = 19;   // Sydney, Australia
-        public const string CANADA = "BHS-1";
-        public const string FRANCE = "SBG-1";
+        public const string Canada = "BHS-1";
+        public const string France = "SBG-1";
 
 
         // Define name:string -> id:string region map
         //public static readonly Dictionary<string, byte> NAME_TO_REGION_ID;
-        public static readonly Dictionary<string, string> NAME_TO_REGION_ID;
+        public static readonly Dictionary<string, string> NameToRegionId;
 
         // Define id:string -> name:string region map
         //public static readonly Dictionary<byte, string> REGION_ID_TO_NAME;
-        public static readonly Dictionary<string, string> REGION_ID_TO_NAME;
+        public static readonly Dictionary<string, string> RegionIdToName;
 
         // Vultr API key
-        public const string VULTR_API_KEY = "***REMOVED***";
+        public const string VultrApiKey = "***REMOVED***";
 
         // Runabove api key:
         //public const string RUNABOVE_API_KEY = "***REMOVED***";
         //public const string RUNABOVE_CONSUMER_KEY = "***REMOVED***";
         //public const string RUNABOVE_APP_KEY = "***REMOVED***";
         //public const string RUNABOVE_APP_SECRET = "***REMOVED***";
-        public const string OPENSTACK_AUTH_TOKEN = "***REMOVED***";
+        public const string OpenstackAuthToken = "***REMOVED***";
 
         // Vultr $15 plan
         //public const byte AMERICA_PLAN_ID = 3;      // 3TB
@@ -49,15 +49,15 @@ namespace DotaHostLibrary
         //public const byte AUSTRALIA_PLAN_ID = 8;    // 0.6TB
 
         // Runabove large sandbox
-        public const string LARGE_SANDBOX = "ra.intel.sb.l";
+        public const string LargeSandbox = "ra.intel.sb.l";
 
         // Runabove large sandbox per region
-        public const string LARGE_SANDBOX_CANADA = "***REMOVED***";
-        public const string LARGE_SANDBOX_FRANCE = "***REMOVED***";
+        public const string LargeSandboxCanada = "***REMOVED***";
+        public const string LargeSandboxFrance = "***REMOVED***";
 
         // Set plan IDs into 
         //public static readonly Dictionary<byte, byte> PLAN_IDS;
-        public static readonly Dictionary<string, string> PLAN_IDS;
+        public static readonly Dictionary<string, string> PlanIds;
 
         // Vultr OS IDs
         //public const byte CUSTOM_OS = 159;
@@ -67,11 +67,11 @@ namespace DotaHostLibrary
         //public const string SNAPSHOT_ID = "54783ffe9a1f3";
 
 
-        public const byte BOX_ACTIVE = 0;
-        public const byte BOX_IDLE = 1;
-        public const byte BOX_MIA = 2;
-        public const byte BOX_INACTIVE = 3;
-        public const byte BOX_DEACTIVATED = 4;
+        public const byte BoxActive = 0;
+        public const byte BoxIdle = 1;
+        public const byte BoxMia = 2;
+        public const byte BoxInactive = 3;
+        public const byte BoxDeactivated = 4;
 
 
         // Initialize the static readonlys
@@ -98,27 +98,27 @@ namespace DotaHostLibrary
                 { AMERICA, "Dallas" }
             };*/
 
-            PLAN_IDS = new Dictionary<string, string>()
+            PlanIds = new Dictionary<string, string>()
             {
-                { CANADA, LARGE_SANDBOX_CANADA },
-                { FRANCE, LARGE_SANDBOX_FRANCE }
+                { Canada, LargeSandboxCanada },
+                { France, LargeSandboxFrance }
             };
 
-            NAME_TO_REGION_ID = new Dictionary<string, string>()
+            NameToRegionId = new Dictionary<string, string>()
             {
-                { "Canada", CANADA },
-                { "France", FRANCE }
+                { "Canada", Canada },
+                { "France", France }
             };
 
-            REGION_ID_TO_NAME = new Dictionary<string, string>()
+            RegionIdToName = new Dictionary<string, string>()
             {
-                { CANADA, "Canada" },
-                { FRANCE, "France" }
+                { Canada, "Canada" },
+                { France, "France" }
             };
         }
 
         // Vultr create server with snapshot in given region
-        public static void createServer(string region)
+        public static void CreateServer(string region)
         {
             /*HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/create", "POST", (jsonObj) =>
             {
@@ -133,7 +133,7 @@ namespace DotaHostLibrary
         }
 
         // Destroy the server with the given subid
-        public static void destroyServer(string instanceID)
+        public static void DestroyServer(string instanceId)
         {
             /*
             HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/destroy", "POST", (jsonObj) =>
@@ -147,7 +147,7 @@ namespace DotaHostLibrary
         }
 
         // Return an object of the server list
-        public static void getServers(Action<OpenStackServerList> func)
+        public static void GetServers(Action<OpenStackServerList> func)
         {
             /*HTTPRequestManager.startRequest("https://api.vultr.com/v1/server/list", "POST", (body) =>
                 {
@@ -159,17 +159,17 @@ namespace DotaHostLibrary
                 }
             );*/
 
-            HTTPRequestManager.startRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body) =>
+            HttpRequestManager.StartRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body) =>
             {
                 // Take the raw JSON body and convert it into a dictionary of server properties
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
-                OpenStackServerList serverList = new OpenStackServerList(data);
+                var serverList = new OpenStackServerList(data);
                 func(serverList);
             }, null,
             new Dictionary<string, string>()
             {
                 {"Content-Type", "application/json"},
-                {"X-Auth-Token", OPENSTACK_AUTH_TOKEN}
+                {"X-Auth-Token", OpenstackAuthToken}
             });
 
         }

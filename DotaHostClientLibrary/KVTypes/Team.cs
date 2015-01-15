@@ -2,17 +2,17 @@
 
 namespace DotaHostClientLibrary
 {
-    public class Team : KV
+    public class Team : Kv
     {
         public string TeamName
         {
             get
             {
-                return getValue("0");
+                return GetValue("0");
             }
             set
             {
-                setValue("0", value);
+                SetValue("0", value);
             }
         }
 
@@ -20,11 +20,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("1"));
+                return Convert.ToByte(GetValue("1"));
             }
             set
             {
-                setValue("1", value.ToString());
+                SetValue("1", value.ToString());
             }
         }
 
@@ -32,24 +32,24 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return new Players(getKV("2"));
+                return new Players(GetKv("2"));
             }
             set
             {
-                setKey("2", value);
+                SetKey("2", value);
             }
         }
 
         public Team()
         {
-            initObject();
+            InitObject();
         }
 
 
 
-        public Team(KV source)
+        public Team(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }

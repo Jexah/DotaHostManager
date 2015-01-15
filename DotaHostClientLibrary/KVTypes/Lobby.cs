@@ -1,23 +1,24 @@
 ﻿using System;
+using System.Linq;
 
 namespace DotaHostClientLibrary
 {
-    public class Lobby : KV
+    public class Lobby : Kv
     {
 
-        public const byte WAITING = 0;
-        public const byte READY = 1;
-        public const byte ACTIVE = 2;
+        public const byte Waiting = 0;
+        public const byte Ready = 1;
+        public const byte Active = 2;
 
         public string Name
         {
             get
             {
-                return getValue("0");
+                return GetValue("0");
             }
             set
             {
-                setValue("0", value);
+                SetValue("0", value);
             }
         }
 
@@ -25,11 +26,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return new Teams(getKV("1"));
+                return new Teams(GetKv("1"));
             }
             set
             {
-                setKey("1", value);
+                SetKey("1", value);
             }
         }
 
@@ -37,11 +38,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return new Addons(getKV("2"));
+                return new Addons(GetKv("2"));
             }
             set
             {
-                setKey("2", value);
+                SetKey("2", value);
             }
         }
 
@@ -49,11 +50,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("3"));
+                return Convert.ToByte(GetValue("3"));
             }
             set
             {
-                setValue("3", value.ToString());
+                SetValue("3", value.ToString());
             }
         }
 
@@ -61,11 +62,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("4"));
+                return Convert.ToByte(GetValue("4"));
             }
             set
             {
-                setValue("4", value.ToString());
+                SetValue("4", value.ToString());
             }
         }
 
@@ -73,11 +74,11 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return getValue("5");
+                return GetValue("5");
             }
             set
             {
-                setValue("5", value);
+                SetValue("5", value);
             }
         }
 
@@ -85,37 +86,37 @@ namespace DotaHostClientLibrary
         {
             get
             {
-                return Convert.ToByte(getValue("6"));
+                return Convert.ToByte(GetValue("6"));
             }
             set
             {
-                setValue("6", value.ToString());
+                SetValue("6", value.ToString());
             }
         }
 
         public Lobby()
         {
-            initObject();
+            InitObject();
         }
 
-        public void forEachPlayer(Action<Player> func)
+        public void ForEachPlayer(Action<Player> func)
         {
-            foreach (Team t in this.Teams.getTeams())
+            foreach (var p in Teams.GetTeams().SelectMany(t => t.Players.GetPlayers()))
             {
-                foreach (Player p in t.Players.getPlayers())
+                try
                 {
-                    try
-                    {
-                        func(p);
-                    }
-                    catch { }
+                    func(p);
+                }
+                catch
+                {
+                    // ignored
                 }
             }
         }
 
-        public Lobby(KV source)
+        public Lobby(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
 
     }

@@ -24,11 +24,11 @@ namespace DotaHostClientLibrary
         public const UInt32 DefaultPolynomial = 0xedb88320u;
         public const UInt32 DefaultSeed = 0xffffffffu;
 
-        private static UInt32[] defaultTable;
+        private static UInt32[] _defaultTable;
 
-        private readonly UInt32 seed;
-        private readonly UInt32[] table;
-        private UInt32 hash;
+        private readonly UInt32 _seed;
+        private readonly UInt32[] _table;
+        private UInt32 _hash;
 
         public Crc32()
             : this(DefaultPolynomial, DefaultSeed)
@@ -37,23 +37,23 @@ namespace DotaHostClientLibrary
 
         public Crc32(UInt32 polynomial, UInt32 seed)
         {
-            table = InitializeTable(polynomial);
-            this.seed = hash = seed;
+            _table = InitializeTable(polynomial);
+            this._seed = _hash = seed;
         }
 
         public override void Initialize()
         {
-            hash = seed;
+            _hash = _seed;
         }
 
         protected override void HashCore(byte[] buffer, int start, int length)
         {
-            hash = CalculateHash(table, hash, buffer, start, length);
+            _hash = CalculateHash(_table, _hash, buffer, start, length);
         }
 
         protected override byte[] HashFinal()
         {
-            var hashBuffer = UInt32ToBigEndianBytes(~hash);
+            var hashBuffer = UInt32ToBigEndianBytes(~_hash);
             HashValue = hashBuffer;
             return hashBuffer;
         }
@@ -77,8 +77,8 @@ namespace DotaHostClientLibrary
 
         private static UInt32[] InitializeTable(UInt32 polynomial)
         {
-            if (polynomial == DefaultPolynomial && defaultTable != null)
-                return defaultTable;
+            if (polynomial == DefaultPolynomial && _defaultTable != null)
+                return _defaultTable;
 
             var createTable = new UInt32[256];
             for (var i = 0; i < 256; i++)
@@ -93,7 +93,7 @@ namespace DotaHostClientLibrary
             }
 
             if (polynomial == DefaultPolynomial)
-                defaultTable = createTable;
+                _defaultTable = createTable;
 
             return createTable;
         }

@@ -1,51 +1,47 @@
 ﻿using DotaHostClientLibrary;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DotaHostLibrary
 {
-    public class BoxManagers : KV
+    public class BoxManagers : Kv
     {
-        public void addBoxManager(BoxManager boxManager)
+        public void AddBoxManager(BoxManager boxManager)
         {
-            setKey(boxManager.Ip, boxManager);
+            SetKey(boxManager.Ip, boxManager);
         }
 
-        public void removeBoxManager(BoxManager boxManager)
+        public void RemoveBoxManager(BoxManager boxManager)
         {
-            removeKey(boxManager);
+            RemoveKey(boxManager);
         }
 
-        public void removeBoxManager(string key)
+        public void RemoveBoxManager(string key)
         {
-            removeKey(key);
+            RemoveKey(key);
         }
 
-        public BoxManager getBoxManager(string key)
+        public BoxManager GetBoxManager(string key)
         {
-            return new BoxManager(getKV(key));
+            return new BoxManager(GetKv(key));
         }
 
 
-        public List<BoxManager> getBoxManagers()
+        public List<BoxManager> GetBoxManagers()
         {
-            List<BoxManager> boxManagers = new List<BoxManager>();
-            foreach (KeyValuePair<string, KV> kvp in getKeys())
-            {
-                boxManagers.Add(new BoxManager(kvp.Value));
-            }
-            return boxManagers;
+            return GetKeys().Select(kvp => new BoxManager(kvp.Value)).ToList();
         }
 
 
         public BoxManagers()
         {
-            initObject();
+            InitObject();
         }
 
 
-        public BoxManagers(KV source)
+        public BoxManagers(Kv source)
         {
-            inheritSource(source);
+            InheritSource(source);
         }
     }
 }
