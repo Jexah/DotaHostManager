@@ -253,9 +253,9 @@ namespace DotaHostManager
                 {
                     string addonId = t;
                     string downloadPath = string.Format(Global.DownloadPathAddonInfo, addonId);
-                    DlManager.DownloadSync(downloadPath, Global.Temp + addonId);
-                    var info = File.ReadAllLines(Global.Temp + addonId);
-                    Helpers.DeleteSafe(Global.Temp + addonId);
+                    DlManager.DownloadSync(downloadPath, Global.Temp + addonId + ".txt");
+                    var info = File.ReadAllLines(Global.Temp + addonId + ".txt");
+                    Helpers.DeleteSafe(Global.Temp + addonId + ".txt");
                     if (info.Length != 2)
                     {
                         Helpers.Log("ERROR: Infopacket for " + addonId + " is corrupted! Got " + info.Length + " lines instead of 2.");
@@ -319,7 +319,7 @@ namespace DotaHostManager
             catch
             {
                 Helpers.Log("Could not find dota path. Enter dota path manually on website.");
-                UpdateDotaPath("unknown");
+                UpdateDotaPath("");
                 return false;
             }
         }
@@ -351,6 +351,7 @@ namespace DotaHostManager
                 {
                     // Whoops, something went wrong
                     Helpers.Log("Failed to update path: Uncaught exception");
+                    WsServer.Send(Helpers.PackArguments("dotaPath", ""));
                 }
             }
         }
@@ -462,7 +463,6 @@ namespace DotaHostManager
 
         private static void ReceiveHook(UserContext c)
         {
-
             if (!ValidateConnection(c)) { return; }
             AppKeepAlive();
         }

@@ -593,14 +593,8 @@ namespace DotaHostLobbyManager
         private static void GameServerExitHook(UserContext c, string[] x)
         {
             Helpers.Log("gameServerExit received");
-            foreach (var l in Lobbies.GetLobbies())
-            {
-                Helpers.Log(l.Name);
-            }
             var gameServer = new GameServer(Kv.Parse(x[1]));
-            Helpers.Log(gameServer.Lobby.Name);
             var lobby = gameServer.Lobby;
-            DeleteLobby(gameServer.Lobby);
             lobby.ForEachPlayer(player =>
             {
                 if (!SteamIdtoIp.ContainsKey(player.SteamId)) return;
@@ -608,6 +602,7 @@ namespace DotaHostLobbyManager
                 string playerIp = SteamIdtoIp[player.SteamId];
                 SendHomePage(playerIp);
             });
+            DeleteLobby(gameServer.Lobby);
         }
 
         private static void ConnectedHook(UserContext c)
@@ -626,6 +621,7 @@ namespace DotaHostLobbyManager
         // This gets called on each tick of the lobby timer interval
         private static void LobbySendTick(Object myObject, EventArgs myEventArgs)
         {
+
             // Have the lobbies not changed yet?
             if (!_lobbiesChanged)
             {
@@ -633,14 +629,16 @@ namespace DotaHostLobbyManager
                 return;
             }
 
+            Helpers.Log(_lobbiesChanged.ToString());
+
+            // Set lobbies changed to false, so we don't send the same info again.
+            _lobbiesChanged = false;
+
             // Lobbies have changed, for each player validated...
             foreach (var kvp in PlayerCache.Where(kvp => !PlayersInLobbies.ContainsKey(kvp.Value.SteamId)).Where(kvp => SteamIdtoIp.ContainsKey(kvp.Value.SteamId)))
             {
                 SendHomePage(SteamIdtoIp[kvp.Value.SteamId]);
             }
-
-            // Set lobbies changed to false, so we don't send the same info again.
-            _lobbiesChanged = false;
         }
 
         // Send the player their homepage
@@ -671,7 +669,7 @@ namespace DotaHostLobbyManager
             var lobbiesWaiting = new Lobbies(Lobbies.GetLobbies().Where(lobby => lobby.Status == Lobby.Waiting));
             string lobbiesJson = lobbiesWaiting.ToJson();
             //byte[] data = ASCIIEncoding.ASCII.GetBytes(lobbiesJson);
-            WsServer.Send(Helpers.PackArguments("getLobbies", lobbiesJson), ip);
+            WsServer.Send(Helpers.PackArguments("page", "home", lobbiesJson), ip);
         }
 
         private static void CancelLobbyStart(string lobbyName)

@@ -126,11 +126,16 @@ namespace DotaHostClientLibrary
             Helpers.Log("[Socket] Disconnected!");
             if (!_userContextToId.ContainsKey(c)) return;
 
+            Helpers.Log("1");
+
             if (_userIdToContext.ContainsKey(_userContextToId[c]))
             {
+                Helpers.Log("2");
                 _userIdToContext.Remove(_userContextToId[c]);
             }
+            Helpers.Log("3");
             _userContextToId.Remove(c);
+            Helpers.Log("4");
         }
 
 
