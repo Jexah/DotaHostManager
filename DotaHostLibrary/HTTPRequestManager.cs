@@ -19,12 +19,13 @@ namespace DotaHostLibrary
             // Initialize request object
             HttpWebRequest request = null;
 
-            // Add ? for GET: all params, and POST: just api_key
-            url += "?";
-
             // If method is GET
             if (method == "GET")
             {
+
+                // Add ? for GET
+                url += "?";
+
                 if (sendData != null)
                 {
                     // Loop through the kkey value pairs in the data, and append them to the url
@@ -117,6 +118,8 @@ namespace DotaHostLibrary
                     dataStream.Close();
                 }
             }
+
+            request.UserAgent = "Jexah";
 
             if (headers != null)
             {

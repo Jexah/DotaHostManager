@@ -161,17 +161,15 @@ namespace DotaHostLibrary
 
             try
             {
-                HttpRequestManager.StartRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body, responseCode) =>
+                HttpRequestManager.StartRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (serversBody, serversResponseCode) =>
                 {
-                    Helpers.Log("1");
                     // Check response
-                    if (responseCode == HttpStatusCode.OK)
+                    if (serversResponseCode == HttpStatusCode.OK)
                     {
-                        Helpers.Log("OK");
                         // Response is good
 
                         // Take the raw JSON body and convert it into a dictionary of server properties
-                        dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
+                        dynamic data = JsonConvert.DeserializeObject<dynamic>(serversBody);
 
                         // Create OpenStackServerList object
                         var serverList = new OpenStackServerList(data);
@@ -179,38 +177,26 @@ namespace DotaHostLibrary
                         // Do the function with server list
                         func(serverList);
                     }
-                    else if (responseCode == HttpStatusCode.Unauthorized)
+                    else if (serversResponseCode == HttpStatusCode.Unauthorized)
                     {
-                        Helpers.Log("Unauthorized");
-                        Helpers.Log(body);
                         // Incorrect API token, generate new one
 
-                        HttpRequestManager.StartRequest("https://auth.runabove.io/v2.0/tokens", "POSTJSON",
-                            (body2, responseCode2) =>
+                        HttpRequestManager.StartRequest("https://auth.runabove.io/v2.0/tokens", "POSTJSON", (tokenBody, tokenResponseCode) =>
                             {
-                                Helpers.Log(":D");
-
-                                Helpers.Log(body);
-
                                 // Convert json object to json c#
-                                dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
-
-                                Helpers.Log("3");
+                                dynamic data = JsonConvert.DeserializeObject<dynamic>(tokenBody);
 
                                 OpenstackAuthToken = data["access"]["token"]["id"];
 
-                                Helpers.Log("4");
-
                                 GetServers(func);
                             },
-                            //"{\"auth\": {\"tenantName\": \"***REMOVED***\", \"passwordCredentials\": {\"username\": \"" + RunaboveUsername + "\", \"password\": \"" + RunabovePassword + "\"}}}",
-                            new { auth = new { tenantName = "***REMOVED***", passwordCredentials = new { username = "***REMOVED***", password = "5***REMOVED***" } } },
+                            new { auth = new { tenantName = "***REMOVED***", passwordCredentials = new { username = RunaboveUsername, password = RunabovePassword } } },
                             new Dictionary<string, string> { { "Accept", "application/json" } }
                         );
                     }
                     else
                     {
-                        Helpers.Log("SHIT");
+                        Helpers.Log("WHOOPS");
                     }
                 }, null,
                 new Dictionary<string, string>()
