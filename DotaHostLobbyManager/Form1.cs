@@ -866,14 +866,14 @@ namespace DotaHostLobbyManager
                 {"steamID", steamid}
             };
 
-            HttpRequestManager.StartRequest("http://127.0.0.1/validate.php", "GET", r =>
+            HttpRequestManager.StartRequest("http://127.0.0.1/validate.php", "GET", (body, responseCode) =>
             {
-                Helpers.Log(r);
-                if (r != "get the fuck out of here")
+                Helpers.Log(body);
+                if (body != "get the fuck out of here")
                 {
                     // Do stuff with r (response) to get it into 4 variables, rest is complete
 
-                    var player = new Player(Kv.Parse(r, true));
+                    var player = new Player(Kv.Parse(body, true));
 
                     Helpers.Log("1: " + ip);
                     PlayerCache.Add(ip, player);

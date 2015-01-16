@@ -5,13 +5,17 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Web.Script.Serialization;
 
 namespace DotaHostLibrary
 {
     public static class HttpRequestManager
     {
-        public static void StartRequest(string url, string method, Action<string> responseAction, Dictionary<string, string> sendData = null, Dictionary<string, string> headers = null)
+        public static void StartRequest(string url, string method, Action<string, HttpStatusCode> responseAction, dynamic sendData = null, Dictionary<string, string> headers = null)
         {
+
+            ServicePointManager.ServerCertificateValidationCallback = (s, cert, chain, ssl) => true;
+
             // Initialize request object
             HttpWebRequest request = null;
 
@@ -24,7 +28,9 @@ namespace DotaHostLibrary
                 if (sendData != null)
                 {
                     // Loop through the kkey value pairs in the data, and append them to the url
-                    url = sendData.Aggregate(url, (current, kvp) => current + (kvp.Key + "=" + kvp.Value + "&"));
+                    var getData = new Dictionary<string, string>(sendData);
+
+                    url = getData.Aggregate(url, (current, kvp) => current + (kvp.Key + "=" + kvp.Value + "&"));
 
                     // Remove the trailing & at the end
                     if (sendData.Count > 0)
@@ -38,7 +44,7 @@ namespace DotaHostLibrary
             }
 
             // If method is POST
-            if (method == "POST")
+            else if (method == "POST")
             {
                 // Define the post data
                 string postData = "";
@@ -48,14 +54,7 @@ namespace DotaHostLibrary
                     // Loop through the key value pairs in the data, append them to postData, except in the case of api_key, append to URL
                     foreach (var kvp in sendData)
                     {
-                        if (kvp.Key == "api_key")
-                        {
-                            url += "api_key=" + kvp.Value;
-                        }
-                        else
-                        {
-                            postData += kvp.Key + "=" + kvp.Value + "&";
-                        }
+                        postData += kvp.Key + "=" + kvp.Value + "&";
                     }
 
                     // Remove trailing &
@@ -91,6 +90,33 @@ namespace DotaHostLibrary
                     dataStream.Close();
                 }
             }
+            else if (method == "POSTJSON")
+            {
+                // Refine the request using the new URL
+                request = (HttpWebRequest)WebRequest.Create(url);
+
+                string json = new JavaScriptSerializer().Serialize(sendData);
+
+                // Set method to POST
+                request.Method = "POST";
+
+                // Set content type to application/json
+                request.ContentType = "application/json";
+
+                Helpers.Log("'" + json + "'");
+
+                // Get the request stream of the request object
+                using (var dataStream = new StreamWriter(request.GetRequestStream()))
+                {
+                    // Write the byte array to the data stream
+                    dataStream.Write(json);
+
+                    dataStream.Flush();
+
+                    // Close the data stream
+                    dataStream.Close();
+                }
+            }
 
             if (headers != null)
             {
@@ -99,6 +125,10 @@ namespace DotaHostLibrary
                     if (kvp.Key == "Content-Type")
                     {
                         if (request != null) request.ContentType = kvp.Value;
+                    }
+                    else if (kvp.Key == "Accept")
+                    {
+                        if (request != null) request.Accept = kvp.Value;
                     }
                     else
                     {
@@ -112,19 +142,33 @@ namespace DotaHostLibrary
             {
                 // Async get response
                 if (request != null)
+                {
                     request.BeginGetResponse(iar =>
                     {
-                        // Get response object
-                        var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
+                        string body;
+                        HttpStatusCode responseCode = HttpStatusCode.OK;
 
-                        // Read response stream and store data
-                        var body = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                        try
+                        {
+                            // Get response object
+                            var response = (HttpWebResponse)((HttpWebRequest)iar.AsyncState).EndGetResponse(iar);
+
+                            // Read response stream and store data
+                            body = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                        }
+                        catch (WebException we)
+                        {
+                            responseCode = ((HttpWebResponse)we.Response).StatusCode;
+                            body = new StreamReader(((HttpWebResponse)we.Response).GetResponseStream()).ReadToEnd();
+                        }
 
 
                         // Call the given function taking the raw JSON as the parameter
-                        responseAction(body);
+                        responseAction(body, responseCode);
+
 
                     }, request);
+                }
             };
 
             // Call of the async function defined above, asynchronously

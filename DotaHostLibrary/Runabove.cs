@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using DotaHostClientLibrary;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace DotaHostLibrary
 {
@@ -37,11 +39,9 @@ namespace DotaHostLibrary
         public const string VultrApiKey = "***REMOVED***";
 
         // Runabove api key:
-        //public const string RUNABOVE_API_KEY = "***REMOVED***";
-        //public const string RUNABOVE_CONSUMER_KEY = "***REMOVED***";
-        //public const string RUNABOVE_APP_KEY = "***REMOVED***";
-        //public const string RUNABOVE_APP_SECRET = "***REMOVED***";
-        public const string OpenstackAuthToken = "***REMOVED***";
+        public const string RunaboveUsername = "***REMOVED***";
+        public const string RunabovePassword = "5***REMOVED***";
+        public static string OpenstackAuthToken = "";
 
         // Vultr $15 plan
         //public const byte AMERICA_PLAN_ID = 3;      // 3TB
@@ -159,18 +159,71 @@ namespace DotaHostLibrary
                 }
             );*/
 
-            HttpRequestManager.StartRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body) =>
+            try
             {
-                // Take the raw JSON body and convert it into a dictionary of server properties
-                dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
-                var serverList = new OpenStackServerList(data);
-                func(serverList);
-            }, null,
-            new Dictionary<string, string>()
+                HttpRequestManager.StartRequest("https://compute.bhs-1.runabove.io/v2/***REMOVED***/servers/detail", "GET", (body, responseCode) =>
+                {
+                    Helpers.Log("1");
+                    // Check response
+                    if (responseCode == HttpStatusCode.OK)
+                    {
+                        Helpers.Log("OK");
+                        // Response is good
+
+                        // Take the raw JSON body and convert it into a dictionary of server properties
+                        dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
+
+                        // Create OpenStackServerList object
+                        var serverList = new OpenStackServerList(data);
+
+                        // Do the function with server list
+                        func(serverList);
+                    }
+                    else if (responseCode == HttpStatusCode.Unauthorized)
+                    {
+                        Helpers.Log("Unauthorized");
+                        Helpers.Log(body);
+                        // Incorrect API token, generate new one
+
+                        HttpRequestManager.StartRequest("https://auth.runabove.io/v2.0/tokens", "POSTJSON",
+                            (body2, responseCode2) =>
+                            {
+                                Helpers.Log(":D");
+
+                                Helpers.Log(body);
+
+                                // Convert json object to json c#
+                                dynamic data = JsonConvert.DeserializeObject<dynamic>(body);
+
+                                Helpers.Log("3");
+
+                                OpenstackAuthToken = data["access"]["token"]["id"];
+
+                                Helpers.Log("4");
+
+                                GetServers(func);
+                            },
+                            //"{\"auth\": {\"tenantName\": \"***REMOVED***\", \"passwordCredentials\": {\"username\": \"" + RunaboveUsername + "\", \"password\": \"" + RunabovePassword + "\"}}}",
+                            new { auth = new { tenantName = "***REMOVED***", passwordCredentials = new { username = "***REMOVED***", password = "5***REMOVED***" } } },
+                            new Dictionary<string, string> { { "Accept", "application/json" } }
+                        );
+                    }
+                    else
+                    {
+                        Helpers.Log("SHIT");
+                    }
+                }, null,
+                new Dictionary<string, string>()
+                {
+                    {"Content-Type", "application/json"},
+                    {"X-Auth-Token", OpenstackAuthToken}
+                });
+            }
+            catch
             {
-                {"Content-Type", "application/json"},
-                {"X-Auth-Token", OpenstackAuthToken}
-            });
+                Helpers.Log("yolo");
+            }
+
 
         }
     }
