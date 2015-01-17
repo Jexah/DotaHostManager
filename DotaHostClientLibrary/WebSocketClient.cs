@@ -53,6 +53,7 @@ namespace DotaHostClientLibrary
         // Connects the websocket client to the server
         public void Start()
         {
+            _wsClient.Disconnect();
             _wsClient.Connect();
         }
 
