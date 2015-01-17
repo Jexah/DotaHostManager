@@ -89,7 +89,7 @@ namespace DotaHostLobbyManager
             WsServer.AddHook("swapTeam", SwapTeamHook);
 
             // Temp request to start game
-            WsServer.AddHook("startGames", StartGamesHook);
+            WsServer.AddHook("startGame", StartGameHook);
 
             // Gets the current page that the user should be at
             WsServer.AddHook("getPage", GetPageHook);
@@ -185,6 +185,7 @@ namespace DotaHostLobbyManager
                 // Create that sucka
                 PlayersReady.Add(lobby.Name, new List<string>());
                 Helpers.Log("createLobby: send to join lobby.");
+                lobby.Status = Lobby.Waiting;
                 JoinLobby(Lobbies.GetLobby(lobby.Name), player, c);
             }
             else
@@ -329,14 +330,17 @@ namespace DotaHostLobbyManager
                 WsServer.Send(Helpers.PackArguments("swapTeam", teamId, slotId, steamId), SteamIdtoIp[player.SteamId]);
 
                 // If the game is full
-                if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count +
-                    lobby.Teams.GetTeam("1").Players.GetPlayers().Count != 2) return;
+                //if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count + lobby.Teams.GetTeam("1").Players.GetPlayers().Count != 2) return;
+
+                return;
 
                 // Let them know if the game is starting...
                 WsServer.Send("lobbyFull", SteamIdtoIp[player.SteamId]);
 
                 // Set lobby status to READY
                 lobby.Status = Lobby.Ready;
+
+                _lobbiesChanged = true;
 
                 // local bool
                 startGame = true;
@@ -378,12 +382,87 @@ namespace DotaHostLobbyManager
             }));
         }
 
-        private static void StartGamesHook(UserContext c, string[] x)
+        private static void StartGameHook(UserContext c, string[] x)
         {
-            foreach (var l in Lobbies.GetLobbies())
+            string ip = c.ClientAddress.ToString();
+            if (!IpToSteamId.ContainsKey(ip)) return;
+
+            string steamid = IpToSteamId[ip];
+
+            if (!PlayersInLobbies.ContainsKey(steamid)) return;
+
+            Lobby lobby = PlayersInLobbies[steamid];
+
+            if (lobby.Status != Lobby.Waiting)
             {
-                RequestGameServer(l);
+                Helpers.Log("Lobby not waiting");
+                return;
             }
+
+            // Set lobby status to READY
+            lobby.Status = Lobby.Ready;
+
+            _lobbiesChanged = true;
+
+            lobby.ForEachPlayer(player =>
+            {
+                // If steamid cannot be converted to IP, re
+                if (!SteamIdtoIp.ContainsKey(player.SteamId)) return;
+
+                // If the game is full
+                //if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count + lobby.Teams.GetTeam("1").Players.GetPlayers().Count != 2) return;
+
+                // Let them know if the game is starting...
+                WsServer.Send("lobbyFull", SteamIdtoIp[player.SteamId]);
+            });
+
+            // If the lobby timer exists, cancel it
+            if (LobbyNameToTimer.ContainsKey(lobby.Name))
+            {
+                CancelLobbyStart(lobby.Name);
+                LobbyNameToTimer.Remove(lobby.Name);
+            }
+
+            // Begin the timeout for requestGameServer
+            LobbyNameToTimer.Add(lobby.Name, Timers.SetTimeout(20, Timers.Seconds, () =>
+            {
+                Helpers.Log(lobby.CurrentPlayers.ToString());
+
+                lobby.ForEachPlayer(player =>
+                {
+                    Helpers.Log("steamid: " + player.SteamId);
+                });
+
+                Helpers.Log(PlayersReady[lobby.Name].Count.ToString());
+                foreach (var i in PlayersReady[lobby.Name])
+                {
+                    Helpers.Log("ready: " + i);
+                }
+
+                // If the number of players ready is full at end of time out
+                if (PlayersReady[lobby.Name].Count == lobby.CurrentPlayers)//lobby.MaxPlayers)
+                {
+                    // Get game server
+                    RequestGameServer(lobby);
+                }
+                else
+                {
+                    // Number of player who are ready is not the full lobby
+                    // For each player in the lobby
+                    lobby.ForEachPlayer(player =>
+                    {
+                        // If the player isn't ready
+                        if (!PlayersReady[lobby.Name].Contains(player.SteamId))
+                        {
+                            // Kick them
+                            RemoveFromLobby(lobby, player, true);
+                        }
+                    });
+
+                    CancelLobbyStart(lobby.Name);
+
+                }
+            }));
         }
 
         private static void GetPageHook(UserContext c, string[] x)
@@ -484,6 +563,8 @@ namespace DotaHostLobbyManager
 
             RemoveFromLobby(lobby, player, true);
 
+            CancelLobbyStart(lobby.Name);
+
             // Tell them it was successful
             c.Send(Helpers.PackArguments("leaveLobby"));
         }
@@ -497,6 +578,7 @@ namespace DotaHostLobbyManager
             if (!IpToSteamId.ContainsKey(ip))
             {
                 // IP is not valid, exit.
+                Helpers.Log("ip not valid");
                 return;
             }
 
@@ -507,6 +589,7 @@ namespace DotaHostLobbyManager
             if (!PlayersInLobbies.ContainsKey(steamid))
             {
                 // Player is not in lobby, exit.
+                Helpers.Log("player is not in lobby");
                 return;
             }
             // Get lobby
@@ -515,16 +598,29 @@ namespace DotaHostLobbyManager
             if (lobby.Status != Lobby.Ready)
             {
                 // Lobby is either waiting or active
+                Helpers.Log("lobby not ready");
                 return;
             }
             // If player is not ready
-            if (PlayersReady[lobby.Name].Contains(steamid)) return;
+            if (PlayersReady[lobby.Name].Contains(steamid))
+            {
+                Helpers.Log("already in PlayersReady");
+                return;
+            }
 
             // Set player to ready
             PlayersReady[lobby.Name].Add(steamid);
 
+            Helpers.Log("added steamid: " + steamid + " to PlayersReady[" + lobby.Name + "]");
+
             // If all players are ready
-            if (PlayersReady.Count != 2) return;
+            if (PlayersReady[lobby.Name].Count != lobby.CurrentPlayers)
+            {
+                Helpers.Log("Not enough");
+                return;
+            }
+
+            Helpers.Log("All g");
 
             // Request game server
             RequestGameServer(lobby);
@@ -549,6 +645,8 @@ namespace DotaHostLobbyManager
             {
                 RemoveFromLobby(lobby, PlayerCache[ip], true);
             }
+
+            CancelLobbyStart(lobby.Name);
         }
 
         private static void GameServerInfoHook(UserContext c, string[] x)
@@ -685,11 +783,19 @@ namespace DotaHostLobbyManager
 
             lobby.ForEachPlayer(player =>
             {
+                if (PlayersReady[lobby.Name].Contains(player.SteamId))
+                {
+                    PlayersReady[lobby.Name].Remove(player.SteamId);
+                }
                 if (SteamIdtoIp.ContainsKey(player.SteamId))
                 {
                     WsServer.Send("cancelBeginGame", SteamIdtoIp[player.SteamId]);
                 }
             });
+
+            lobby.Status = Lobby.Waiting;
+
+            _lobbiesChanged = true;
         }
 
         private static bool SwapTeam(Team newTeam, string newSlot, Player player)
@@ -778,18 +884,23 @@ namespace DotaHostLobbyManager
 
                     WsServer.Send(Helpers.PackArguments("addPlayerToLobby", player.ToJson(), "2"), SteamIdtoIp[p.SteamId]);
 
-                    if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count + lobby.Teams.GetTeam("1").Players.GetPlayers().Count == 2)//lobby.MaxPlayers)
-                    {
-                        WsServer.Send("lobbyFull", SteamIdtoIp[p.SteamId]);
-                    }
+                    //if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count + lobby.Teams.GetTeam("1").Players.GetPlayers().Count == 2)//lobby.MaxPlayers)
+                    //{
+                    //    WsServer.Send("lobbyFull", SteamIdtoIp[p.SteamId]);
+                    //}
                 });
-                if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count +
-                    lobby.Teams.GetTeam("1").Players.GetPlayers().Count != 2) return;
+
+                return;
+
+                if (lobby.Teams.GetTeam("0").Players.GetPlayers().Count + lobby.Teams.GetTeam("1").Players.GetPlayers().Count != lobby.CurrentPlayers) return;
 
                 if (LobbyNameToTimer.ContainsKey(lobby.Name))
                 {
                     CancelLobbyStart(lobby.Name);
                 }
+
+
+
                 LobbyNameToTimer.Add(lobby.Name, Timers.SetTimeout(5, Timers.Seconds, () =>
                 {
                     Helpers.Log("Requested game server");
