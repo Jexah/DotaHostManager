@@ -90,6 +90,8 @@ namespace DotaHostBoxManager
         // Box Server status
         private static byte _status;
 
+        private static bool connectedToServerManager = false;
+
         #endregion
 
         // The main entry point into the program
@@ -119,8 +121,10 @@ namespace DotaHostBoxManager
             // Hook the websocket events/
             HookWSocketEvents();
 
-            // Start the websocket client.
+            // Start the websocket client
             WsClient.Start();
+
+
 
 
 
@@ -271,6 +275,9 @@ namespace DotaHostBoxManager
             // When connected to the ServerManager, send alert and request information and instructions
             WsClient.AddHook(WebSocketClient.TypeConnected, ConnectedHook);
 
+            // When connected to the ServerManager, send alert and request information and instructions
+            WsClient.AddHook(WebSocketClient.TypeDisconnected, DisconnectedHook);
+
             // Begin server reboot
             WsClient.AddHook("reboot", RebootHook);
 
@@ -309,6 +316,28 @@ namespace DotaHostBoxManager
         private static void ConnectedHook(UserContext c)
         {
             c.Send("box");
+            connectedToServerManager = true;
+        }
+
+        private static void DisconnectedHook(UserContext c)
+        {
+            connectedToServerManager = false;
+            AttemptReconnect();
+
+            Helpers.Log("Disconnected, starting timeout");
+        }
+
+        private static void AttemptReconnect()
+        {
+            Timers.SetTimeout(1, Timers.Seconds, () =>
+            {
+                if (connectedToServerManager) return;
+
+                Helpers.Log("Attempting connect");
+
+                WsClient.Start();
+                AttemptReconnect();
+            });
         }
 
         private static void RebootHook(UserContext c, string[] x)

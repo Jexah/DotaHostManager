@@ -41,6 +41,7 @@ namespace DotaHostLibrary
         // Runabove api key:
         public const string RunaboveUsername = "***REMOVED***";
         public const string RunabovePassword = "5***REMOVED***";
+
         public static string OpenstackAuthToken = "";
 
         // Vultr $15 plan
