@@ -129,7 +129,7 @@ namespace DotaHostBoxManager
 
 
             // Update the dota install
-            //updateServers();
+            UpdateServers();
         }
 
         // Updates serverinit.zip
@@ -762,6 +762,7 @@ namespace DotaHostBoxManager
             {
                 // Ensure the directory exists
                 Directory.CreateDirectory(SourcePath);
+                Directory.CreateDirectory(SourcePath + @"\addons");
 
                 // Create the path command file
                 File.WriteAllText(Global.BasePath + SteamcmdPath + "install.txt", SteamcmdUpdatefile);
@@ -792,20 +793,31 @@ namespace DotaHostBoxManager
                 // Install SRCDS
                 InstallServerFile(Global.BasePath + SourcePath + "srcds.exe", DownloadPathSrcds, Global.BasePath + SourcePath, "srcds", () =>
                 {
-                    // Install Metamod
-                    InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod.vdf", DownloadPathMetamod, Global.BasePath + SourcePath + @"dota\", "metamod", () =>
+                    Helpers.Log("Installed SRCDS");
+                    GetMetaModSourceLink(mmsLink =>
                     {
-                        // Install d2fixups
-                        InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod\d2fixups.vdf", DownloadPathD2Fixups, Global.BasePath + SourcePath + @"dota\", "d2fixups", () =>
+                        Helpers.Log("Grabbed MMS Link");
+                        // Install Metamod
+                        InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod.vdf", mmsLink, Global.BasePath + SourcePath + @"dota\", "metamod", () =>
                         {
-                            // Patch the gameinfo file
-                            Source1GameInfoPatch();
+                            Helpers.Log("Installed metamod");
+                            GetD2FixupsLink(d2FixupsLink =>
+                            {
+                                Helpers.Log("grabbed d2ixups link");
+                                // Install d2fixups
+                                InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod\d2fixups.vdf", d2FixupsLink, Global.BasePath + SourcePath + @"dota\", "d2fixups", () =>
+                                {
+                                    Helpers.Log("installed d2fixups");
+                                    // Patch the gameinfo file
+                                    Source1GameInfoPatch();
 
-                            // Patch the maps
-                            PatchSource1Maps();
+                                    // Patch the maps
+                                    PatchSource1Maps();
 
-                            // Finished installing
-                            Helpers.Log("Finished installing servers!");
+                                    // Finished installing
+                                    Helpers.Log("Finished installing servers!");
+                                });
+                            });
                         });
                     });
                 });
@@ -978,5 +990,58 @@ namespace DotaHostBoxManager
             return instancename;
         }
 
+
+        public static void GetMetaModSourceLink(Action<string> func)
+        {
+            HttpRequestManager.StartRequest("http://www.metamodsource.net/mmsdrop/1.11/", "GET", (body, statusCode) =>
+            {
+                var occurances = AllIndexesOf(body, "mmsource-1.11.0-git");
+                var highestBuild = 0;
+                for (var i = 0; i < occurances.Count; i += 2)
+                {
+                    var start = occurances[i];
+                    var end = body.Substring(start).IndexOf("\"") + start;
+                    var distance = end - start;
+                    var link = body.Substring(start, distance);
+
+                    if (!link.Contains("windows")) continue;
+
+                    var build = Convert.ToInt16(link.Split('-')[2].Substring(3));
+                    if (build > highestBuild)
+                    {
+                        highestBuild = build;
+                    }
+                }
+                func("http://www.metamodsource.net/mmsdrop/1.11/mmsource-1.11.0-git" + highestBuild + "-windows.zip");
+            });
+        }
+
+        public static void GetD2FixupsLink(Action<string> func)
+        {
+            HttpRequestManager.StartRequest("https://forums.alliedmods.net/showthread.php?t=209965", "GET", (body, statusCode) =>
+            {
+                var d2FixupsPos = body.IndexOf("d2fixups.zip");
+                var start = body.Substring(0, d2FixupsPos).LastIndexOf("href=") + 6;
+                var end = body.Substring(start).IndexOf("\"") + start;
+                var distance = end - start;
+                var link = "https://forums.alliedmods.net/" + body.Substring(start, distance);
+                link = link.Replace("amp;", "");
+                func(link);
+            });
+        }
+
+        public static List<int> AllIndexesOf(string str, string value)
+        {
+            if (String.IsNullOrEmpty(value))
+                throw new ArgumentException("the string to find may not be empty", "value");
+            var indexes = new List<int>();
+            for (int index = 0; ; index += value.Length)
+            {
+                index = str.IndexOf(value, index);
+                if (index == -1)
+                    return indexes;
+                indexes.Add(index);
+            }
+        }
     }
 }
