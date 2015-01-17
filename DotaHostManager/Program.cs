@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Timers;
 using System.Windows.Forms;
 
@@ -48,15 +49,19 @@ namespace DotaHostManager
 
         private static void Main(string[] i)
         {
+            // Reset log file
+            File.Delete(Global.BasePath + "log.txt");
+
+            Application.ThreadException += Application_ThreadException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+
             if (i.Length > 1 && i[0] == "crc")
             {
                 Console.WriteLine(Helpers.CalculateCrc(i[1]));
                 Console.ReadLine();
                 return;
             }
-
-            // Reset log file
-            File.Delete(Global.BasePath + "log.txt");
 
             File.Delete(Global.BasePath + "DotaHostManagerUpdater.exe");
 
@@ -823,6 +828,21 @@ namespace DotaHostManager
             }
         }
 
+        private static void Application_ThreadException(object sender, ThreadExceptionEventArgs eo)
+        {
+            var e = eo.Exception;
+            MessageBox.Show(e.Message + Environment.NewLine + Environment.NewLine + "Please report this to an Admin.", "DotaHost ModManager - Error");
+            Helpers.Log(e.ToString());
+            Exit();
+        }
+
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs eo)
+        {
+            var e = (eo.ExceptionObject as Exception);
+            MessageBox.Show(e.Message + Environment.NewLine + Environment.NewLine + "Please report this to an Admin.", "DotaHost ModManager - Error");
+            Helpers.Log(e.ToString());
+            Exit();
+        }
     }
 
 }
