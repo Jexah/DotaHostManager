@@ -188,7 +188,7 @@ namespace DotaHostServerManager
             ModGui(boxesList, () => boxesList.Items.Remove(c.ClientAddress));
         }
 
-        private void CreateGameServerHook(UserContext c, string[] x)
+        private static void CreateGameServerHook(UserContext c, string[] x)
         {
 
             Helpers.Log("Received createGameServer from lobby");
@@ -199,16 +199,7 @@ namespace DotaHostServerManager
             if (boxManager != null)
             {
                 Helpers.Log("Found game server");
-                var gameServer = CreateGameServer(boxManager, lobby);
-
-                /*if (gameServer != null)
-                {
-                    c.Send(Helpers.packArguments("gameServerInfo", "success", gameServer.toString()));
-                }
-                else
-                {
-                    Helpers.log("Could not find server");
-                }*/
+                CreateGameServer(boxManager, lobby);
             }
             else
             {
@@ -303,34 +294,17 @@ namespace DotaHostServerManager
             {
 
             }
-            foreach (BoxManager boxManager in BoxManagers.GetBoxManagers())
-            {
-                if (boxManager.Region == lobby.Region)
-                {
-                    Helpers.Log("region OK");
-                    Helpers.Log("Total req RAM: " + totalRam);
-                    Helpers.Log("Available RAM: " + boxManager.RamAvailable);
-                    Helpers.Log("Total req CPU: " + totalCpu);
-                    Helpers.Log("Available CPU: " + (100 - boxManager.Cpu).ToString());
-
-                    if (boxManager.RamAvailable > totalRam && 100 - boxManager.Cpu > totalCpu)
-                    {
-                        Helpers.Log("stats OK");
-                        return boxManager;
-                    }
-                }
-            }
-            return null;
+            return BoxManagers.GetBoxManagers().Where(boxManager => boxManager.Region == lobby.Region).FirstOrDefault(boxManager => boxManager.GameServers.GetGameServers().Count < 2);
         }
 
         // Creates a game server
-        private static GameServer CreateGameServer(BoxManager boxManager, Lobby lobby)
+        private static void CreateGameServer(BoxManager boxManager, Lobby lobby)
         {
             Helpers.Log("createGameServer");
 
             var ports = boxManager.GameServers.GetGameServers().Select(gs => gs.Port).ToList();
 
-            GameServer gameServer = null;
+            GameServer gameServer;
             for (ushort i = 27015; i < 27025; ++i)
             {
                 if (ports.Contains(i)) continue;
@@ -349,7 +323,6 @@ namespace DotaHostServerManager
 
                 break;
             }
-            return gameServer;
         }
 
         // Reboots the selected box
