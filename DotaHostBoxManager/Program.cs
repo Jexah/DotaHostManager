@@ -92,6 +92,12 @@ namespace DotaHostBoxManager
 
         private static bool connectedToServerManager = false;
 
+        private static Timers.EndTimer rebootEndTimer;
+
+        private static Timers.EndTimer destroyEndTimer;
+
+        private static Timers.EndTimer reconnectEndTimer;
+
         #endregion
 
         // The main entry point into the program
@@ -305,7 +311,7 @@ namespace DotaHostBoxManager
 
         private static void BoxManagerHook(UserContext c)
         {
-            Helpers.Log("SENT SOMETHING");
+
         }
 
         private static void ReceiveHook(UserContext c)
@@ -322,22 +328,23 @@ namespace DotaHostBoxManager
         private static void DisconnectedHook(UserContext c)
         {
             connectedToServerManager = false;
-            AttemptReconnect();
+
+            reconnectEndTimer = Timers.SetInterval(1, Timers.Seconds, AttemptReconnect);
 
             Helpers.Log("Disconnected, starting timeout");
         }
 
         private static void AttemptReconnect()
         {
-            Timers.SetTimeout(1, Timers.Seconds, () =>
+            if (connectedToServerManager)
             {
-                if (connectedToServerManager) return;
+                reconnectEndTimer();
+                return;
+            }
 
-                Helpers.Log("Attempting connect");
+            Helpers.Log("Attempting connect");
 
-                WsClient.Start();
-                AttemptReconnect();
-            });
+            WsClient.Start();
         }
 
         private static void RebootHook(UserContext c, string[] x)
@@ -346,7 +353,7 @@ namespace DotaHostBoxManager
             _status = Runabove.BoxDeactivated;
 
             // Begin reboot loop.
-            RebootLoop();
+            rebootEndTimer = Timers.SetInterval(5, Timers.Seconds, RebootLoop);
         }
 
         private static void InstanceidHook(UserContext c, string[] x)
@@ -370,7 +377,7 @@ namespace DotaHostBoxManager
             {
                 // Soft destroy, waits for games to finish, polls every minute
                 _status = Runabove.BoxDeactivated;
-                DestroyLoop();
+                destroyEndTimer = Timers.SetInterval(5, Timers.Seconds, DestroyLoop);
             }
         }
 
@@ -662,13 +669,14 @@ namespace DotaHostBoxManager
             if (GameServers.GetKeys().Count > 0)
             {
                 // Game server still running, check again in 60 seconds
-                Timers.SetTimeout(60, Timers.Seconds, RebootLoop);
+                return;
             }
-            else
-            {
-                // Reboot server
-                Process.Start("shutdown.exe", "-r -t 0");
-            }
+
+            // No servers running, reboot
+            rebootEndTimer();
+
+            // Reboot server
+            Process.Start("shutdown.exe", "-r -t 0");
         }
 
         // Destroy check loop
@@ -677,13 +685,13 @@ namespace DotaHostBoxManager
             if (GameServers.GetKeys().Count > 0)
             {
                 // Game servers still running, check again in 60 seconds
-                Timers.SetTimeout(60, Timers.Seconds, DestroyLoop);
+                return;
             }
-            else
-            {
-                // Destroy server
-                //Runabove.destroyServer(instanceID);
-            }
+
+            destroyEndTimer();
+
+            // Destroy server
+            //Runabove.destroyServer(instanceID);
         }
 
         // Destroy server instantly
