@@ -56,7 +56,6 @@ namespace DotaHostServerManager
                     string ip = boxesList.SelectedItem.ToString();
                     WsServer.Send("gameServers", ip);
                 }
-                Timers.SetTimeout(5, Timers.Seconds, UpdateCurrentBoxGameServers);
             });
 
         }
@@ -180,12 +179,22 @@ namespace DotaHostServerManager
 
         private void DisconnectedHook(UserContext c)
         {
+            string ip = c.ClientAddress.ToString();
+
+            if (BoxManagers.GetBoxManagers().All(boxManager => boxManager.Ip != ip))
+            {
+                return;
+            }
 
             // Remove boxmanager from the list
-            BoxManagers.RemoveBoxManager(c.ClientAddress.ToString());
+            BoxManagers.RemoveBoxManager(ip);
 
             // Update listbox
-            ModGui(boxesList, () => boxesList.Items.Remove(c.ClientAddress));
+            ModGui(boxesList, () =>
+            {
+                Helpers.Log(boxesList.Items.Contains(c.ClientAddress.ToString()).ToString());
+                boxesList.Items.Remove(ip);
+            });
         }
 
         private static void CreateGameServerHook(UserContext c, string[] x)
@@ -376,7 +385,7 @@ namespace DotaHostServerManager
         {
             SetBoxDefaultGui();
 
-            UpdateCurrentBoxGameServers();
+            Timers.SetInterval(5, Timers.Seconds, UpdateCurrentBoxGameServers);
         }
 
         // Form 1 shown (after GUI loads)
