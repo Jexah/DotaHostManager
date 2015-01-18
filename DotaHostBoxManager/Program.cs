@@ -724,7 +724,7 @@ namespace DotaHostBoxManager
         private static void InstallServerFile(string localFileCheck, string downloadUrl, string extractTo, string friendlyName, Action callback)
         {
             // Check if steamcmd exists
-            if (!File.Exists(localFileCheck))
+            if (localFileCheck == string.Empty || !File.Exists(localFileCheck))
             {
                 // Debug log
                 Helpers.Log(friendlyName + " not found, downloading...");
@@ -806,24 +806,37 @@ namespace DotaHostBoxManager
                     {
                         Helpers.Log("Grabbed MMS Link");
                         // Install Metamod
-                        InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod.vdf", mmsLink, Global.BasePath + SourcePath + @"dota\", "metamod", () =>
+                        Helpers.DeleteFolder(Global.BasePath + SourcePath + @"dota\addons", true);
+                        InstallServerFile(string.Empty, mmsLink, Global.BasePath + SourcePath + @"dota\", "metamod", () =>
                         {
                             Helpers.Log("Installed metamod");
                             GetD2FixupsLink(d2FixupsLink =>
                             {
                                 Helpers.Log("grabbed d2ixups link");
                                 // Install d2fixups
-                                InstallServerFile(Global.BasePath + SourcePath + @"dota\addons\metamod\d2fixups.vdf", d2FixupsLink, Global.BasePath + SourcePath + @"dota\", "d2fixups", () =>
+                                InstallServerFile(string.Empty, d2FixupsLink, Global.BasePath + SourcePath + @"dota\", "d2fixups", () =>
                                 {
                                     Helpers.Log("installed d2fixups");
-                                    // Patch the gameinfo file
-                                    Source1GameInfoPatch();
+                                    GetSourceModLink(smLink =>
+                                    {
+                                        Helpers.DeleteFolder(Global.BasePath + SourcePath + @"dota\cfg\sourcemod", true);
+                                        // Install sourcemod
+                                        InstallServerFile(string.Empty, smLink, Global.BasePath + SourcePath + @"dota\", "sourcemod", () =>
+                                        {
+                                            // Install steam dlls
+                                            InstallServerFile(Global.BasePath + SourcePath + "steamclient.dll", Global.Root + "files/steam.zip", Global.BasePath + SourcePath, "steam", () =>
+                                            {
+                                                // Patch the gameinfo file
+                                                Source1GameInfoPatch();
 
-                                    // Patch the maps
-                                    PatchSource1Maps();
+                                                // Patch the maps
+                                                PatchSource1Maps();
 
-                                    // Finished installing
-                                    Helpers.Log("Finished installing servers!");
+                                                // Finished installing
+                                                Helpers.Log("Finished installing servers!");
+                                            });
+                                        });
+                                    });
                                 });
                             });
                         });
@@ -999,6 +1012,31 @@ namespace DotaHostBoxManager
         }
 
 
+        public static void GetSourceModLink(Action<string> func)
+        {
+            HttpRequestManager.StartRequest("http://www.sourcemod.net/smdrop/1.7/", "GET", (body, statusCode) =>
+            {
+                var occurances = AllIndexesOf(body, "sourcemod-1.7.0-git");
+                var highestBuild = 0;
+                for (var i = 0; i < occurances.Count; i += 2)
+                {
+                    var start = occurances[i];
+                    var end = body.Substring(start).IndexOf("\"") + start;
+                    var distance = end - start;
+                    var link = body.Substring(start, distance);
+
+                    if (!link.Contains("windows")) continue;
+
+                    var build = Convert.ToInt16(link.Split('-')[2].Substring(3));
+                    if (build > highestBuild)
+                    {
+                        highestBuild = build;
+                    }
+                }
+                func("http://www.sourcemod.net/smdrop/1.7/sourcemod-1.7.0-git" + highestBuild + "-windows.zip");
+            });
+        }
+
         public static void GetMetaModSourceLink(Action<string> func)
         {
             HttpRequestManager.StartRequest("http://www.metamodsource.net/mmsdrop/1.11/", "GET", (body, statusCode) =>
@@ -1037,6 +1075,8 @@ namespace DotaHostBoxManager
                 func(link);
             });
         }
+
+
 
         public static List<int> AllIndexesOf(string str, string value)
         {
