@@ -115,7 +115,7 @@ namespace DotaHostManager
             AppKeepAlive();
 
             // Event loop to prevent program from exiting
-            DoEvents();
+            Timers.SetInterval(1, Timers.Seconds, DoEvents);
         }
 
         // Copies this application to temp, then deletes itself
@@ -594,7 +594,6 @@ namespace DotaHostManager
             {
                 Exit();
             }
-            Timers.SetTimeout(1, Timers.Seconds, DoEvents);
         }
 
         // Function to request registration of the dotahost uri protocol
