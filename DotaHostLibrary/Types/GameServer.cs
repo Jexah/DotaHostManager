@@ -42,6 +42,14 @@ namespace DotaHostLibrary
             }
         }
 
+        public string ConnectionIp
+        {
+            get
+            {
+                return Ip.Split(':')[0] + ":" + Port;
+            }
+        }
+
 
         public GameServer()
         {

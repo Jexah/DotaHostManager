@@ -37,6 +37,8 @@ namespace DotaHostLobbyManager
         // Each lobby has its own timer stored under its name in this dictionary. Simply call the value to dispose the timer.
         private static readonly Dictionary<string, Timers.EndTimer> LobbyNameToTimer = new Dictionary<string, Timers.EndTimer>();
 
+
+        private static readonly Dictionary<string, string> LobbyNameToGameServerIp = new Dictionary<string, string>();
         // Temp lobby
         private static bool _lobbiesChanged;
 
@@ -177,6 +179,7 @@ namespace DotaHostLobbyManager
             lobby.MaxPlayers = 10;
             lobby.CurrentPlayers = 0;
             lobby.Region = Runabove.Canada;
+            lobby.Status = Lobby.Waiting;
             // End temp stuff
 
             // If the lobby name isn't null, and the name isn't taken
@@ -185,7 +188,6 @@ namespace DotaHostLobbyManager
                 // Create that sucka
                 PlayersReady.Add(lobby.Name, new List<string>());
                 Helpers.Log("createLobby: send to join lobby.");
-                lobby.Status = Lobby.Waiting;
                 JoinLobby(Lobbies.GetLobby(lobby.Name), player, c);
             }
             else
@@ -402,6 +404,7 @@ namespace DotaHostLobbyManager
             // Set lobby status to READY
             lobby.Status = Lobby.Ready;
 
+
             _lobbiesChanged = true;
 
             lobby.ForEachPlayer(player =>
@@ -483,7 +486,7 @@ namespace DotaHostLobbyManager
 
             // If so, get the lobby info and send it to them.
             var l = PlayersInLobbies[IpToSteamId[ip]];
-            c.Send(Helpers.PackArguments("page", "lobby", l.ToJson()));
+            c.Send(Helpers.PackArguments("page", "lobby", l.ToJson(), LobbyNameToGameServerIp.ContainsKey(l.Name) ? LobbyNameToGameServerIp[l.Name] : ""));
         }
 
         private static void ChatHook(UserContext c, string[] x)
@@ -598,6 +601,7 @@ namespace DotaHostLobbyManager
             if (lobby.Status != Lobby.Ready)
             {
                 // Lobby is either waiting or active
+                Helpers.Log(lobby.Status.ToString());
                 Helpers.Log("lobby not ready");
                 return;
             }
@@ -658,6 +662,13 @@ namespace DotaHostLobbyManager
             // Are there teams in the game server?
             if (lobby.Teams == null) return;
 
+            if (!LobbyNameToGameServerIp.ContainsKey(lobby.Name))
+            {
+                LobbyNameToGameServerIp.Add(lobby.Name, gameServer.ConnectionIp);
+            }
+
+            Lobbies.GetLobby(lobby.Name).Status = Lobby.Active;
+
             // Great, for each of them, set the LoD defaults.
             foreach (var kvp in gameServer.Lobby.Teams.GetKeys())
             {
@@ -693,6 +704,10 @@ namespace DotaHostLobbyManager
             Helpers.Log("gameServerExit received");
             var gameServer = new GameServer(Kv.Parse(x[1]));
             var lobby = gameServer.Lobby;
+            if (LobbyNameToGameServerIp.ContainsKey(lobby.Name))
+            {
+                LobbyNameToGameServerIp.Remove(lobby.Name);
+            }
             lobby.ForEachPlayer(player =>
             {
                 if (!SteamIdtoIp.ContainsKey(player.SteamId)) return;
@@ -775,6 +790,7 @@ namespace DotaHostLobbyManager
             if (LobbyNameToTimer.ContainsKey(lobbyName))
             {
                 LobbyNameToTimer[lobbyName]();
+                LobbyNameToTimer.Remove(lobbyName);
             }
 
             if (!Lobbies.ContainsKey(lobbyName)) return;

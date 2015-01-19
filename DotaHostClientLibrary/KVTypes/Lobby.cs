@@ -97,6 +97,7 @@ namespace DotaHostClientLibrary
         public Lobby()
         {
             InitObject();
+            Status = Waiting;
         }
 
         public void ForEachPlayer(Action<Player> func)
