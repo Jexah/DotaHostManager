@@ -17,37 +17,38 @@ namespace DotaHostManagerUpdater
 
         private static void Update()
         {
-            try
+            Timers.SetTimeout(1, Timers.Seconds, () =>
             {
                 // Download version info
-                DlManager.DownloadSync(string.Format(Global.DownloadPathAddonInfo, "DotaHostManager"), Global.Temp + "DotaHostManager.txt");
+                DlManager.DownloadSync(string.Format(Global.DownloadPathAddonInfo, "DotaHostManager"),
+                    Global.Temp + "DotaHostManager.txt");
 
                 // Store version info
                 var versionCrc = File.ReadAllLines(Global.Temp + "DotaHostManager.txt");
 
                 // Download manager
-                DlManager.DownloadSync(string.Format(Global.DownloadPathApp, versionCrc[0]), Global.BasePath + @"DotaHostManager.exe");
+                DlManager.DownloadSync(string.Format(Global.DownloadPathApp, versionCrc[0]),
+                    Global.Temp + "DotaHostManager.exe");
 
                 var proc = new ProcessStartInfo
                 {
                     UseShellExecute = true,
-                    WorkingDirectory = Global.BasePath,
+                    WorkingDirectory = Global.Temp,
                     FileName = "DotaHostManager.exe"
                 };
-                try
+                var exit = Timers.SetInterval(1, Timers.Seconds, () =>
                 {
-                    Process.Start(proc);
-                    Environment.Exit(0);
-                }
-                catch
-                {
-                    Timers.SetTimeout(1, Timers.Seconds, Update);
-                }
-            }
-            catch
-            {
-                Timers.SetTimeout(1, Timers.Seconds, Update);
-            }
+                    try
+                    {
+                        Process.Start(proc);
+                        Environment.Exit(0);
+                    }
+                    catch
+                    {
+                        // could not start process
+                    }
+                });
+            });
         }
     }
 }

@@ -830,7 +830,7 @@ namespace DotaHostManager
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs eo)
         {
             var e = eo.Exception;
-            MessageBox.Show(e.Message + Environment.NewLine + Environment.NewLine + "Please report this to an Admin.", "DotaHost ModManager - Error");
+            MessageBox.Show(e.Message + Environment.NewLine + Environment.NewLine + "Please check reddit.com/r/dotahost for possible solutions. If you cannot find an answer, useful information has been copied to the clipboard, and you may text post the contents.", "DotaHost ModManager - Error");
             Helpers.Log(e.ToString());
             Exit();
         }
@@ -838,7 +838,7 @@ namespace DotaHostManager
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs eo)
         {
             var e = (eo.ExceptionObject as Exception);
-            MessageBox.Show(e.Message + Environment.NewLine + Environment.NewLine + "Please report this to an Admin.", "DotaHost ModManager - Error");
+            MessageBox.Show(e.Message + Environment.NewLine + Environment.NewLine + "Please check reddit.com/r/dotahost for possible solutions. If you cannot find an answer, useful information has been copied to the clipboard, and you may text post the contents.", "DotaHost ModManager - Error");
             Helpers.Log(e.ToString());
             Exit();
         }
