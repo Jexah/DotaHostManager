@@ -7,6 +7,7 @@ CREATE DATABASE IF NOT EXISTS dotahost;
 USE dotahost;
 
 -- Drop old tables
+--DROP TABLE IF EXISTS betaSlots;
 --DROP TABLE IF EXISTS betaUsers;
 --DROP TABLE IF EXISTS bans;
 DROP TABLE IF EXISTS sessionKeys;
@@ -49,4 +50,12 @@ CREATE TABLE IF NOT EXISTS betaUsers (
     FOREIGN KEY (steamID)
         REFERENCES steamUsers(steamID)
         ON DELETE CASCADE
-)
+);
+
+-- Beta Slots table
+DROP TABLE IF EXISTS betaSlots;
+CREATE TABLE IF NOT EXISTS betaSlots (
+    lck TINYINT DEFAULT 0 NOT NULL,
+    slots SMALLINT UNSIGNED NOT NULL,
+    PRIMARY KEY(lck)
+);
