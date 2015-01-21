@@ -70,17 +70,5 @@ namespace DotaHostManager.Properties {
                 this["shouldDeregister"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool gameinfoPatched {
-            get {
-                return ((bool)(this["gameinfoPatched"]));
-            }
-            set {
-                this["gameinfoPatched"] = value;
-            }
-        }
     }
 }
