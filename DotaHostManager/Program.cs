@@ -421,9 +421,13 @@ namespace DotaHostManager
 
         private static void SetDotaPathHook(UserContext c, string[] x)
         {
-
             if (!ValidateConnection(c)) { return; }
-            UpdateDotaPath(x[1]);
+            var dotapath = x[1];
+            if (!dotapath.EndsWith(@"\"))
+            {
+                dotapath += @"\";
+            }
+            UpdateDotaPath(dotapath);
         }
 
         private static void ExitHook(UserContext c, string[] x)

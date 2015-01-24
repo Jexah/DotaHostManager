@@ -40,7 +40,7 @@ namespace DotaHostLibrary
 
         // Runabove api key:
         public const string RunaboveUsername = "***REMOVED***";
-        public const string RunabovePassword = "5***REMOVED***";
+        public const string RunabovePassword = "***REMOVED***";
 
         public static string OpenstackAuthToken = "";
 
